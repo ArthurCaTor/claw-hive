@@ -374,7 +374,12 @@ function AppContent() {
 
       ws.onclose = () => {
         setWsConnected(false);
+        // Retry after 3 seconds
         setTimeout(connectWS, 3000);
+      };
+      
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
       };
     };
 

@@ -61,7 +61,7 @@ let agentStore = {};
 let storeLock = require('crypto').randomUUID(); // Simple lock indicator
 const OPENCLAW_CMD = process.env.OPENCLAW_CMD || 'openclaw';
 const POLL_INTERVAL = 10000;
-const ACTIVE_THRESHOLD = 120000;
+const ACTIVE_THRESHOLD = 600000;
 
 // WebSocket - attach to same HTTP server
 const { createServer } = require('http');
@@ -164,6 +164,10 @@ function pollOpenclaw() {
         }
         
         const old = agentStore[agentId] || {};
+        const existingAgeMs = old.updated_at ? (now - old.updated_at) : Infinity;
+        
+        // Only update if this session is more recent than what's stored
+        if (existingAgeMs < ageMs && old.status === 'working') continue;
         
         agentStore[agentId] = {
           ...old,

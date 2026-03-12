@@ -1,5 +1,5 @@
 {
-  "name": "openclaw-dashboard",
+  "name": "claw-hive",
   "version": "1.0.0",
   "description": "Real-time monitoring dashboard for OpenClaw AI agents",
   "main": "src/server.js",

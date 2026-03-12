@@ -1,24 +1,24 @@
-# openclaw-dashboard
+# claw-hive
 
 Real-time monitoring dashboard for OpenClaw AI agents.
 
 ## Install
 
 ```bash
-npm install -g openclaw-dashboard
+npm install -g claw-hive
 ```
 
 ## Usage
 
 ```bash
-openclaw-dashboard start
+claw-hive start
 ```
 
 ## Options
 
 ```bash
-openclaw-dashboard start --port 9090
-openclaw-dashboard start --no-open
+claw-hive start --port 9090
+claw-hive start --no-open
 ```
 
 ## Requirements
