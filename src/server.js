@@ -291,6 +291,9 @@ app.get('/api/cost', (req, res) => {
   const agents = Object.values(agentStore);
   const totalTokens = agents.reduce((sum, a) => sum + (a.tokens_used || 0), 0);
   
+  // Get today's date
+  const today = new Date().toDateString();
+  
   // Group by model
   const byModel = {};
   for (const agent of agents) {
@@ -304,23 +307,61 @@ app.get('/api/cost', (req, res) => {
   
   // Calculate estimated cost (approximate pricing)
   const pricing = {
-    'minimax-portal/MiniMax-M2.5': 0.0003,  // $0.30/1M tokens
-    'minimax-portal/MiniMax-M2.1': 0.0002,   // $0.20/1M tokens
-    'minimax-portal/MiniMax-M3': 0.0005,    // $0.50/1M tokens
-    'anthropic/claude-3.5-sonnet': 0.003,    // $3.00/1M tokens
-    'openai/gpt-4o': 0.0025,                 // $2.50/1M tokens
+    'MiniMax-M2.5': 0.0003,
+    'MiniMax-M2.1': 0.0002,
+    'MiniMax-M3': 0.0005,
+    'claude-3.5-sonnet': 0.003,
+    'gpt-4o': 0.0025,
   };
   
   let estimatedCost = 0;
   for (const [model, data] of Object.entries(byModel)) {
-    const rate = pricing[model] || 0.00025;  // default rate
-    estimatedCost += (data.tokens / 1000000) * rate * 2;  // input + output multiplier
+    const rate = pricing[model] || 0.00025;
+    estimatedCost += (data.tokens / 1000000) * rate * 2;
   }
+  
+  // Calculate today's usage (approximate based on updated_at)
+  const todayTokens = agents.reduce((sum, a) => {
+    if (a.updated_at) {
+      const updated = new Date(a.updated_at).toDateString();
+      if (updated === today) {
+        return sum + (a.tokens_used || 0);
+      }
+    }
+    return sum;
+  }, 0);
+  
+  // Projected monthly: assume 30 days, use today's as average if we have data
+  const projectedMonthly = todayTokens > 0 ? todayTokens * 30 : totalTokens;
+  
+  const calculateCost = (tokens) => {
+    let cost = 0;
+    for (const [model, data] of Object.entries(byModel)) {
+      const rate = pricing[model] || 0.00025;
+      const modelTokens = Math.floor(tokens / Object.keys(byModel).length);
+      cost += (modelTokens / 1000000) * rate * 2;
+    }
+    return cost;
+  };
   
   res.json({
     total_tokens: totalTokens,
     estimated_cost: estimatedCost.toFixed(2),
     by_model: byModel,
+    breakdown: {
+      today: {
+        tokens: todayTokens,
+        cost: calculateCost(todayTokens).toFixed(2),
+      },
+      all_time: {
+        tokens: totalTokens,
+        cost: estimatedCost.toFixed(2),
+      },
+      projected_monthly: {
+        tokens: projectedMonthly,
+        cost: calculateCost(projectedMonthly).toFixed(2),
+      }
+    }
   });
 });
 
@@ -473,6 +514,46 @@ app.get('/api/memory/*', (req, res) => {
   res.status(404).json({ error: 'Memory file not found' });
 });
 
+// Save memory file
+app.put('/api/memory/:id', (req, res) => {
+  const { id } = req.params;
+  const { content } = req.body;
+  
+  if (!content) {
+    res.status(400).json({ error: 'Content is required' });
+    return;
+  }
+  
+  const memoryPaths = [
+    path.join(os.homedir(), '.openclaw', 'workspace-memory'),
+    path.join(os.homedir(), '.openclaw', 'workspace-coder', 'memory'),
+    path.join(os.homedir(), '.openclaw', 'workspace-nova', 'memory'),
+    path.join(os.homedir(), '.openclaw', 'workspace-scout', 'memory'),
+  ];
+  
+  for (const memPath of memoryPaths) {
+    const filePath = path.join(memPath, `${id}.md`);
+    if (fs.existsSync(filePath)) {
+      try {
+        // Create backup
+        const backupPath = filePath + '.backup';
+        fs.copyFileSync(filePath, backupPath);
+        
+        // Write new content
+        fs.writeFileSync(filePath, content, 'utf8');
+        
+        res.json({ success: true, message: 'File saved', backup: backupPath });
+        return;
+      } catch (e) {
+        res.status(500).json({ error: e.message });
+        return;
+      }
+    }
+  }
+  
+  res.status(404).json({ error: 'Memory file not found' });
+});
+
 // Log Viewer - List available log files
 app.get('/api/logs', (req, res) => {
   const logPaths = [
@@ -553,6 +634,46 @@ app.get('/api/logs/*', (req, res) => {
   } else {
     res.status(404).json({ error: 'Log file not found' });
   }
+});
+
+// Session Search Endpoint
+app.get('/api/sessions/search', (req, res) => {
+  const { q } = req.query;
+  const query = (q || '').toLowerCase();
+  
+  // Get all sessions from agentStore
+  const sessions = Object.values(agentStore).map(agent => ({
+    agent_id: agent.agent_id,
+    name: agent.name,
+    role: agent.role,
+    avatar: agent.avatar,
+    color: agent.color,
+    status: agent.status,
+    task: agent.task,
+    output: agent.output,
+    model: agent.model,
+    heartbeat: agent.heartbeat,
+    tokens_used: agent.tokens_used,
+    updated_at: agent.updated_at,
+  }));
+  
+  // Filter by query if provided
+  let results = sessions;
+  if (query) {
+    results = sessions.filter(s => 
+      (s.name && s.name.toLowerCase().includes(query)) ||
+      (s.task && s.task.toLowerCase().includes(query)) ||
+      (s.output && s.output.toLowerCase().includes(query)) ||
+      (s.agent_id && s.agent_id.toLowerCase().includes(query)) ||
+      (s.role && s.role.toLowerCase().includes(query))
+    );
+  }
+  
+  res.json({
+    query,
+    total: results.length,
+    sessions: results,
+  });
 });
 
 // Serve index.html for all other routes

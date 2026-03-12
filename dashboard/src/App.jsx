@@ -190,20 +190,65 @@ function Sidebar({ agents, stats, costData, rateLimitData, theme }) {
           </div>
         ))}
 
-        {/* Cost Analysis */}
-        {costData && (
+        {/* Cost Analysis - Trio Cards */}
+        {costData && costData.breakdown && (
           <div style={{ marginTop: 16 }}>
             <div style={{ color: t.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
-              Cost Estimate
+              Cost Analysis
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ color: t.textMuted, fontSize: 12 }}>Total Tokens</span>
-              <span style={{ color: t.text, fontSize: 12, fontFamily: "monospace" }}>{(costData.total_tokens || 0).toLocaleString()}</span>
+            
+            {/* Cost Trio Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+              <div style={{ 
+                padding: '10px 8px', 
+                borderRadius: 8, 
+                background: '#22c55e15',
+                border: '1px solid #22c55e30',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: 9, color: t.textMuted, marginBottom: 4 }}>Today</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#22c55e', fontFamily: 'monospace' }}>
+                  ${costData.breakdown.today?.cost || '0.00'}
+                </div>
+                <div style={{ fontSize: 9, color: t.textMuted, marginTop: 2 }}>
+                  {(costData.breakdown.today?.tokens || 0).toLocaleString()} tok
+                </div>
+              </div>
+              
+              <div style={{ 
+                padding: '10px 8px', 
+                borderRadius: 8, 
+                background: '#3b82f615',
+                border: '1px solid #3b82f630',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: 9, color: t.textMuted, marginBottom: 4 }}>All Time</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#3b82f6', fontFamily: 'monospace' }}>
+                  ${costData.breakdown.all_time?.cost || '0.00'}
+                </div>
+                <div style={{ fontSize: 9, color: t.textMuted, marginTop: 2 }}>
+                  {(costData.breakdown.all_time?.tokens || 0).toLocaleString()} tok
+                </div>
+              </div>
+              
+              <div style={{ 
+                padding: '10px 8px', 
+                borderRadius: 8, 
+                background: '#f59e0b15',
+                border: '1px solid #f59e0b30',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: 9, color: t.textMuted, marginBottom: 4 }}>Projected</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#f59e0b', fontFamily: 'monospace' }}>
+                  ${costData.breakdown.projected_monthly?.cost || '0.00'}
+                </div>
+                <div style={{ fontSize: 9, color: t.textMuted, marginTop: 2 }}>
+                  /month
+                </div>
+              </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ color: t.textMuted, fontSize: 12 }}>Est. Cost</span>
-              <span style={{ color: "#4ade80", fontSize: 12, fontFamily: "monospace" }}>${costData.estimated_cost || "0.00"}</span>
-            </div>
+            
+            {/* By Model */}
             {Object.entries(costData.by_model || {}).map(([model, data]) => (
               <div key={model} style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${t.border}` }}>
                 <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>{model}</div>
@@ -432,6 +477,9 @@ function MemoryPage({ memoryData, selectedMemoryId, onSelectMemory, theme }) {
   const [memoryContent, setMemoryContent] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
   const [expandedFolders, setExpandedFolders] = React.useState({}); // Track expanded folders
+  const [editMode, setEditMode] = React.useState(false);
+  const [editContent, setEditContent] = React.useState('');
+  const [saving, setSaving] = React.useState(false);
   const t = themes[theme];
   
   // Group memories by workspace
@@ -528,17 +576,79 @@ function MemoryPage({ memoryData, selectedMemoryId, onSelectMemory, theme }) {
       </div>
       
       {/* Content View */}
-      <div style={{ flex: 1, overflow: 'auto', background: t.bgSecondary, borderRadius: 8, padding: 16 }}>
+      <div style={{ flex: 1, overflow: 'auto', background: t.bgSecondary, borderRadius: 8, padding: 16, display: 'flex', flexDirection: 'column' }}>
         {selectedMemoryId ? (
           loading ? (
             <div style={{ color: t.textMuted }}>Loading...</div>
           ) : (
-            <pre style={{ 
-              color: t.text, fontSize: 12, fontFamily: 'monospace', 
-              whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0
-            }}>
-              {memoryContent}
-            </pre>
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ fontSize: 12, color: t.textMuted, fontFamily: 'monospace' }}>
+                  {selectedMemoryId}
+                </div>
+                <button
+                  onClick={() => {
+                    if (editMode) {
+                      // Save
+                      setSaving(true);
+                      fetch(`${API_BASE}/api/memory/${selectedMemoryId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content: editContent })
+                      })
+                      .then(r => r.json())
+                      .then(data => {
+                        setMemoryContent(editContent);
+                        setEditMode(false);
+                        setSaving(false);
+                      })
+                      .catch(() => setSaving(false));
+                    } else {
+                      setEditContent(memoryContent);
+                      setEditMode(true);
+                    }
+                  }}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: editMode ? '#22c55e' : t.bg,
+                    color: editMode ? 'white' : t.text,
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    fontWeight: 500,
+                  }}
+                >
+                  {saving ? 'Saving...' : editMode ? '💾 Save' : '✏️ Edit'}
+                </button>
+              </div>
+              {editMode ? (
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  style={{
+                    flex: 1,
+                    background: t.bg,
+                    color: t.text,
+                    border: `1px solid ${t.border}`,
+                    borderRadius: 8,
+                    padding: 12,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    resize: 'none',
+                    outline: 'none',
+                  }}
+                />
+              ) : (
+                <pre style={{ 
+                  color: t.text, fontSize: 12, fontFamily: 'monospace', 
+                  whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0,
+                  flex: 1,
+                }}>
+                  {memoryContent}
+                </pre>
+              )}
+            </>
           )
         ) : (
           <div style={{ color: t.textMuted, textAlign: 'center', marginTop: 100 }}>
@@ -670,6 +780,203 @@ function LogPage({ logData, selectedLogId, onSelectLog, theme }) {
   );
 }
 
+// Sessions Page - Search agent sessions
+function SessionsPage({ agents, searchQuery, onSearch, searchResults, theme }) {
+  const t = themes[theme];
+  const [selectedSession, setSelectedSession] = React.useState(null);
+  
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 16 }}>
+      {/* Search Bar */}
+      <div style={{ display: 'flex', gap: 12 }}>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => onSearch(e.target.value)}
+          placeholder="Search sessions by name, task, or output..."
+          style={{
+            flex: 1,
+            padding: '10px 14px',
+            borderRadius: 8,
+            border: `1px solid ${t.border}`,
+            background: t.bgSecondary,
+            color: t.text,
+            fontSize: 14,
+            outline: 'none',
+          }}
+        />
+      </div>
+      
+      {/* Results and Detail */}
+      <div style={{ flex: 1, display: 'flex', gap: 16, overflow: 'hidden' }}>
+        {/* Session List */}
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {searchResults?.sessions?.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+              {searchResults.sessions.map(session => (
+                <div
+                  key={session.agent_id}
+                  onClick={() => setSelectedSession(session)}
+                  style={{
+                    padding: 16,
+                    borderRadius: 8,
+                    background: t.bgSecondary,
+                    border: selectedSession?.agent_id === session.agent_id ? `1px solid ${t.primary}` : `1px solid ${t.border}`,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <span style={{ fontWeight: 600, color: t.text, fontFamily: 'monospace' }}>
+                      {session.name}
+                    </span>
+                    <span style={{
+                      fontSize: 10,
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      background: session.status === 'working' ? '#22c55e20' : '#374151',
+                      color: session.status === 'working' ? '#22c55e' : t.textMuted,
+                    }}>
+                      {session.status}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>
+                    {session.task || 'No task'}
+                  </div>
+                  <div style={{ fontSize: 11, color: t.textMuted, fontFamily: 'monospace' }}>
+                    {session.model}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : searchQuery ? (
+            <div style={{ textAlign: 'center', color: t.textMuted, padding: 40 }}>
+              No sessions found for "{searchQuery}"
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', color: t.textMuted, padding: 40 }}>
+              Enter a search query to find sessions
+            </div>
+          )}
+        </div>
+        
+        {/* Session Detail Panel */}
+        {selectedSession && (
+          <div style={{ 
+            width: 400, 
+            background: t.bgSecondary, 
+            borderRadius: 8, 
+            padding: 20,
+            overflowY: 'auto',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0, color: t.text }}>Session Details</h3>
+              <button 
+                onClick={() => setSelectedSession(null)}
+                style={{ background: 'none', border: 'none', color: t.text, fontSize: 20, cursor: 'pointer' }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ 
+                  fontSize: 32, 
+                  width: 48, height: 48, 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: (selectedSession.color || '#60a5fa') + '20',
+                  borderRadius: 12 
+                }}>
+                  {selectedSession.avatar || '🤖'}
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: t.textMuted }}>Agent</div>
+                  <div style={{ color: t.text, fontWeight: 600, fontSize: 16 }}>
+                    {selectedSession.name}
+                  </div>
+                </div>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Status</div>
+                  <span style={{
+                    fontSize: 12,
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    background: selectedSession.status === 'working' ? '#22c55e20' : '#374151',
+                    color: selectedSession.status === 'working' ? '#22c55e' : t.textMuted,
+                  }}>
+                    {selectedSession.status}
+                  </span>
+                </div>
+                
+                <div>
+                  <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Heartbeat</div>
+                  <span style={{
+                    fontSize: 12,
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    background: selectedSession.heartbeat === 'online' ? '#22c55e20' : '#ef444420',
+                    color: selectedSession.heartbeat === 'online' ? '#22c55e' : '#ef4444',
+                  }}>
+                    {selectedSession.heartbeat || 'unknown'}
+                  </span>
+                </div>
+              </div>
+              
+              <div>
+                <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Role</div>
+                <div style={{ color: t.text }}>{selectedSession.role || 'Agent'}</div>
+              </div>
+              
+              <div>
+                <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Model</div>
+                <div style={{ color: t.text, fontFamily: 'monospace', fontSize: 12 }}>{selectedSession.model}</div>
+              </div>
+              
+              <div>
+                <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Tokens Used</div>
+                <div style={{ color: t.text, fontFamily: 'monospace' }}>{(selectedSession.tokens_used || 0).toLocaleString()}</div>
+              </div>
+              
+              <div>
+                <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Current Task</div>
+                <div style={{ color: t.text, fontSize: 13 }}>{selectedSession.task || '—'}</div>
+              </div>
+              
+              <div>
+                <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Output</div>
+                <div style={{ 
+                  color: t.textMuted, 
+                  fontSize: 12, 
+                  background: t.bg, 
+                  padding: 12, 
+                  borderRadius: 6,
+                  maxHeight: 200,
+                  overflow: 'auto',
+                  whiteSpace: 'pre-wrap',
+                }}>
+                  {selectedSession.output || '—'}
+                </div>
+              </div>
+              
+              {selectedSession.updated_at && (
+                <div>
+                  <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Last Updated</div>
+                  <div style={{ color: t.textMuted, fontSize: 12 }}>
+                    {new Date(selectedSession.updated_at).toLocaleString()}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AppContent() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [agents, setAgents] = useState([]);
@@ -683,7 +990,12 @@ function AppContent() {
   const [memoryData, setMemoryData] = useState(null);
   const [selectedMemoryId, setSelectedMemoryId] = useState(null);
   const [selectedLogId, setSelectedLogId] = useState(null);
+  const [cmdKOpen, setCmdKOpen] = useState(false);
+  const [cmdKQuery, setCmdKQuery] = useState('');
+  const [cmdKResults, setCmdKResults] = useState({ agents: [], memory: [], logs: [] });
   const [logData, setLogData] = useState(null);
+  const [sessionSearchQuery, setSessionSearchQuery] = useState('');
+  const [sessionResults, setSessionResults] = useState(null);
   const [selectedMemory, setSelectedMemory] = useState(null);
   const wsRef = useRef(null);
   const { theme, toggleTheme } = useTheme();
@@ -734,6 +1046,15 @@ function AppContent() {
       .then(setLogData)
       .catch(console.error);
     
+    // Search sessions function
+    const searchSessions = (query) => {
+      setSessionSearchQuery(query);
+      fetch(`${API_BASE}/api/sessions/search?q=${encodeURIComponent(query)}`)
+        .then(r => r.json())
+        .then(setSessionResults)
+        .catch(console.error);
+    };
+    
     // WS 断线时的保底轮询
     const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
@@ -781,6 +1102,36 @@ function AppContent() {
   const apiStatus = wsConnected ? "Live" : apiError ? "Error" : "Polling";
   const apiStatusColor = wsConnected ? "#4ade80" : apiError ? "#ef4444" : "#f59e0b";
 
+  // Cmd+K global search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCmdKOpen(true);
+      }
+      if (e.key === 'Escape') {
+        setCmdKOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Search when Cmd+K query changes
+  useEffect(() => {
+    if (cmdKQuery && cmdKOpen) {
+      // Search agents
+      const agentResults = agents.filter(a => 
+        a.name?.toLowerCase().includes(cmdKQuery.toLowerCase()) ||
+        a.task?.toLowerCase().includes(cmdKQuery.toLowerCase()) ||
+        a.agent_id?.toLowerCase().includes(cmdKQuery.toLowerCase())
+      );
+      setCmdKResults({ agents: agentResults, memory: [], logs: [] });
+    } else {
+      setCmdKResults({ agents: [], memory: [], logs: [] });
+    }
+  }, [cmdKQuery, cmdKOpen, agents]);
+
   return (
     <div style={{
       height: "100vh", background: t.bg, color: t.text,
@@ -815,6 +1166,7 @@ function AppContent() {
             { id: 'dashboard', label: 'Dashboard', icon: '📊' },
             { id: 'memory', label: 'Memory', icon: '📁' },
             { id: 'logs', label: 'Logs', icon: '📜' },
+            { id: 'sessions', label: 'Sessions', icon: '🔍' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -854,6 +1206,80 @@ function AppContent() {
       </div>
 
       {/* Body */}
+      {/* Cmd+K Search Modal */}
+      {cmdKOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.7)', zIndex: 1000,
+          display: 'flex', justifyContent: 'center', paddingTop: 100,
+        }} onClick={() => setCmdKOpen(false)}>
+          <div style={{
+            width: 600, maxHeight: 500,
+            background: t.bg, borderRadius: 12, border: `1px solid ${t.border}`,
+            overflow: 'hidden', display: 'flex', flexDirection: 'column',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: 16, borderBottom: `1px solid ${t.border}` }}>
+              <input
+                autoFocus
+                type="text"
+                value={cmdKQuery}
+                onChange={e => setCmdKQuery(e.target.value)}
+                placeholder="Search agents, memory, logs..."
+                style={{
+                  width: '100%', padding: '12px 16px', borderRadius: 8,
+                  border: `1px solid ${t.border}`, background: t.bgSecondary,
+                  color: t.text, fontSize: 16, outline: 'none',
+                }}
+              />
+              <div style={{ marginTop: 8, fontSize: 11, color: t.textMuted }}>
+                Press <kbd style={{ background: t.bgSecondary, padding: '2px 6px', borderRadius: 4 }}>Esc</kbd> to close • <kbd style={{ background: t.bgSecondary, padding: '2px 6px', borderRadius: 4 }}>Enter</kbd> to select
+              </div>
+            </div>
+            <div style={{ flex: 1, overflow: 'auto', padding: 8 }}>
+              {cmdKResults.agents.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 11, color: t.textMuted, padding: '8px 12px', textTransform: 'uppercase' }}>
+                    Agents
+                  </div>
+                  {cmdKResults.agents.map(agent => (
+                    <div
+                      key={agent.agent_id}
+                      onClick={() => {
+                        setCurrentPage('dashboard');
+                        setSelected(agent);
+                        setCmdKOpen(false);
+                      }}
+                      style={{
+                        padding: '12px 16px', cursor: 'pointer', borderRadius: 8,
+                        display: 'flex', alignItems: 'center', gap: 12,
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = t.bgSecondary}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      <span style={{ fontSize: 24 }}>{agent.avatar || '🤖'}</span>
+                      <div>
+                        <div style={{ fontWeight: 600, color: t.text }}>{agent.name}</div>
+                        <div style={{ fontSize: 12, color: t.textMuted }}>{agent.task}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {!cmdKQuery && (
+                <div style={{ textAlign: 'center', color: t.textMuted, padding: 40 }}>
+                  Type to search across all data
+                </div>
+              )}
+              {cmdKQuery && cmdKResults.agents.length === 0 && (
+                <div style={{ textAlign: 'center', color: t.textMuted, padding: 40 }}>
+                  No results found
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         {currentPage === 'dashboard' ? (
           <>
@@ -897,6 +1323,22 @@ function AppContent() {
               memoryData={memoryData} 
               selectedMemoryId={selectedMemoryId}
               onSelectMemory={setSelectedMemoryId}
+              theme={theme}
+            />
+          </div>
+        ) : currentPage === 'sessions' ? (
+          <div style={{ flex: 1, padding: "24px 28px", overflow: "hidden" }}>
+            <SessionsPage 
+              agents={agents}
+              searchQuery={sessionSearchQuery}
+              onSearch={(q) => {
+                setSessionSearchQuery(q);
+                fetch(`${API_BASE}/api/sessions/search?q=${encodeURIComponent(q)}`)
+                  .then(r => r.json())
+                  .then(setSessionResults)
+                  .catch(console.error);
+              }}
+              searchResults={sessionResults}
               theme={theme}
             />
           </div>
