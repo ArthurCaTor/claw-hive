@@ -63,9 +63,12 @@ const OPENCLAW_CMD = process.env.OPENCLAW_CMD || 'openclaw';
 const POLL_INTERVAL = 10000;
 const ACTIVE_THRESHOLD = 120000;
 
-// WebSocket
-const WS_PORT = parseInt(PORT) + 1;
-const wss = new WebSocket.Server({ port: WS_PORT || 8081 });
+// WebSocket - attach to same HTTP server
+const { createServer } = require('http');
+const httpServer = createServer(app);
+
+// WebSocket on same port
+const wss = new WebSocket.Server({ server: httpServer });
 
 wss.on('connection', (ws) => {
   console.log('WebSocket client connected');
@@ -298,9 +301,10 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-app.listen(PORT, () => {
+const HOST = process.env.HOST || '0.0.0.0';
+httpServer.listen(PORT, HOST, () => {
   console.log(`✅ OpenClaw Dashboard running at http://localhost:${PORT}`);
-  console.log(`   WebSocket: ws://localhost:${WS_PORT || 8081}`);
+  console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
 });
 
 module.exports = app;

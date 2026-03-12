@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 
-const API_BASE = import.meta.env.VITE_API_BASE || `http://${window.location.hostname}:8080`;
-const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:8080/ws`;
+const API_BASE = import.meta.env.VITE_API_BASE || `http://${window.location.hostname}:${window.location.port || '8080'}`;
+const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:${window.location.port || '8080'}/ws`;
 
 // Theme Context
 const ThemeContext = createContext();
