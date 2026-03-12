@@ -550,6 +550,126 @@ function MemoryPage({ memoryData, selectedMemoryId, onSelectMemory, theme }) {
   );
 }
 
+// Log Page - Full page view
+function LogPage({ logData, selectedLogId, onSelectLog, theme }) {
+  const [logContent, setLogContent] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+  const [expandedFolders, setExpandedFolders] = React.useState({});
+  const t = themes[theme];
+  
+  // Group logs by category
+  const groupedLogs = React.useMemo(() => {
+    if (!logData?.logs) return {};
+    const groups = {};
+    for (const log of logData.logs) {
+      const cat = log.category || 'other';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(log);
+    }
+    return groups;
+  }, [logData]);
+  
+  // Toggle folder
+  const toggleFolder = (cat) => {
+    setExpandedFolders(prev => ({ ...prev, [cat]: !prev[cat] }));
+  };
+  
+  // Fetch content when selected
+  React.useEffect(() => {
+    if (selectedLogId) {
+      setLoading(true);
+      fetch(`${API_BASE}/api/logs/${selectedLogId}`)
+        .then(r => r.json())
+        .then(data => {
+          setLogContent(data.content);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    } else {
+      setLogContent(null);
+    }
+  }, [selectedLogId]);
+  
+  return (
+    <div style={{ display: 'flex', height: '100%', gap: 16 }}>
+      {/* Log List */}
+      <div style={{ width: 280, flexShrink: 0, overflowY: 'auto', paddingRight: 8 }}>
+        <div style={{ color: t.textMuted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+          Log Files ({logData?.logs?.length || 0})
+        </div>
+        
+        {Object.entries(groupedLogs).map(([category, logs]) => (
+          <div key={category} style={{ marginBottom: 8 }}>
+            {/* Folder */}
+            <div 
+              onClick={() => toggleFolder(category)}
+              style={{ 
+                cursor: 'pointer',
+                fontSize: 12, fontWeight: 600, color: t.text, 
+                marginBottom: 4, padding: '6px 8px',
+                borderRadius: 6,
+                background: t.bgSecondary,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>📁 {category}</span>
+              <span style={{ fontSize: 10, color: t.textMuted }}>
+                {expandedFolders[category] ? '▼' : '▶'}
+              </span>
+            </div>
+            
+            {/* Files */}
+            {expandedFolders[category] && logs.map(log => (
+              <div 
+                key={log.id}
+                onClick={() => onSelectLog(log.id)}
+                style={{
+                  cursor: 'pointer',
+                  padding: '6px 10px',
+                  marginBottom: 2,
+                  marginLeft: 12,
+                  borderRadius: 4,
+                  background: selectedLogId === log.id ? t.bgSecondary : 'transparent',
+                  border: selectedLogId === log.id ? `1px solid ${t.primary}` : 'none',
+                }}
+              >
+                <div style={{ fontSize: 11, color: t.text, fontFamily: 'monospace' }}>
+                  📄 {log.name}
+                </div>
+                <div style={{ fontSize: 9, color: t.textMuted, marginTop: 1 }}>
+                  {(log.size / 1024).toFixed(1)} KB
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      
+      {/* Content View */}
+      <div style={{ flex: 1, overflow: 'auto', background: t.bgSecondary, borderRadius: 8, padding: 16 }}>
+        {selectedLogId ? (
+          loading ? (
+            <div style={{ color: t.textMuted }}>Loading...</div>
+          ) : (
+            <pre style={{ 
+              color: t.text, fontSize: 11, fontFamily: 'monospace', 
+              whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0
+            }}>
+              {logContent}
+            </pre>
+          )
+        ) : (
+          <div style={{ color: t.textMuted, textAlign: 'center', marginTop: 100 }}>
+            ← Select a log file to view its content
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AppContent() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [agents, setAgents] = useState([]);
@@ -562,6 +682,8 @@ function AppContent() {
   const [rateLimitData, setRateLimitData] = useState(null);
   const [memoryData, setMemoryData] = useState(null);
   const [selectedMemoryId, setSelectedMemoryId] = useState(null);
+  const [selectedLogId, setSelectedLogId] = useState(null);
+  const [logData, setLogData] = useState(null);
   const [selectedMemory, setSelectedMemory] = useState(null);
   const wsRef = useRef(null);
   const { theme, toggleTheme } = useTheme();
@@ -604,6 +726,12 @@ function AppContent() {
     fetch(`${API_BASE}/api/memory`)
       .then(r => r.json())
       .then(setMemoryData)
+      .catch(console.error);
+    
+    // Fetch log data
+    fetch(`${API_BASE}/api/logs`)
+      .then(r => r.json())
+      .then(setLogData)
       .catch(console.error);
     
     // WS 断线时的保底轮询
@@ -686,6 +814,7 @@ function AppContent() {
           {[
             { id: 'dashboard', label: 'Dashboard', icon: '📊' },
             { id: 'memory', label: 'Memory', icon: '📁' },
+            { id: 'logs', label: 'Logs', icon: '📜' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -762,12 +891,21 @@ function AppContent() {
 
             <Sidebar agents={agents} stats={stats} costData={costData} rateLimitData={rateLimitData} theme={theme} />
           </>
-        ) : (
+        ) : currentPage === 'memory' ? (
           <div style={{ flex: 1, padding: "24px 28px", overflow: "hidden" }}>
             <MemoryPage 
               memoryData={memoryData} 
               selectedMemoryId={selectedMemoryId}
               onSelectMemory={setSelectedMemoryId}
+              theme={theme}
+            />
+          </div>
+        ) : (
+          <div style={{ flex: 1, padding: "24px 28px", overflow: "hidden" }}>
+            <LogPage 
+              logData={logData} 
+              selectedLogId={selectedLogId}
+              onSelectLog={setSelectedLogId}
               theme={theme}
             />
           </div>
