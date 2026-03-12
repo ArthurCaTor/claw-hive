@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, createContext, useContext } from "react";
+import React, { useState, useEffect, useRef, createContext, useContext } from "react";
 
 const API_BASE = import.meta.env.VITE_API_BASE || `http://${window.location.hostname}:${window.location.port || '8080'}`;
 const WS_URL = import.meta.env.VITE_WS_URL || `ws://${window.location.hostname}:${window.location.port || '8080'}/ws`;
@@ -160,7 +160,7 @@ function AgentCard({ agent, selected, onClick, theme }) {
 }
 
 // Sidebar
-function Sidebar({ agents, stats, theme }) {
+function Sidebar({ agents, stats, costData, rateLimitData, theme }) {
   const t = themes[theme];
   const active = agents.filter(a => a.status === "working");
   const idle = agents.filter(a => a.status !== "working");
@@ -189,6 +189,76 @@ function Sidebar({ agents, stats, theme }) {
             <span style={{ color: t.text, fontSize: 12, fontFamily: "monospace" }}>{v}</span>
           </div>
         ))}
+
+        {/* Cost Analysis */}
+        {costData && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ color: t.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
+              Cost Estimate
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ color: t.textMuted, fontSize: 12 }}>Total Tokens</span>
+              <span style={{ color: t.text, fontSize: 12, fontFamily: "monospace" }}>{(costData.total_tokens || 0).toLocaleString()}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ color: t.textMuted, fontSize: 12 }}>Est. Cost</span>
+              <span style={{ color: "#4ade80", fontSize: 12, fontFamily: "monospace" }}>${costData.estimated_cost || "0.00"}</span>
+            </div>
+            {Object.entries(costData.by_model || {}).map(([model, data]) => (
+              <div key={model} style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${t.border}` }}>
+                <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>{model}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+                  <span style={{ color: t.textMuted }}>Tokens</span>
+                  <span style={{ color: t.text, fontFamily: "monospace" }}>{(data.tokens || 0).toLocaleString()}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Rate Limit Monitoring */}
+        {rateLimitData && rateLimitData.models && rateLimitData.models.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ color: t.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
+              Rate Limits
+            </div>
+            {rateLimitData.models.map((model) => (
+              <div key={model.model} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${t.border}` }}>
+                <div style={{ fontSize: 12, color: t.text, marginBottom: 6 }}>{model.model}</div>
+                
+                {/* RPM Usage */}
+                <div style={{ marginBottom: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 2 }}>
+                    <span style={{ color: t.textMuted }}>RPM</span>
+                    <span style={{ color: t.text, fontFamily: "monospace" }}>{model.rpm_used}/{model.limits.rpm}</span>
+                  </div>
+                  <div style={{ height: 4, background: t.border, borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ 
+                      height: "100%", 
+                      width: `${Math.min(model.rpm_percent, 100)}%`,
+                      background: model.rpm_percent > 80 ? "#ef4444" : model.rpm_percent > 50 ? "#f59e0b" : "#22c55e",
+                    }} />
+                  </div>
+                </div>
+                
+                {/* TPM Usage */}
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 2 }}>
+                    <span style={{ color: t.textMuted }}>TPM</span>
+                    <span style={{ color: t.text, fontFamily: "monospace" }}>{(model.total_tokens || 0).toLocaleString()}/{model.limits.tpm.toLocaleString()}</span>
+                  </div>
+                  <div style={{ height: 4, background: t.border, borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ 
+                      height: "100%", 
+                      width: `${Math.min(model.tpm_percent, 100)}%`,
+                      background: model.tpm_percent > 80 ? "#ef4444" : model.tpm_percent > 50 ? "#f59e0b" : "#22c55e",
+                    }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       {/* Active Agents */}
       <div>
@@ -311,13 +381,188 @@ function AgentDetailPanel({ agent, onClose, theme }) {
 }
 
 // Main App
+// Memory Viewer Panel
+function MemoryViewer({ memoryId, onClose, theme }) {
+  const [content, setContent] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const t = themes[theme];
+  
+  React.useEffect(() => {
+    if (memoryId) {
+      setLoading(true);
+      fetch(`${API_BASE}/api/memory/${memoryId}`)
+        .then(r => r.json())
+        .then(data => {
+          setContent(data.content);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    }
+  }, [memoryId]);
+  
+  if (!memoryId) return null;
+  
+  return (
+    <div style={{
+      position: 'fixed', top: 0, right: 0, bottom: 0, width: 500,
+      background: t.bg, borderLeft: `1px solid ${t.border}`,
+      padding: 20, overflow: 'auto', zIndex: 100,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h3 style={{ margin: 0, color: t.text }}>Memory: {memoryId}</h3>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: t.text, fontSize: 20, cursor: 'pointer' }}>×</button>
+      </div>
+      {loading ? (
+        <div style={{ color: t.textMuted }}>Loading...</div>
+      ) : (
+        <pre style={{ 
+          color: t.text, fontSize: 12, fontFamily: 'monospace', 
+          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+          background: t.bgSecondary, padding: 16, borderRadius: 8,
+        }}>
+          {content}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+// Memory Page - Full page view
+function MemoryPage({ memoryData, selectedMemoryId, onSelectMemory, theme }) {
+  const [memoryContent, setMemoryContent] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+  const [expandedFolders, setExpandedFolders] = React.useState({}); // Track expanded folders
+  const t = themes[theme];
+  
+  // Group memories by workspace
+  const groupedMemories = React.useMemo(() => {
+    if (!memoryData?.memories) return {};
+    const groups = {};
+    for (const mem of memoryData.memories) {
+      const ws = mem.workspace || 'other';
+      if (!groups[ws]) groups[ws] = [];
+      groups[ws].push(mem);
+    }
+    return groups;
+  }, [memoryData]);
+  
+  // Toggle folder expand/collapse
+  const toggleFolder = (workspace) => {
+    setExpandedFolders(prev => ({
+      ...prev,
+      [workspace]: !prev[workspace]
+    }));
+  };
+  
+  // Fetch content when selected
+  React.useEffect(() => {
+    if (selectedMemoryId) {
+      setLoading(true);
+      fetch(`${API_BASE}/api/memory/${selectedMemoryId}`)
+        .then(r => r.json())
+        .then(data => {
+          setMemoryContent(data.content);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    } else {
+      setMemoryContent(null);
+    }
+  }, [selectedMemoryId]);
+  
+  return (
+    <div style={{ display: 'flex', height: '100%', gap: 16 }}>
+      {/* Memory List */}
+      <div style={{ width: 280, flexShrink: 0, overflowY: 'auto', paddingRight: 8 }}>
+        <div style={{ color: t.textMuted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+          Memory Files ({memoryData?.memories?.length || 0})
+        </div>
+        
+        {Object.entries(groupedMemories).map(([workspace, mems]) => (
+          <div key={workspace} style={{ marginBottom: 8 }}>
+            {/* Folder - Clickable to expand/collapse */}
+            <div 
+              onClick={() => toggleFolder(workspace)}
+              style={{ 
+                cursor: 'pointer',
+                fontSize: 12, fontWeight: 600, color: t.text, 
+                marginBottom: 4, padding: '6px 8px',
+                borderRadius: 6,
+                background: t.bgSecondary,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>📁 {workspace}</span>
+              <span style={{ fontSize: 10, color: t.textMuted }}>
+                {expandedFolders[workspace] ? '▼' : '▶'}
+              </span>
+            </div>
+            
+            {/* Files inside folder - only show if expanded */}
+            {expandedFolders[workspace] && mems.map(mem => (
+              <div 
+                key={mem.id}
+                onClick={() => onSelectMemory(mem.id)}
+                style={{
+                  cursor: 'pointer',
+                  padding: '6px 10px',
+                  marginBottom: 2,
+                  marginLeft: 12,
+                  borderRadius: 4,
+                  background: selectedMemoryId === mem.id ? t.bgSecondary : 'transparent',
+                  border: selectedMemoryId === mem.id ? `1px solid ${t.primary}` : 'none',
+                }}
+              >
+                <div style={{ fontSize: 11, color: t.text, fontFamily: 'monospace' }}>
+                  📄 {mem.filename}
+                </div>
+                <div style={{ fontSize: 9, color: t.textMuted, marginTop: 1 }}>
+                  {(mem.size / 1024).toFixed(1)} KB
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      
+      {/* Content View */}
+      <div style={{ flex: 1, overflow: 'auto', background: t.bgSecondary, borderRadius: 8, padding: 16 }}>
+        {selectedMemoryId ? (
+          loading ? (
+            <div style={{ color: t.textMuted }}>Loading...</div>
+          ) : (
+            <pre style={{ 
+              color: t.text, fontSize: 12, fontFamily: 'monospace', 
+              whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0
+            }}>
+              {memoryContent}
+            </pre>
+          )
+        ) : (
+          <div style={{ color: t.textMuted, textAlign: 'center', marginTop: 100 }}>
+            ← Select a memory file to view its content
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AppContent() {
+  const [currentPage, setCurrentPage] = useState('dashboard');
   const [agents, setAgents] = useState([]);
   const [stats, setStats] = useState({});
   const [selected, setSelected] = useState(null);
   const [wsConnected, setWsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [apiError, setApiError] = useState(false);
+  const [costData, setCostData] = useState(null);
+  const [rateLimitData, setRateLimitData] = useState(null);
+  const [memoryData, setMemoryData] = useState(null);
+  const [selectedMemoryId, setSelectedMemoryId] = useState(null);
+  const [selectedMemory, setSelectedMemory] = useState(null);
   const wsRef = useRef(null);
   const { theme, toggleTheme } = useTheme();
   const t = themes[theme];
@@ -342,6 +587,24 @@ function AppContent() {
       }
     };
     fetchData();
+    
+    // Fetch cost data
+    fetch(`${API_BASE}/api/cost`)
+      .then(r => r.json())
+      .then(setCostData)
+      .catch(console.error);
+    
+    // Fetch rate limit data
+    fetch(`${API_BASE}/api/rate-limits`)
+      .then(r => r.json())
+      .then(setRateLimitData)
+      .catch(console.error);
+    
+    // Fetch memory data
+    fetch(`${API_BASE}/api/memory`)
+      .then(r => r.json())
+      .then(setMemoryData)
+      .catch(console.error);
     
     // WS 断线时的保底轮询
     const interval = setInterval(fetchData, 15000);
@@ -392,8 +655,9 @@ function AppContent() {
 
   return (
     <div style={{
-      minHeight: "100vh", background: t.bg, color: t.text,
+      height: "100vh", background: t.bg, color: t.text,
       fontFamily: "'Noto Sans SC', 'DM Sans', sans-serif", display: "flex", flexDirection: "column",
+      overflow: "hidden",
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&display=swap');
@@ -403,16 +667,48 @@ function AppContent() {
         * { box-sizing: border-box; }
       `}</style>
 
-      {/* Header */}
+      {/* Header - Fixed at top */}
       <div style={{
         borderBottom: `1px solid ${t.border}`, padding: "0 24px", height: 52,
         display: "flex", alignItems: "center", gap: 16, background: "rgba(0,0,0,0.02)",
         flexShrink: 0,
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#3b82f6", boxShadow: "0 0 8px #3b82f6" }} />
-          <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: 0.5, color: t.text }}>Control Center</span>
+          <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: 0.5, color: t.text }}>Claw Hive</span>
         </div>
+        
+        {/* Navigation Tabs */}
+        <div style={{ marginLeft: 24, display: 'flex', gap: 4 }}>
+          {[
+            { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+            { id: 'memory', label: 'Memory', icon: '📁' },
+          ].map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setCurrentPage(tab.id)}
+              style={{
+                background: currentPage === tab.id ? t.bgSecondary : 'transparent',
+                border: 'none',
+                padding: '6px 14px',
+                borderRadius: 6,
+                cursor: 'pointer',
+                color: currentPage === tab.id ? t.text : t.textMuted,
+                fontSize: 13,
+                fontWeight: currentPage === tab.id ? 600 : 400,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </div>
+        
         <ThemeToggle theme={theme} onToggle={toggleTheme} />
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
           {lastUpdate && (
@@ -430,36 +726,52 @@ function AppContent() {
 
       {/* Body */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
-          <div style={{ marginBottom: 20 }}>
-            <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 6, color: t.text }}>Agent Overview</h1>
-            <p style={{ color: t.textMuted, fontSize: 13, margin: 0 }}>
-              Real-time status, tasks, and heartbeat for all OpenClaw Agents
-            </p>
+        {currentPage === 'dashboard' ? (
+          <>
+            <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+              <div style={{ marginBottom: 20 }}>
+                <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 6, color: t.text }}>Agent Overview</h1>
+                <p style={{ color: t.textMuted, fontSize: 13, margin: 0 }}>
+                  Real-time status, tasks, and heartbeat for all OpenClaw Agents
+                </p>
+              </div>
+
+              {agents.length === 0 ? (
+                <div style={{ textAlign: "center", color: t.textMuted, padding: "80px 0", fontSize: 14 }}>
+                  {apiError ? "⚠️ Cannot connect to API, please check service" : "Waiting for agent data..."}
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
+                  {agents.map(agent => (
+                    <AgentCard
+                      key={agent.agent_id}
+                      agent={agent}
+                      selected={selected?.agent_id === agent.agent_id}
+                      onClick={setSelected}
+                      theme={theme}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <AgentDetailPanel agent={selected} onClose={() => setSelected(null)} theme={theme} />
+              {selectedMemory && (
+                <MemoryViewer memoryId={selectedMemory} onClose={() => setSelectedMemory(null)} theme={theme} />
+              )}
+            </div>
+
+            <Sidebar agents={agents} stats={stats} costData={costData} rateLimitData={rateLimitData} theme={theme} />
+          </>
+        ) : (
+          <div style={{ flex: 1, padding: "24px 28px", overflow: "hidden" }}>
+            <MemoryPage 
+              memoryData={memoryData} 
+              selectedMemoryId={selectedMemoryId}
+              onSelectMemory={setSelectedMemoryId}
+              theme={theme}
+            />
           </div>
-
-          {agents.length === 0 ? (
-            <div style={{ textAlign: "center", color: t.textMuted, padding: "80px 0", fontSize: 14 }}>
-              {apiError ? "⚠️ Cannot connect to API, please check service" : "Waiting for agent data..."}
-            </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
-              {agents.map(agent => (
-                <AgentCard
-                  key={agent.agent_id}
-                  agent={agent}
-                  selected={selected?.agent_id === agent.agent_id}
-                  onClick={setSelected}
-                  theme={theme}
-                />
-              ))}
-            </div>
-          )}
-
-          <AgentDetailPanel agent={selected} onClose={() => setSelected(null)} theme={theme} />
-        </div>
-
-        <Sidebar agents={agents} stats={stats} theme={theme} />
+        )}
       </div>
     </div>
   );

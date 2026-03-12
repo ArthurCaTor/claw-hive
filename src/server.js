@@ -286,6 +286,93 @@ app.get('/api/stats', (req, res) => {
   res.json(getStats());
 });
 
+// Cost Analysis Endpoint
+app.get('/api/cost', (req, res) => {
+  const agents = Object.values(agentStore);
+  const totalTokens = agents.reduce((sum, a) => sum + (a.tokens_used || 0), 0);
+  
+  // Group by model
+  const byModel = {};
+  for (const agent of agents) {
+    const model = agent.model || 'unknown';
+    if (!byModel[model]) {
+      byModel[model] = { tokens: 0, requests: 0 };
+    }
+    byModel[model].tokens += agent.tokens_used || 0;
+    byModel[model].requests += 1;
+  }
+  
+  // Calculate estimated cost (approximate pricing)
+  const pricing = {
+    'minimax-portal/MiniMax-M2.5': 0.0003,  // $0.30/1M tokens
+    'minimax-portal/MiniMax-M2.1': 0.0002,   // $0.20/1M tokens
+    'minimax-portal/MiniMax-M3': 0.0005,    // $0.50/1M tokens
+    'anthropic/claude-3.5-sonnet': 0.003,    // $3.00/1M tokens
+    'openai/gpt-4o': 0.0025,                 // $2.50/1M tokens
+  };
+  
+  let estimatedCost = 0;
+  for (const [model, data] of Object.entries(byModel)) {
+    const rate = pricing[model] || 0.00025;  // default rate
+    estimatedCost += (data.tokens / 1000000) * rate * 2;  // input + output multiplier
+  }
+  
+  res.json({
+    total_tokens: totalTokens,
+    estimated_cost: estimatedCost.toFixed(2),
+    by_model: byModel,
+  });
+});
+
+// Rate Limit Monitoring Endpoint
+app.get('/api/rate-limits', (req, res) => {
+  const agents = Object.values(agentStore);
+  
+  // Group by model and track usage
+  const byModel = {};
+  for (const agent of agents) {
+    const model = agent.model || 'unknown';
+    if (!byModel[model]) {
+      byModel[model] = {
+        model,
+        requests: 0,
+        total_tokens: 0,
+        active_sessions: 0,
+      };
+    }
+    byModel[model].total_tokens += agent.tokens_used || 0;
+    byModel[model].requests += 1;
+    if (agent.status === 'working') {
+      byModel[model].active_sessions += 1;
+    }
+  }
+  
+  // Define rate limits for each model
+  const rateLimits = {
+    'minimax-portal/MiniMax-M2.5': { rpm: 500, tpm: 150000, daily: 10000000 },
+    'minimax-portal/MiniMax-M2.1': { rpm: 500, tpm: 150000, daily: 10000000 },
+    'minimax-portal/MiniMax-M3': { rpm: 300, tpm: 100000, daily: 5000000 },
+    'anthropic/claude-3.5-sonnet': { rpm: 50, tpm: 200000, daily: 5000000 },
+    'openai/gpt-4o': { rpm: 500, tpm: 150000, daily: 10000000 },
+  };
+  
+  const result = Object.values(byModel).map(item => {
+    const limits = rateLimits[item.model] || { rpm: 500, tpm: 150000, daily: 10000000 };
+    return {
+      ...item,
+      limits,
+      rpm_used: item.active_sessions,
+      rpm_percent: Math.round((item.active_sessions / limits.rpm) * 100),
+      tpm_percent: Math.round((item.total_tokens / limits.tpm) * 100),
+    };
+  });
+  
+  res.json({
+    timestamp: new Date().toISOString(),
+    models: result,
+  });
+});
+
 app.get('/api/config', (req, res) => {
   const configPath = findConfigPath();
   if (configPath) {
@@ -298,6 +385,92 @@ app.get('/api/config', (req, res) => {
   } else {
     res.json({ error: 'Config not found' });
   }
+});
+
+// Memory Viewer Endpoint - List memory files
+app.get('/api/memory', (req, res) => {
+  const memoryPaths = [
+    path.join(os.homedir(), '.openclaw', 'workspace-memory'),
+    path.join(os.homedir(), '.openclaw', 'workspace-coder', 'memory'),
+    path.join(os.homedir(), '.openclaw', 'workspace-nova', 'memory'),
+    path.join(os.homedir(), '.openclaw', 'workspace-scout', 'memory'),
+  ];
+  
+  const memories = [];
+  
+  for (const memPath of memoryPaths) {
+    if (fs.existsSync(memPath)) {
+      try {
+        const files = fs.readdirSync(memPath);
+        const wsName = path.basename(path.dirname(memPath));
+        
+        for (const file of files) {
+          if (file.endsWith('.md')) {
+            const filePath = path.join(memPath, file);
+            const stats = fs.statSync(filePath);
+            memories.push({
+              id: `${wsName}/${file.replace('.md', '')}`,
+              workspace: wsName,
+              filename: file,
+              path: filePath,
+              size: stats.size,
+              modified: stats.mtime.toISOString(),
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Error reading memory path:', memPath, e.message);
+      }
+    }
+  }
+  
+  // Sort by modified date
+  memories.sort((a, b) => new Date(b.modified) - new Date(a.modified));
+  
+  res.json({
+    timestamp: new Date().toISOString(),
+    memories: memories.slice(0, 50),  // Limit to 50 most recent
+  });
+});
+
+// Get specific memory file content - handle paths with slashes
+app.get('/api/memory/*', (req, res) => {
+  // Get the full path after /api/memory/
+  let id = req.params[0];
+  
+  // Handle workspace/filename format - extract just the filename
+  if (id && id.includes('/')) {
+    id = id.split('/').pop();
+  }
+  
+  const memoryPaths = [
+    path.join(os.homedir(), '.openclaw', 'workspace-memory'),
+    path.join(os.homedir(), '.openclaw', 'workspace-coder', 'memory'),
+    path.join(os.homedir(), '.openclaw', 'workspace-nova', 'memory'),
+    path.join(os.homedir(), '.openclaw', 'workspace-scout', 'memory'),
+  ];
+  
+  for (const memPath of memoryPaths) {
+    const filePath = path.join(memPath, `${id}.md`);
+    if (fs.existsSync(filePath)) {
+      try {
+        const content = fs.readFileSync(filePath, 'utf8');
+        const stats = fs.statSync(filePath);
+        res.json({
+          id,
+          content,
+          size: stats.size,
+          modified: stats.mtime.toISOString(),
+        });
+        return;
+      } catch (e) {
+        res.status(500).json({ error: e.message });
+        return;
+      }
+    }
+  }
+  
+  res.status(404).json({ error: 'Memory file not found' });
 });
 
 // Serve index.html for all other routes
