@@ -999,11 +999,21 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
   const [filters, setFilters] = React.useState({
     message: true,
     thinking: true,
+    thinking_level_change: true,
     tool_use: true,
+    custom: true,
+    compaction: true,
     error: true,
   });
   const [autoScroll, setAutoScroll] = React.useState(true);
   const eventListRef = React.useRef(null);
+
+  // Auto-scroll to bottom when new events arrive
+  React.useEffect(() => {
+    if (autoScroll && eventListRef.current) {
+      eventListRef.current.scrollTop = eventListRef.current.scrollHeight;
+    }
+  }, [contextEvents, autoScroll]);
 
   // Fetch agents and sessions
   React.useEffect(() => {
@@ -1116,6 +1126,9 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
       if (subType === 'tool_use') return filters.tool_use;
       return filters.message;
     }
+    if (type === 'thinking_level_change') return filters.thinking_level_change;
+    if (type === 'custom') return filters.custom;
+    if (type === 'compaction') return filters.compaction;
     return filters[type] !== false;
   });
 
@@ -1200,6 +1213,43 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
       );
     }
     
+    if (type === 'custom') {
+      const customType = event.customType || 'custom';
+      const data = event.data || {};
+      return (
+        <div key={idx} style={{ padding: 8, marginBottom: 6, borderRadius: 6, background: '#1e3a5f', color: '#93c5fd', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ marginBottom: 4 }}>⚙️ {customType} {time}</div>
+          {Object.keys(data).length > 0 && (
+            <div style={{ color: '#9ca3af', whiteSpace: 'pre-wrap' }}>
+              {JSON.stringify(data, null, 2)}
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    if (type === 'compaction') {
+      const summary = event.summary || '';
+      return (
+        <div key={idx} style={{ padding: 8, marginBottom: 6, borderRadius: 6, background: '#3f2f2f', color: '#d4a574', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ marginBottom: 4 }}>🗜️ compaction {time}</div>
+          {summary && (
+            <div style={{ color: '#9ca3af', whiteSpace: 'pre-wrap', maxHeight: 200, overflow: 'auto' }}>
+              {summary.slice(0, 500)}...
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    if (type === 'thinking_level_change') {
+      return (
+        <div key={idx} style={{ padding: '6px 10px', marginBottom: 6, borderRadius: 6, background: 'rgba(100,100,100,0.2)', border: '1px dashed #666', fontSize: 10, color: '#9ca3af' }}>
+          💭 thinking_level_change: {event.thinkingLevel} {time}
+        </div>
+      );
+    }
+    
     return (
       <div key={idx} style={{ padding: 6, marginBottom: 4, fontSize: 10, color: t.textMuted, fontFamily: 'monospace' }}>
         [{type}] {time}
@@ -1277,7 +1327,7 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
           </div>
           
           {/* Main List */}
-          <div ref={eventListRef} style={{ flex: 1, padding: 12, overflowY: 'auto' }}>
+          <div ref={eventListRef} style={{ flex: 1, padding: 12, overflowY: 'auto', minHeight: '300px' }}>
             {filteredEvents.length === 0 ? (
               <div style={{ textAlign: 'center', color: t.textMuted, padding: 40 }}>Waiting for events...</div>
             ) : (
