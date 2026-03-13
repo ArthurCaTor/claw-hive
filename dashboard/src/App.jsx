@@ -473,6 +473,840 @@ function MemoryViewer({ memoryId, onClose, theme }) {
 }
 
 // Memory Page - Full page view
+// Cron Page with Jobs and History tabs
+function CronPage({ theme }) {
+  const t = themes[theme];
+  const [activeTab, setActiveTab] = React.useState('jobs');
+  const [cronJobs, setCronJobs] = React.useState([]);
+  const [cronHistory, setCronHistory] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetch(`${API_BASE}/api/cron`)
+      .then(r => r.json())
+      .then(d => setCronJobs(d.jobs || []))
+      .catch(console.error);
+    
+    fetch(`${API_BASE}/api/cron/history`)
+      .then(r => r.json())
+      .then(d => setCronHistory(d.runs || []))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const runJob = (jobId) => {
+    fetch(`${API_BASE}/api/cron/${jobId}/run`, { method: 'POST' })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          alert('Job triggered!');
+          // Refresh history
+          fetch(`${API_BASE}/api/cron/history`)
+            .then(r => r.json())
+            .then(d => setCronHistory(d.runs || []));
+        }
+      })
+      .catch(console.error);
+  };
+
+  return (
+    <div style={{ color: t.text }}>
+      <h2 style={{ color: t.text, marginBottom: 20 }}>⏰ Cron Jobs</h2>
+      
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: `1px solid ${t.border}`, paddingBottom: 12 }}>
+        {['jobs', 'history'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{
+              padding: '8px 16px',
+              border: 'none',
+              borderRadius: 6,
+              background: activeTab === tab ? t.accent : 'transparent',
+              color: activeTab === tab ? 'white' : t.textMuted,
+              cursor: 'pointer',
+              fontWeight: 500,
+            }}
+          >
+            {tab === 'jobs' ? '📋 Jobs' : '📜 History'}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ color: t.textMuted }}>Loading...</div>
+      ) : activeTab === 'jobs' ? (
+        <div style={{ display: 'grid', gap: 12 }}>
+          {cronJobs.length === 0 ? (
+            <div style={{ color: t.textMuted }}>No cron jobs configured</div>
+          ) : cronJobs.map(job => (
+            <div key={job.id} style={{ 
+              background: t.card, 
+              border: `1px solid ${t.border}`, 
+              borderRadius: 8, 
+              padding: 16 
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 600, color: t.text }}>{job.name}</div>
+                  <div style={{ fontSize: 12, color: t.textMuted, fontFamily: 'monospace' }}>{job.schedule}</div>
+                </div>
+                <button
+                  onClick={() => runJob(job.id)}
+                  style={{
+                    padding: '6px 12px',
+                    border: 'none',
+                    borderRadius: 6,
+                    background: t.accent,
+                    color: 'white',
+                    cursor: 'pointer',
+                  }}
+                >
+                  ▶ Run
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: 8 }}>
+          {cronHistory.length === 0 ? (
+            <div style={{ color: t.textMuted }}>No history yet</div>
+          ) : cronHistory.map((run, i) => (
+            <div key={i} style={{ 
+              background: t.card, 
+              border: `1px solid ${t.border}`, 
+              borderRadius: 8, 
+              padding: 12,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <div>
+                <span style={{ fontWeight: 500, color: t.text }}>{run.name}</span>
+                <span style={{ fontSize: 12, color: t.textMuted, marginLeft: 12 }}>
+                  {new Date(run.timestamp).toLocaleString()}
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ 
+                  color: run.status === 'success' ? '#22c55e' : '#ef4444',
+                  fontSize: 12,
+                }}>
+                  {run.status === 'success' ? '✅ Success' : '❌ Error'}
+                </span>
+                <span style={{ fontSize: 12, color: t.textMuted, fontFamily: 'monospace' }}>
+                  {run.duration}ms
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FilesPage({ theme }) {
+  const t = themes[theme];
+  const [files, setFiles] = React.useState([]);
+  const [currentPath, setCurrentPath] = React.useState('');
+  const [workspace, setWorkspace] = React.useState('coder');
+  const [loading, setLoading] = React.useState(false);
+
+  const loadFiles = (ws, path = '') => {
+    setLoading(true);
+    fetch(`${API_BASE}/api/files?workspace=${ws}&path=${encodeURIComponent(path)}`)
+      .then(r => r.json())
+      .then(d => {
+        setFiles(d.files || []);
+        setCurrentPath(path);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  };
+
+  React.useEffect(() => {
+    loadFiles(workspace);
+  }, [workspace]);
+
+  const navigate = (folder) => {
+    const newPath = currentPath ? `${currentPath}/${folder}` : folder;
+    loadFiles(workspace, newPath);
+  };
+
+  const goUp = () => {
+    const parts = currentPath.split('/');
+    parts.pop();
+    loadFiles(workspace, parts.join('/'));
+  };
+
+  return (
+    <div style={{ color: t.text }}>
+      <h2 style={{ color: t.text, marginBottom: 20 }}>📂 File Browser</h2>
+      
+      {/* Workspace selector */}
+      <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
+        {['nova', 'coder', 'scout'].map(ws => (
+          <button
+            key={ws}
+            onClick={() => setWorkspace(ws)}
+            style={{
+              padding: '6px 12px',
+              border: 'none',
+              borderRadius: 6,
+              background: workspace === ws ? t.accent : t.card,
+              color: workspace === ws ? 'white' : t.text,
+              cursor: 'pointer',
+            }}
+          >
+            {ws}
+          </button>
+        ))}
+      </div>
+
+      {/* Current path */}
+      <div style={{ 
+        background: t.card, 
+        border: `1px solid ${t.border}`, 
+        borderRadius: 8, 
+        padding: 12,
+        marginBottom: 12,
+        fontFamily: 'monospace',
+        fontSize: 12,
+        color: t.textMuted,
+      }}>
+        ~/.openclaw/workspace-{workspace}/{currentPath}
+      </div>
+
+      {/* Back button */}
+      {currentPath && (
+        <button
+          onClick={goUp}
+          style={{
+            padding: '6px 12px',
+            border: `1px solid ${t.border}`,
+            borderRadius: 6,
+            background: 'transparent',
+            color: t.text,
+            cursor: 'pointer',
+            marginBottom: 12,
+          }}
+        >
+          ← Go Up
+        </button>
+      )}
+
+      {/* Files list */}
+      {loading ? (
+        <div style={{ color: t.textMuted }}>Loading...</div>
+      ) : (
+        <div style={{ display: 'grid', gap: 4 }}>
+          {files.map(file => (
+            <div
+              key={file.name}
+              onClick={() => file.isDirectory && navigate(file.name)}
+              style={{ 
+                padding: '10px 12px',
+                borderRadius: 6,
+                cursor: file.isDirectory ? 'pointer' : 'default',
+                background: t.card,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
+              <span>{file.isDirectory ? '📁' : '📄'}</span>
+              <span style={{ color: t.text }}>{file.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SearchPage({ theme }) {
+  const t = themes[theme];
+  const [query, setQuery] = React.useState('');
+  const [results, setResults] = React.useState([]);
+  const [searching, setSearching] = React.useState(false);
+
+  const doSearch = (q) => {
+    if (!q.trim()) {
+      setResults([]);
+      return;
+    }
+    setSearching(true);
+    fetch(`${API_BASE}/api/search?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(d => setResults(d.results || []))
+      .catch(console.error)
+      .finally(() => setSearching(false));
+  };
+
+  return (
+    <div style={{ color: t.text }}>
+      <h2 style={{ color: t.text, marginBottom: 20 }}>🔎 Cross-Agent Search</h2>
+      
+      {/* Search input */}
+      <div style={{ marginBottom: 20 }}>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            doSearch(e.target.value);
+          }}
+          placeholder="Search across all sessions..."
+          style={{
+            width: '100%',
+            padding: '12px 16px',
+            borderRadius: 8,
+            border: `1px solid ${t.border}`,
+            background: t.card,
+            color: t.text,
+            fontSize: 14,
+          }}
+        />
+      </div>
+
+      {/* Results */}
+      {searching ? (
+        <div style={{ color: t.textMuted }}>Searching...</div>
+      ) : results.length === 0 ? (
+        query && <div style={{ color: t.textMuted }}>No results found</div>
+      ) : (
+        <div style={{ display: 'grid', gap: 12 }}>
+          {results.map((result, i) => (
+            <div key={i} style={{ 
+              background: t.card, 
+              border: `1px solid ${t.border}`, 
+              borderRadius: 8, 
+              padding: 16 
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <span style={{ fontSize: 12, color: t.textMuted }}>{result.agent}</span>
+                <span style={{ color: t.border }}>|</span>
+                <span style={{ fontWeight: 500, color: t.text }}>{result.session}</span>
+              </div>
+              <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.5 }}>
+                {result.content}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ModelsPage({ theme }) {
+  const t = themes[theme];
+  const [agents, setAgents] = React.useState([]);
+  const [modelsConfig, setModelsConfig] = React.useState(null);
+
+  React.useEffect(() => {
+    fetch(`${API_BASE}/api/agents`)
+      .then(r => r.json())
+      .then(setAgents)
+      .catch(console.error);
+    
+    fetch(`${API_BASE}/api/config/models`)
+      .then(r => r.json())
+      .then(setModelsConfig)
+      .catch(console.error);
+  }, []);
+
+  const availableModels = [
+    { id: 'MiniMax-M2.5', name: 'MiniMax M2.5', provider: 'minimax' },
+    { id: 'MiniMax-M2.1', name: 'MiniMax M2.1', provider: 'minimax' },
+    { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'anthropic' },
+    { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' },
+  ];
+
+  return (
+    <div style={{ color: t.text }}>
+      <h2 style={{ color: t.text, marginBottom: 20 }}>🤖 Model Configuration</h2>
+      
+      <div style={{ display: 'grid', gap: 16 }}>
+        {agents.map(agent => (
+          <div key={agent.agent_id} style={{ 
+            background: t.card, 
+            border: `1px solid ${t.border}`, 
+            borderRadius: 8, 
+            padding: 16 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <span style={{ fontSize: 24 }}>{agent.avatar}</span>
+              <div>
+                <div style={{ fontWeight: 600, color: t.text }}>{agent.name}</div>
+                <div style={{ fontSize: 12, color: t.textMuted }}>{agent.agent_id}</div>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, color: t.textMuted }}>Current Model:</span>
+              <select 
+                value={agent.model || 'MiniMax-M2.5'}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: 6,
+                  border: `1px solid ${t.border}`,
+                  background: t.bg,
+                  color: t.text,
+                }}
+              >
+                {availableModels.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ChannelsPage({ theme }) {
+  const t = themes[theme];
+  const [channels, setChannels] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetch(`${API_BASE}/api/config/channels`)
+      .then(r => r.json())
+      .then(d => setChannels(d.channels || []))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const defaultChannels = [
+    { id: 'telegram', name: 'Telegram', icon: '✉️', enabled: true },
+    { id: 'discord', name: 'Discord', icon: '🎮', enabled: false },
+    { id: 'slack', name: 'Slack', icon: '💬', enabled: false },
+    { id: 'telegram', name: 'Signal', icon: '🔒', enabled: false },
+  ];
+
+  return (
+    <div style={{ color: t.text }}>
+      <h2 style={{ color: t.text, marginBottom: 20 }}>📱 Channel Configuration</h2>
+      
+      {loading ? (
+        <div style={{ color: t.textMuted }}>Loading...</div>
+      ) : (
+        <div style={{ display: 'grid', gap: 12 }}>
+          {defaultChannels.map(channel => (
+            <div key={channel.id} style={{ 
+              background: t.card, 
+              border: `1px solid ${t.border}`, 
+              borderRadius: 8, 
+              padding: 16,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ fontSize: 24 }}>{channel.icon}</span>
+                <div>
+                  <div style={{ fontWeight: 600, color: t.text }}>{channel.name}</div>
+                  <div style={{ fontSize: 12, color: t.textMuted }}>ID: {channel.id}</div>
+                </div>
+              </div>
+              <div style={{ 
+                padding: '4px 12px', 
+                borderRadius: 12,
+                background: channel.enabled ? '#22c55e20' : '#374151',
+                color: channel.enabled ? '#22c55e' : t.textMuted,
+                fontSize: 12,
+                fontWeight: 500,
+              }}>
+                {channel.enabled ? '✅ Enabled' : '○ Disabled'}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SkillsPage({ theme }) {
+  const t = themes[theme];
+  const [skills, setSkills] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetch(`${API_BASE}/api/skills`)
+      .then(r => r.json())
+      .then(d => setSkills(d.skills || []))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div style={{ color: t.text }}>
+      <h2 style={{ color: t.text, marginBottom: 20 }}>🔧 Skills Manager</h2>
+      
+      {loading ? (
+        <div style={{ color: t.textMuted }}>Loading...</div>
+      ) : skills.length === 0 ? (
+        <div style={{ 
+          background: t.card, 
+          border: `1px solid ${t.border}`, 
+          borderRadius: 8, 
+          padding: 24,
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>🛠️</div>
+          <div style={{ color: t.textMuted }}>No skills installed</div>
+          <div style={{ fontSize: 12, color: t.textMuted, marginTop: 8 }}>
+            Skills are located in ~/.openclaw/skills/
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+          {skills.map(skill => (
+            <div key={skill.name} style={{ 
+              background: t.card, 
+              border: `1px solid ${t.border}`, 
+              borderRadius: 8, 
+              padding: 16 
+            }}>
+              <div style={{ fontWeight: 600, color: t.text, marginBottom: 8 }}>
+                {skill.icon || '🔧'} {skill.name}
+              </div>
+              <div style={{ fontSize: 12, color: t.textMuted }}>
+                {skill.description || 'No description'}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Context Stream Inspector Page
+function ContextPage({ contextEvents, setContextEvents, recordingStatus, setRecordingStatus, recordingsList, setRecordingsList, theme }) {
+  const t = themes[theme];
+  const [view, setView] = React.useState('live');
+  const [agents, setAgents] = React.useState({});
+  const [selectedAgent, setSelectedAgent] = React.useState('');
+  const [selectedSession, setSelectedSession] = React.useState('');
+  const [filters, setFilters] = React.useState({
+    message: true,
+    thinking: true,
+    tool_use: true,
+    error: true,
+  });
+  const [autoScroll, setAutoScroll] = React.useState(true);
+  const eventListRef = React.useRef(null);
+
+  // Fetch agents and sessions
+  React.useEffect(() => {
+    fetch(`${API_BASE}/api/sessions`)
+      .then(r => r.json())
+      .then(data => {
+        setAgents(data);
+        const agentList = Object.keys(data);
+        if (agentList.length > 0 && !selectedAgent) {
+          const agent = agentList[0];
+          setSelectedAgent(agent);
+          if (data[agent].length > 0) {
+            setSelectedSession(data[agent][0].sessionId);
+          }
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  // Load session events when selection changes
+  React.useEffect(() => {
+    if (!selectedAgent || !selectedSession) return;
+    fetch(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.events) {
+          setContextEvents(data.events.slice(-500));
+        }
+      })
+      .catch(console.error);
+    fetch(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}/watch`, { method: 'POST' })
+      .catch(console.error);
+  }, [selectedAgent, selectedSession]);
+
+  // Connect to SSE
+  React.useEffect(() => {
+    if (view !== 'live') return;
+    const eventSource = new EventSource(`${API_BASE}/api/context-stream`);
+    eventSource.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setContextEvents(prev => [...prev, data].slice(-500));
+        if (autoScroll && eventListRef.current) {
+          eventListRef.current.scrollTop = eventListRef.current.scrollHeight;
+        }
+      } catch (err) {}
+    };
+    eventSource.onerror = () => eventSource.close();
+    
+    const pollRecording = setInterval(() => {
+      fetch(`${API_BASE}/api/recording/status`)
+        .then(r => r.json())
+        .then(d => setRecordingStatus(d.recording))
+        .catch(() => {});
+    }, 2000);
+    
+    fetch(`${API_BASE}/api/recordings`)
+      .then(r => r.json())
+      .then(d => setRecordingsList(d.recordings || []))
+      .catch(() => {});
+    
+    return () => { eventSource.close(); clearInterval(pollRecording); };
+  }, [view, autoScroll]);
+
+  const extractContent = (event) => {
+    const msg = event.message || event.data?.message || event.data || event;
+    if (!msg?.content) return '';
+    
+    const content = msg.content;
+    
+    // Handle array content
+    if (Array.isArray(content)) {
+      // Extract text blocks
+      const texts = content
+        .filter(b => b.type === 'text' && b.text)
+        .map(b => b.text);
+      
+      // If no text blocks, try thinking blocks
+      if (texts.length === 0) {
+        const thinkings = content
+          .filter(b => b.type === 'thinking' && b.thinking)
+          .map(b => '💭 ' + b.thinking);
+        return thinkings.join('\n\n');
+      }
+      
+      return texts.join('\n');
+    }
+    
+    // Handle string content
+    if (typeof content === 'string') return content;
+    
+    return JSON.stringify(content);
+  };
+
+  const extractRole = (event) => {
+    const msg = event.message || event.data?.message || event.data || event;
+    return msg?.role || 'unknown';
+  };
+
+  const extractUsage = (event) => {
+    const msg = event.message || event.data?.message || event.data || event;
+    return msg?.usage || null;
+  };
+
+  const filteredEvents = contextEvents.filter(e => {
+    const type = e.type;
+    if (type === 'message') {
+      const subType = e.data?.type;
+      if (subType === 'thinking') return filters.thinking;
+      if (subType === 'tool_use') return filters.tool_use;
+      return filters.message;
+    }
+    return filters[type] !== false;
+  });
+
+  const startRecording = () => {
+    fetch(`${API_BASE}/api/recording/start`, { method: 'POST' })
+      .then(r => r.json())
+      .then(d => setRecordingStatus(d))
+      .catch(console.error);
+  };
+
+  const stopRecording = () => {
+    fetch(`${API_BASE}/api/recording/stop`, { method: 'POST' })
+      .then(r => r.json())
+      .then(d => { setRecordingStatus(null); fetch(`${API_BASE}/api/recordings`).then(r => r.json()).then(d => setRecordingsList(d.recordings || [])).catch(() => {}); })
+      .catch(console.error);
+  };
+
+  const renderEvent = (event, idx) => {
+    const type = event.type;
+    const time = new Date(event.timestamp || event.received_at).toLocaleTimeString();
+    
+    if (type === 'session') {
+      return (
+        <div key={idx} style={{ textAlign: 'center', padding: '8px', color: t.textMuted, borderTop: `1px solid ${t.border}`, borderBottom: `1px solid ${t.border}`, margin: '8px 0', fontSize: 10 }}>
+         ━━━ SESSION {event.id?.slice(0, 8)} ━━━ {time}
+        </div>
+      );
+    }
+    
+    if (type === 'message' && extractRole(event) === 'user') {
+      return (
+        <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: 8 }}>
+          <div style={{ maxWidth: '80%', padding: '10px 14px', borderRadius: 12, background: '#2d4a7a', color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', fontSize: 11, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 4 }}>👤 user {time}</div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{extractContent(event)}</div>
+          </div>
+        </div>
+      );
+    }
+    
+    if (type === 'message' && extractRole(event) === 'assistant') {
+      const usage = extractUsage(event);
+      return (
+        <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 8 }}>
+          <div style={{ maxWidth: '85%', padding: '10px 14px', borderRadius: 12, background: t.bgSecondary || '#1e2a3a', color: t.text, fontSize: 11, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 4, display: 'flex', gap: 8 }}>
+              <span>🤖 assistant</span>
+              <span>{time}</span>
+              {usage && <span style={{ color: '#22c55e' }}>${usage.cost?.total || 0}</span>}
+            </div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{extractContent(event)}</div>
+          </div>
+        </div>
+      );
+    }
+    
+    if (type === 'message' && event.data?.type === 'thinking') {
+      return (
+        <div key={idx} style={{ padding: '6px 10px', marginBottom: 6, borderRadius: 6, background: 'rgba(100,100,100,0.2)', border: '1px dashed #666', fontSize: 10, color: '#9ca3af' }}>
+          💭 thinking {time}
+        </div>
+      );
+    }
+    
+    if (type === 'message' && event.data?.type === 'tool_use') {
+      const tool = event.data?.name || event.data?.tool || 'tool';
+      const input = event.data?.input || '';
+      return (
+        <div key={idx} style={{ padding: 8, marginBottom: 6, borderRadius: 6, background: '#1f2937', color: '#e5e7eb', fontSize: 11, fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ marginBottom: 4, color: '#fbbf24' }}>🔧 {tool} {time}</div>
+          <div style={{ color: '#9ca3af', whiteSpace: 'pre-wrap' }}>{typeof input === 'string' ? input : JSON.stringify(input, null, 2)}</div>
+        </div>
+      );
+    }
+    
+    if (type === 'error') {
+      return (
+        <div key={idx} style={{ padding: 10, marginBottom: 6, borderRadius: 6, background: '#7f1d1d', color: '#fecaca', fontSize: 11 }}>
+          ⚠️ ERROR {time}
+          <div>{event.message || event.data?.message || 'Unknown error'}</div>
+        </div>
+      );
+    }
+    
+    return (
+      <div key={idx} style={{ padding: 6, marginBottom: 4, fontSize: 10, color: t.textMuted, fontFamily: 'monospace' }}>
+        [{type}] {time}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', color: t.text }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: `1px solid ${t.border}` }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {[
+            { id: 'live', label: '📡 Live' },
+            { id: 'recordings', label: '📂 Recordings' },
+          ].map(tab => (
+            <button key={tab.id} onClick={() => setView(tab.id)} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: view === tab.id ? t.accent : 'transparent', color: view === tab.id ? 'white' : t.textMuted, cursor: 'pointer', fontSize: 11, fontWeight: 500 }}>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {view === 'live' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {recordingStatus ? (
+              <button onClick={stopRecording} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: '#dc2626', color: 'white', cursor: 'pointer', fontSize: 11 }}>
+                ⏹ Stop ({recordingStatus.event_count})
+              </button>
+            ) : (
+              <button onClick={startRecording} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: '#22c55e', color: 'white', cursor: 'pointer', fontSize: 11 }}>
+                ⏺ Record
+              </button>
+            )}
+            <span style={{ fontSize: 11, color: t.textMuted }}>{contextEvents.length} events</span>
+          </div>
+        )}
+      </div>
+
+      {view === 'live' ? (
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          {/* Left Panel */}
+          <div style={{ width: 200, borderRight: `1px solid ${t.border}`, padding: 12, background: t.bgSecondary || '#1a1a2e', overflowY: 'auto', fontSize: 11 }}>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ color: t.textMuted, marginBottom: 4, fontWeight: 500 }}>AGENT</div>
+              <select value={selectedAgent} onChange={e => { setSelectedAgent(e.target.value); const sessions = agents[e.target.value]; if (sessions?.length > 0) setSelectedSession(sessions[0].sessionId); }} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontSize: 11 }}>
+                {Object.keys(agents).map(agent => <option key={agent} value={agent}>{agent}</option>)}
+              </select>
+            </div>
+            {selectedAgent && agents[selectedAgent] && (
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ color: t.textMuted, marginBottom: 4, fontWeight: 500 }}>SESSION</div>
+                <select value={selectedSession} onChange={e => setSelectedSession(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontSize: 11 }}>
+                  {agents[selectedAgent].map(s => <option key={s.sessionId} value={s.sessionId}>{s.sessionId.slice(0, 12)}...</option>)}
+                </select>
+              </div>
+            )}
+            {selectedAgent && selectedSession && (
+              <div style={{ marginBottom: 16, color: '#22c55e', fontSize: 10 }}>● Watching: {selectedAgent}/{selectedSession.slice(0, 8)}...</div>
+            )}
+            <div style={{ marginBottom: 8 }}>
+              <div style={{ color: t.textMuted, marginBottom: 6, fontWeight: 500 }}>FILTERS</div>
+              {Object.entries(filters).map(([key, val]) => (
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, color: t.text }}>
+                  <input type="checkbox" checked={val} onChange={e => setFilters(f => ({...f, [key]: e.target.checked}))} />
+                  {key.replace('_', ' ')}
+                </label>
+              ))}
+            </div>
+            <div>
+              <div style={{ color: t.textMuted, marginBottom: 6, fontWeight: 500 }}>AUTO-SCROLL</div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: t.text }}>
+                <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} />
+                Enabled
+              </label>
+            </div>
+          </div>
+          
+          {/* Main List */}
+          <div ref={eventListRef} style={{ flex: 1, padding: 12, overflowY: 'auto' }}>
+            {filteredEvents.length === 0 ? (
+              <div style={{ textAlign: 'center', color: t.textMuted, padding: 40 }}>Waiting for events...</div>
+            ) : (
+              filteredEvents.map((e, i) => renderEvent(e, i))
+            )}
+          </div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, padding: 16, overflowY: 'auto' }}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>📂 Recordings</div>
+          {recordingsList.length === 0 ? (
+            <div style={{ color: t.textMuted }}>No recordings yet</div>
+          ) : (
+            recordingsList.map(rec => (
+              <div key={rec.filename} style={{ padding: 12, marginBottom: 8, borderRadius: 8, background: t.bgSecondary, border: `1px solid ${t.border}` }}>
+                <div style={{ fontWeight: 600, marginBottom: 4 }}>{rec.name}</div>
+                <div style={{ fontSize: 11, color: t.textMuted }}>
+                  {rec.started_at && new Date(rec.started_at).toLocaleString()}
+                  {rec.duration_seconds && ` • ${Math.floor(rec.duration_seconds/60)}m ${rec.duration_seconds%60}s`}
+                  {rec.event_count && ` • ${rec.event_count} events`}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 function MemoryPage({ memoryData, selectedMemoryId, onSelectMemory, theme }) {
   const [memoryContent, setMemoryContent] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
@@ -986,6 +1820,11 @@ function AppContent() {
   const [lastUpdate, setLastUpdate] = useState(null);
   const [apiError, setApiError] = useState(false);
   const [costData, setCostData] = useState(null);
+  
+  // Context/Recording state
+  const [contextEvents, setContextEvents] = useState([]);
+  const [recordingStatus, setRecordingStatus] = useState(null);
+  const [recordingsList, setRecordingsList] = useState([]);
   const [rateLimitData, setRateLimitData] = useState(null);
   const [memoryData, setMemoryData] = useState(null);
   const [selectedMemoryId, setSelectedMemoryId] = useState(null);
@@ -1044,6 +1883,18 @@ function AppContent() {
     fetch(`${API_BASE}/api/logs`)
       .then(r => r.json())
       .then(setLogData)
+      .catch(console.error);
+    
+    // Fetch recording status
+    fetch(`${API_BASE}/api/recording/status`)
+      .then(r => r.json())
+      .then(d => setRecordingStatus(d.recording))
+      .catch(console.error);
+    
+    // Fetch recordings list
+    fetch(`${API_BASE}/api/recordings`)
+      .then(r => r.json())
+      .then(d => setRecordingsList(d.recordings || []))
       .catch(console.error);
     
     // Search sessions function
@@ -1167,6 +2018,12 @@ function AppContent() {
             { id: 'memory', label: 'Memory', icon: '📁' },
             { id: 'logs', label: 'Logs', icon: '📜' },
             { id: 'sessions', label: 'Sessions', icon: '🔍' },
+            { id: 'cron', label: 'Cron', icon: '⏰' },
+            { id: 'files', label: 'Files', icon: '📂' },
+            { id: 'search', label: 'Search', icon: '🔎' },
+            { id: 'models', label: 'Models', icon: '🤖' },
+            { id: 'channels', label: 'Channels', icon: '📱' },
+            { id: 'skills', label: 'Skills', icon: '🔧' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -1191,6 +2048,28 @@ function AppContent() {
         </div>
         
         <ThemeToggle theme={theme} onToggle={toggleTheme} />
+        
+        {/* Context Stream Button */}
+        <button
+          onClick={() => setCurrentPage('context')}
+          style={{
+            padding: '6px 12px',
+            marginLeft: 8,
+            borderRadius: 6,
+            border: 'none',
+            background: currentPage === 'context' ? t.accent : 'transparent',
+            color: currentPage === 'context' ? 'white' : t.textMuted,
+            cursor: 'pointer',
+            fontSize: 12,
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
+        >
+          📡 Context
+        </button>
+        
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
           {lastUpdate && (
             <span style={{ color: t.textMuted, fontSize: 11 }}>
@@ -1339,6 +2218,42 @@ function AppContent() {
                   .catch(console.error);
               }}
               searchResults={sessionResults}
+              theme={theme}
+            />
+          </div>
+        ) : currentPage === 'cron' ? (
+          <div style={{ flex: 1, padding: "24px 28px", overflow: "auto" }}>
+            <CronPage theme={theme} />
+          </div>
+        ) : currentPage === 'files' ? (
+          <div style={{ flex: 1, padding: "24px 28px", overflow: "auto" }}>
+            <FilesPage theme={theme} />
+          </div>
+        ) : currentPage === 'search' ? (
+          <div style={{ flex: 1, padding: "24px 28px", overflow: "auto" }}>
+            <SearchPage theme={theme} />
+          </div>
+        ) : currentPage === 'models' ? (
+          <div style={{ flex: 1, padding: "24px 28px", overflow: "auto" }}>
+            <ModelsPage theme={theme} />
+          </div>
+        ) : currentPage === 'channels' ? (
+          <div style={{ flex: 1, padding: "24px 28px", overflow: "auto" }}>
+            <ChannelsPage theme={theme} />
+          </div>
+        ) : currentPage === 'skills' ? (
+          <div style={{ flex: 1, padding: "24px 28px", overflow: "hidden" }}>
+            <SkillsPage theme={theme} />
+          </div>
+        ) : currentPage === 'context' ? (
+          <div style={{ flex: 1, padding: 0, overflow: "hidden" }}>
+            <ContextPage 
+              contextEvents={contextEvents}
+              setContextEvents={setContextEvents}
+              recordingStatus={recordingStatus}
+              setRecordingStatus={setRecordingStatus}
+              recordingsList={recordingsList}
+              setRecordingsList={setRecordingsList}
               theme={theme}
             />
           </div>
