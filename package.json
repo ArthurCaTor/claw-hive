@@ -1,0 +1,48 @@
+{
+  "name": "claw-hive",
+  "version": "1.0.0",
+  "description": "Real-time monitoring dashboard for OpenClaw AI agents",
+  "main": "src/server.js",
+  "bin": {
+    "openclaw-dashboard": "./bin/cli.js"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev:server": "node src/server.js",
+    "dev:ui": "cd dashboard && npx vite",
+    "build": "cd dashboard && npx vite build --outDir ../public",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "openclaw",
+    "dashboard",
+    "ai-agent",
+    "monitoring"
+  ],
+  "author": "Arthur",
+  "license": "MIT",
+  "files": [
+    "bin/",
+    "src/",
+    "public/",
+    "README.md"
+  ],
+  "dependencies": {
+    "commander": "^11.0.0",
+    "cors": "^2.8.5",
+    "eventsource": "^4.1.0",
+    "express": "^4.18.0",
+    "fs-extra": "^11.3.4",
+    "open": "^9.0.0",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "vite": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
