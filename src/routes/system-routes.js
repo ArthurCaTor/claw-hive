@@ -76,7 +76,19 @@ module.exports = function(app, { sessionWatcher, debugService, OPENCLAW_DIR, fin
   // Get single session
   app.get('/api/sessions/:Agent/:sessionId', (req, res) => {
     const { agent, sessionId } = req.params;
-    const filepath = path.join(OPENCLAW_DIR, 'agents', agent, 'sessions', `${sessionId}.jsonl`);
+    
+    // Security: validate inputs
+    if (!agent || !sessionId || agent.includes('..') || sessionId.includes('..')) {
+      return res.status(400).json({ error: 'Invalid parameters' });
+    }
+    
+    const sessionsDir = path.join(OPENCLAW_DIR, 'agents', agent, 'sessions');
+    const filepath = path.join(sessionsDir, `${sessionId}.jsonl`);
+    
+    // Security: ensure path is within sessions directory
+    if (!filepath.startsWith(sessionsDir)) {
+      return res.status(400).json({ error: 'Invalid path' });
+    }
     
     if (!fs.existsSync(filepath)) {
       return res.status(404).json({ error: 'Session not found' });
@@ -89,7 +101,19 @@ module.exports = function(app, { sessionWatcher, debugService, OPENCLAW_DIR, fin
   // Watch a session
   app.post('/api/sessions/:Agent/:sessionId/watch', (req, res) => {
     const { agent, sessionId } = req.params;
-    const filepath = path.join(OPENCLAW_DIR, 'agents', agent, 'sessions', `${sessionId}.jsonl`);
+    
+    // Security: validate inputs
+    if (!agent || !sessionId || agent.includes('..') || sessionId.includes('..')) {
+      return res.status(400).json({ error: 'Invalid parameters' });
+    }
+    
+    const sessionsDir = path.join(OPENCLAW_DIR, 'agents', agent, 'sessions');
+    const filepath = path.join(sessionsDir, `${sessionId}.jsonl`);
+    
+    // Security: ensure path is within sessions directory
+    if (!filepath.startsWith(sessionsDir)) {
+      return res.status(400).json({ error: 'Invalid path' });
+    }
     
     if (!fs.existsSync(filepath)) {
       return res.status(404).json({ error: 'Session not found' });
