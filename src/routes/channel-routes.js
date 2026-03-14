@@ -30,7 +30,7 @@ module.exports = function(app, { findConfigPath }) {
           channels: channelList,
         });
       } catch (e) {
-        res.json({ error: e.message });
+        res.json({ error: 'Failed to read channel config' });
       }
     } else {
       res.json({ error: 'Config not found' });

@@ -95,7 +95,7 @@ module.exports = function(app) {
           content,
         });
       } catch (e) {
-        res.json({ error: e.message });
+        res.json({ error: 'Failed to read memory file' });
       }
     } else {
       res.json({ error: 'Memory file not found' });

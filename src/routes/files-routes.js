@@ -66,7 +66,7 @@ module.exports = function(app) {
         items: files,
       });
     } catch (e) {
-      res.json({ error: e.message });
+      res.json({ error: 'Failed to read file list' });
     }
   });
 

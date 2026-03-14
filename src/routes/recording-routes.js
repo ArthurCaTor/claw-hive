@@ -86,7 +86,7 @@ module.exports = function(app, { recordingStore }) {
 
       res.json({ total: recordings.length, recordings });
     } catch (e) {
-      res.json({ total: 0, recordings: [], error: e.message });
+      res.json({ total: 0, recordings: [], error: "Failed to list recordings" });
     }
   });
 
@@ -108,7 +108,7 @@ module.exports = function(app, { recordingStore }) {
       const content = fs.readFileSync(resolved.filepath, 'utf-8');
       res.json(JSON.parse(content));
     } catch (e) {
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: "Failed to process recording" });
     }
   });
 
@@ -135,7 +135,7 @@ module.exports = function(app, { recordingStore }) {
       fs.writeFileSync(resolved.filepath, JSON.stringify(parsed, null, 2));
       res.json({ success: true, notes: parsed.notes });
     } catch (e) {
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: "Failed to process recording" });
     }
   });
 
@@ -158,7 +158,7 @@ module.exports = function(app, { recordingStore }) {
       fs.unlinkSync(resolved.filepath);
       res.json({ success: true });
     } catch (e) {
-      res.status(500).json({ error: e.message });
+      res.status(500).json({ error: "Failed to process recording" });
     }
   });
 };

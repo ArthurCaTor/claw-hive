@@ -28,7 +28,7 @@ module.exports = function(app, { agentStore, findConfigPath }) {
           defaults: config.agents?.defaults,
         });
       } catch (e) {
-        res.json({ error: e.message });
+        res.json({ error: 'Failed to read config' });
       }
     } else {
       res.json({ error: 'Config not found' });

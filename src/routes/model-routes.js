@@ -28,7 +28,7 @@ module.exports = function(app, { findConfigPath }) {
         
         res.json({ total: modelList.length, models: modelList });
       } catch (e) {
-        res.json({ error: e.message });
+        res.json({ error: 'Failed to read model config'});
       }
     } else {
       res.json({ error: 'Config not found' });
