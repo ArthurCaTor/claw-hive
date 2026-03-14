@@ -20,3 +20,4 @@
 {"cycle":22,"area":"code-quality","file":"src/routes/agent-routes.js","type":"INFO","description":"No user input - no issues","lines_changed":0,"test_passed":true,"committed":true,"commit_hash":"N/A"}
 {"cycle":23,"area":"code-quality","file":"src/services/*.js","type":"INFO","description":"Console logging is appropriate for services","lines_changed":0,"test_passed":true,"committed":true,"commit_hash":"N/A"}
 {"cycle":24,"area":"code-quality","file":"src/services/session-watcher.js","type":"INFO","description":"Proper try-catch blocks in place","lines_changed":0,"test_passed":true,"committed":true,"commit_hash":"N/A"}
+{"cycle":26,"area":"bug-detection","file":"src/routes/debug-proxy-routes.js","type":"BUG-HIGH","description":"Path traversal in /api/debug-proxy/history/:filename","fix":"Added validation for .. ~ / and boundary check","lines_changed":17,"test_passed":true,"committed":true,"commit_hash":"4fa1956"}
