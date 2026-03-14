@@ -8,6 +8,9 @@ const os = require('os');
 const { execFile, execSync } = require('child_process');
 const fs = require('fs');
 
+// Utils
+const { createRateLimiter } = require('./utils/rate-limiter');
+
 // Services
 const { debugService } = require('./services/debug-service');
 const { sessionWatcher, OPENCLAW_DIR } = require('./services/session-watcher');
@@ -30,6 +33,22 @@ process.on('unhandledRejection', (reason, promise) => {
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    if (duration > 500 || req.path.startsWith('/api')) {
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+    }
+  });
+  next();
+});
+
+// Rate limiter for API routes
+const apiRateLimiter = createRateLimiter({ windowMs: 60000, maxRequests: 100 });
+app.use('/api', apiRateLimiter);
 
 // Serve static files from public/
 app.use(express.static(path.join(__dirname, '../public')));
