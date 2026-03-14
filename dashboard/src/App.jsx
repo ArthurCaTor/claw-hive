@@ -989,6 +989,347 @@ function SkillsPage({ theme }) {
   );
 }
 
+// Debug Proxy Page - LLM Request Interceptor
+function DebugProxyPage({ theme }) {
+  const t = themes[theme];
+  const [status, setStatus] = React.useState(null);
+  const [captures, setCaptures] = React.useState([]);
+  const [selectedCapture, setSelectedCapture] = React.useState(null);
+  const [captureDetail, setCaptureDetail] = React.useState(null);
+  const [activeTab, setActiveTab] = React.useState('system');
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
+
+  // Fetch status
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/debug-proxy/status`);
+      const data = await res.json();
+      setStatus(data);
+      setError(null);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  // Fetch captures list
+  const fetchCaptures = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/debug-proxy/captures`);
+      const data = await res.json();
+      setCaptures(data);
+    } catch (e) {
+      console.error('Failed to fetch captures:', e);
+    }
+  };
+
+  // Fetch capture detail
+  const fetchCaptureDetail = async (id) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/debug-proxy/captures/${id}`);
+      const data = await res.json();
+      setCaptureDetail(data);
+    } catch (e) {
+      console.error('Failed to fetch capture:', e);
+    }
+    setLoading(false);
+  };
+
+  // Start proxy
+  const startProxy = async () => {
+    try {
+      await fetch(`${API_BASE}/api/debug-proxy/start`, { method: 'POST' });
+      fetchStatus();
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  // Stop proxy
+  const stopProxy = async () => {
+    try {
+      await fetch(`${API_BASE}/api/debug-proxy/stop`, { method: 'POST' });
+      fetchStatus();
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  // Initial load
+  React.useEffect(() => {
+    fetchStatus();
+    fetchCaptures();
+  }, []);
+
+  // SSE for real-time updates
+  React.useEffect(() => {
+    if (!status?.running) return;
+    
+    const sse = new EventSource(`${API_BASE}/api/debug-proxy/stream`);
+    sse.onmessage = (event) => {
+      const summary = JSON.parse(event.data);
+      setCaptures(prev => [summary, ...prev]);
+    };
+    sse.onerror = () => sse.close();
+    
+    return () => sse.close();
+  }, [status?.running]);
+
+  // Poll status every 5s
+  React.useEffect(() => {
+    const interval = setInterval(fetchStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Format uptime
+  const formatUptime = (seconds) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Extract content from message blocks
+  const extractContent = (content) => {
+    if (!content) return '';
+    if (typeof content === 'string') return content;
+    if (Array.isArray(content)) {
+      return content
+        .filter(block => block.type === 'text')
+        .map(block => block.text || '')
+        .join('\n');
+    }
+    return JSON.stringify(content);
+  };
+
+  // Get status color
+  const getStatusColor = (code) => {
+    if (code >= 200 && code < 300) return '#22c55e';
+    if (code >= 400 && code < 500) return '#eab308';
+    return '#ef4444';
+  };
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 16, overflow: 'hidden' }}>
+      {/* Proxy Status Panel */}
+      <div style={{ 
+        background: t.card, 
+        border: `1px solid ${t.border}`, 
+        borderRadius: 12, 
+        padding: 16 
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>PROXY STATUS</span>
+            {status?.running ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#22c55e', fontSize: 13 }}>
+                <Pulse color="#22c55e" active={true} /> Running on :{status.port}
+              </span>
+            ) : (
+              <span style={{ color: '#64748b', fontSize: 13 }}>● Stopped</span>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {status?.running ? (
+              <button onClick={stopProxy} style={{
+                background: '#dc2626', color: 'white', border: 'none', padding: '6px 14px',
+                borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 500,
+              }}>⏹ Stop Proxy</button>
+            ) : (
+              <button onClick={startProxy} style={{
+                background: '#22c55e', color: 'white', border: 'none', padding: '6px 14px',
+                borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 500,
+              }}>▶ Start Proxy</button>
+            )}
+            <button onClick={() => { fetchStatus(); fetchCaptures(); }} style={{
+              background: 'transparent', color: t.textMuted, border: `1px solid ${t.border}`,
+              padding: '6px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 12,
+            }}>🔄 Refresh</button>
+          </div>
+        </div>
+        
+        {status?.running && (
+          <div style={{ display: 'flex', gap: 24, color: t.textMuted, fontSize: 12 }}>
+            <span>Calls: <strong style={{ color: t.text }}>{status.totalCalls}</strong></span>
+            <span>Uptime: <strong style={{ color: t.text }}>{formatUptime(status.uptimeSeconds)}</strong></span>
+          </div>
+        )}
+
+        {/* Emergency Recovery */}
+        <div style={{ 
+          marginTop: 12, 
+          padding: 10, 
+          background: 'rgba(234, 179, 8, 0.1)', 
+          border: '1px solid rgba(234, 179, 8, 0.3)', 
+          borderRadius: 8,
+          fontSize: 11,
+          color: '#eab308'
+        }}>
+          <strong>⚠️ Emergency Recovery:</strong> If issues occur, run: <code style={{ background: 'rgba(0,0,0,0.3)', padding: '2px 6px', borderRadius: 4 }}>bash fix-proxy.sh stop</code>
+        </div>
+      </div>
+
+      {/* API Calls List */}
+      <div style={{ flex: 1, background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: 16, overflow: 'auto' }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 12 }}>API CALLS</div>
+        
+        {captures.length === 0 ? (
+          <div style={{ color: t.textMuted, fontSize: 13, textAlign: 'center', padding: 24 }}>
+            {status?.running ? 'No captures yet. Send a message to OpenClaw.' : 'Start the proxy to capture LLM requests.'}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {captures.map((call) => (
+              <div key={call.id} onClick={() => { setSelectedCapture(call.id); fetchCaptureDetail(call.id); }} style={{
+                background: selectedCapture === call.id ? t.bgSecondary : 'rgba(0,0,0,0.2)',
+                border: `1px solid ${selectedCapture === call.id ? t.accent : t.border}`,
+                borderRadius: 8,
+                padding: '10px 14px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: 12, color: t.textMuted }}>#{call.id}</span>
+                  <span style={{ fontSize: 12, color: t.textMuted }}>
+                    {new Date(call.timestamp).toLocaleTimeString()}
+                  </span>
+                  <span style={{ 
+                    fontSize: 11, 
+                    fontWeight: 600, 
+                    color: getStatusColor(call.status),
+                    background: `${getStatusColor(call.status)}20`,
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                  }}>{call.status}</span>
+                  <span style={{ fontSize: 11, color: t.textMuted }}>{call.latency_ms}ms</span>
+                </div>
+                <div style={{ fontSize: 11, color: t.textMuted }}>
+                  {call.tokens?.input?.toLocaleString()} → {call.tokens?.output?.toLocaleString()} tok
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Capture Detail Panel */}
+      {selectedCapture && captureDetail && (
+        <div style={{ 
+          flex: 1, 
+          background: t.card, 
+          border: `1px solid ${t.border}`, 
+          borderRadius: 12, 
+          padding: 16, 
+          overflow: 'auto',
+          minHeight: 300,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>
+              #{captureDetail.id} - {new Date(captureDetail.timestamp).toLocaleString()}
+            </span>
+            <button onClick={() => { setSelectedCapture(null); setCaptureDetail(null); }} style={{
+              background: 'transparent', color: t.textMuted, border: 'none', cursor: 'pointer', fontSize: 16,
+            }}>✕</button>
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+            {['system', 'messages', 'tools', 'raw'].map(tab => (
+              <button key={tab} onClick={() => setActiveTab(tab)} style={{
+                padding: '6px 12px',
+                borderRadius: 6,
+                border: 'none',
+                background: activeTab === tab ? t.accent : 'transparent',
+                color: activeTab === tab ? 'white' : t.textMuted,
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 500,
+                textTransform: 'uppercase',
+              }}>
+                {tab === 'messages' ? `Messages (${captureDetail.request?.body?.messages?.length || 0})` : 
+                 tab === 'tools' ? `Tools (${captureDetail.request?.body?.tools?.length || 0})` : tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab Content */}
+          <div style={{ 
+            background: '#0d1117', 
+            borderRadius: 8, 
+            padding: 12, 
+            fontFamily: 'JetBrains Mono, monospace', 
+            fontSize: 11, 
+            overflow: 'auto',
+            maxHeight: 400,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+          }}>
+            {activeTab === 'system' && (
+              <div style={{ color: '#e2e8f0' }}>
+                {captureDetail.request?.body?.system || '(no system prompt)'}
+              </div>
+            )}
+            
+            {activeTab === 'messages' && (
+              <div style={{ color: '#e2e8f0' }}>
+                {captureDetail.request?.body?.messages?.map((msg, i) => (
+                  <div key={i} style={{ marginBottom: 12, borderBottom: '1px solid #30363d', paddingBottom: 8 }}>
+                    <span style={{ color: msg.role === 'user' ? '#58a6ff' : '#f0883e', fontWeight: 600 }}>
+                      {msg.role}
+                    </span>
+                    <div style={{ marginTop: 4, color: '#c9d1d9' }}>
+                      {extractContent(msg.content)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {activeTab === 'tools' && (
+              <div style={{ color: '#e2e8f0' }}>
+                {captureDetail.request?.body?.tools?.map((tool, i) => (
+                  <div key={i} style={{ marginBottom: 12, borderBottom: '1px solid #30363d', paddingBottom: 8 }}>
+                    <span style={{ color: '#7ee787', fontWeight: 600 }}>▶ {tool.name}</span>
+                    <div style={{ color: '#8b949e', marginTop: 4 }}>{tool.description}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {activeTab === 'raw' && (
+              <div style={{ color: '#e2e8f0' }}>
+                {JSON.stringify(captureDetail.request?.body, null, 2)}
+              </div>
+            )}
+          </div>
+
+          {/* Response Section */}
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 8 }}>RESPONSE</div>
+            <div style={{ 
+              background: '#0d1117', 
+              borderRadius: 8, 
+              padding: 12, 
+              fontFamily: 'JetBrains Mono, monospace', 
+              fontSize: 11,
+            }}>
+              <div style={{ color: '#c9d1d9', marginBottom: 8 }}>
+                {captureDetail.response?.body?.assistant_text || '(no text)'}
+              </div>
+              <div style={{ color: '#8b949e', fontSize: 10, marginTop: 8, borderTop: '1px solid #30363d', paddingTop: 8 }}>
+                usage: input={captureDetail.tokens?.input} output={captureDetail.tokens?.output}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Context Stream Inspector Page
 function ContextPage({ contextEvents, setContextEvents, recordingStatus, setRecordingStatus, recordingsList, setRecordingsList, theme }) {
   const t = themes[theme];
@@ -2120,6 +2461,27 @@ function AppContent() {
           📡 Context
         </button>
         
+        {/* Debug Proxy Button */}
+        <button
+          onClick={() => setCurrentPage('proxy')}
+          style={{
+            padding: '6px 12px',
+            marginLeft: 8,
+            borderRadius: 6,
+            border: 'none',
+            background: currentPage === 'proxy' ? t.accent : 'transparent',
+            color: currentPage === 'proxy' ? 'white' : t.textMuted,
+            cursor: 'pointer',
+            fontSize: 12,
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}
+        >
+          �_proxy
+        </button>
+        
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
           {lastUpdate && (
             <span style={{ color: t.textMuted, fontSize: 11 }}>
@@ -2306,6 +2668,10 @@ function AppContent() {
               setRecordingsList={setRecordingsList}
               theme={theme}
             />
+          </div>
+        ) : currentPage === 'proxy' ? (
+          <div style={{ flex: 1, padding: "24px 28px", overflow: "hidden" }}>
+            <DebugProxyPage theme={theme} />
           </div>
         ) : (
           <div style={{ flex: 1, padding: "24px 28px", overflow: "hidden" }}>
