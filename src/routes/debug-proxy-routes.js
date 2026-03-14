@@ -3,24 +3,40 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
 const { llmProxy } = require('../services/llm-proxy');
 
 const router = express.Router();
 const CAPTURES_DIR = path.join(process.cwd(), 'captures');
+const SCRIPT_PATH = path.join(process.cwd(), 'fix-proxy.sh');
 
 // Proxy status
 router.get('/api/debug-proxy/status', (req, res) => {
   res.json(llmProxy.getStatus());
 });
 
-// Start Proxy
-router.post('/api/debug-proxy/start', async (req, res) => {
-  try {
-    const result = await llmProxy.start();
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// Start Proxy - call fix-proxy.sh start
+router.post('/api/debug-proxy/start', (req, res) => {
+  const cwd = process.cwd();
+  exec(`bash ${SCRIPT_PATH} start`, { cwd, timeout: 90000 }, (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).json({ error: error.message, stderr });
+      return;
+    }
+    res.json({ success: true, stdout, stderr: stderr || undefined });
+  });
+});
+
+// Stop Proxy - call fix-proxy.sh stop
+router.post('/api/debug-proxy/stop', (req, res) => {
+  const cwd = process.cwd();
+  exec(`bash ${SCRIPT_PATH} stop`, { cwd, timeout: 90000 }, (error, stdout, stderr) => {
+    if (error) {
+      res.status(500).json({ error: error.message, stderr });
+      return;
+    }
+    res.json({ success: true, stdout, stderr: stderr || undefined });
+  });
 });
 
 // Stop Proxy
