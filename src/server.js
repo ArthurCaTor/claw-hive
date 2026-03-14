@@ -16,6 +16,17 @@ const { recordingStore } = require('./services/recording-store');
 const app = express();
 const PORT = process.env.OPENCLAW_DASHBOARD_PORT || process.env.PORT || 8080;
 
+// Global error handlers for stability
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught Exception:', err.message);
+  console.error(err.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[ERROR] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -681,6 +692,12 @@ filesRoutes(app);
 // Serve index.html for all other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// Express error handling middleware
+app.use((err, req, res, next) => {
+  console.error('[EXPRESS ERROR]', err.message);
+  res.status(500).json({ error: err.message });
 });
 
 const HOST = process.env.HOST || '0.0.0.0';
