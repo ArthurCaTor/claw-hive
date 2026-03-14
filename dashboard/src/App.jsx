@@ -1039,23 +1039,39 @@ function DebugProxyPage({ theme }) {
     setLoading(false);
   };
 
-  // Start proxy
+  // Start proxy mode (full flow)
   const startProxy = async () => {
     try {
-      await fetch(`${API_BASE}/api/debug-proxy/start`, { method: 'POST' });
+      setError('');
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/api/proxy-mode/start`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Failed to start proxy mode');
+      }
       fetchStatus();
     } catch (e) {
       setError(e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Stop proxy
+  // Stop proxy mode (full flow)
   const stopProxy = async () => {
     try {
-      await fetch(`${API_BASE}/api/debug-proxy/stop`, { method: 'POST' });
+      setError('');
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/api/proxy-mode/stop`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Failed to stop proxy mode');
+      }
       fetchStatus();
     } catch (e) {
       setError(e.message);
+    } finally {
+      setLoading(false);
     }
   };
 
