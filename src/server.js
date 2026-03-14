@@ -8,6 +8,9 @@ const os = require('os');
 const { execFile, execSync } = require('child_process');
 const fs = require('fs');
 
+// Utils
+const { createRateLimiter } = require('./utils/rate-limiter');
+
 // Services
 const { debugService } = require('./services/debug-service');
 const { sessionWatcher, OPENCLAW_DIR } = require('./services/session-watcher');
@@ -16,9 +19,36 @@ const { recordingStore } = require('./services/recording-store');
 const app = express();
 const PORT = process.env.OPENCLAW_DASHBOARD_PORT || process.env.PORT || 8080;
 
+// Global error handlers for stability
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught Exception:', err.message);
+  console.error(err.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[ERROR] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    if (duration > 500 || req.path.startsWith('/api')) {
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+    }
+  });
+  next();
+});
+
+// Rate limiter for API routes
+const apiRateLimiter = createRateLimiter({ windowMs: 60000, maxRequests: 100 });
+app.use('/api', apiRateLimiter);
 
 // Serve static files from public/
 app.use(express.static(path.join(__dirname, '../public')));
@@ -681,6 +711,12 @@ filesRoutes(app);
 // Serve index.html for all other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// Express error handling middleware
+app.use((err, req, res, next) => {
+  console.error('[EXPRESS ERROR]', err.message);
+  res.status(500).json({ error: err.message });
 });
 
 const HOST = process.env.HOST || '0.0.0.0';

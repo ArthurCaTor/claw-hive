@@ -37,13 +37,36 @@ program
   .option('-a, --agent <name>', 'Filter by agent name')
   .option('-l, --limit <number>', 'Limit number of sessions', '20')
   .action((options) => {
-    const { sessionWatcher } = require('../src/services/session-watcher');
-    const sessions = sessionWatcher.getAllSessions();
+    const fs = require('fs');
+    const path = require('path');
+    const homeDir = process.env.HOME || '/home/arthur';
+    const agentsDir = path.join(homeDir, '.openclaw', 'agents');
+    
+    let allSessions = [];
+    
+    if (fs.existsSync(agentsDir)) {
+      const agents = fs.readdirSync(agentsDir);
+      for (const agent of agents) {
+        const sessionsDir = path.join(agentsDir, agent, 'sessions');
+        if (fs.existsSync(sessionsDir)) {
+          const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.jsonl'));
+          for (const file of files) {
+            const sessionId = file.replace('.jsonl', '');
+            const stats = fs.statSync(path.join(sessionsDir, file));
+            allSessions.push({
+              agent,
+              sessionId,
+              mtime: stats.mtime,
+            });
+          }
+        }
+      }
+    }
     
     // Filter by agent if specified
-    let filtered = sessions;
+    let filtered = allSessions;
     if (options.agent) {
-      filtered = sessions.filter(s => s.agent === options.agent);
+      filtered = allSessions.filter(s => s.agent === options.agent);
     }
     
     // Sort by mtime descending (newest first)
@@ -58,8 +81,8 @@ program
     console.log('-'.repeat(80));
     
     for (const s of filtered) {
-      const agent = (s.agent || 'unknown').padEnd(15);
-      const sessionId = (s.sessionId || 'unknown').substring(0, 38).padEnd(40);
+      const agent = s.agent.padEnd(15);
+      const sessionId = s.sessionId.substring(0, 38).padEnd(40);
       const mtime = s.mtime ? new Date(s.mtime).toLocaleString() : 'N/A';
       console.log(agent + sessionId + mtime);
     }
@@ -69,28 +92,132 @@ program
 
 
 
-// Tail command - real-time session output
+// Tail command - show session output
 program
   .command('tail')
-  .description('Show real-time session output')
-  .argument('[sessionId]', 'Session ID to tail (default: latest)')
-  .option('-a, --agent <name>', 'Agent name')
+  .description('Show session output')
+  .argument('[sessionId]', 'Session ID to show')
+  .option('-a, --agent <name>', 'Agent name (gets latest session)')
+  .option('-n, --lines <number>', 'Number of recent messages to show', '5')
+  .option('-f, --follow', 'Follow mode - keep watching for new messages (Ctrl+C to exit)')
   .action((sessionId, options) => {
-    const { sessionWatcher } = require('../src/services/session-watcher');
+    const fs = require('fs');
+    const path = require('path');
+    const homeDir = process.env.HOME || '/home/arthur';
+    const numLines = parseInt(options.lines) || 5;
+    const follow = options.follow || false;
+    
     let targetSession = sessionId;
+    
     if (!targetSession && options.agent) {
-      const sessions = sessionWatcher.getAllSessions().filter(s => s.agent === options.agent);
-      if (sessions.length > 0) {
-        sessions.sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
-        targetSession = sessions[0].sessionId;
+      const agentsDir = path.join(homeDir, '.openclaw', 'agents');
+      const sessionsDir = path.join(agentsDir, options.agent, 'sessions');
+      if (fs.existsSync(sessionsDir)) {
+        const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.jsonl'));
+        if (files.length > 0) {
+          const withStats = files.map(f => ({
+            file: f,
+            mtime: fs.statSync(path.join(sessionsDir, f)).mtime
+          }));
+          withStats.sort((a, b) => b.mtime - a.mtime);
+          targetSession = withStats[0].file.replace('.jsonl', '');
+        }
       }
     }
+    
     if (!targetSession) {
       console.log('No session found. Specify session ID or agent name.');
       process.exit(1);
     }
-    console.log('Tailing session: ' + targetSession + ' (Ctrl+C to exit)');
-    console.log('File: ' + path.join(process.env.HOME || '/home/arthur', '.openclaw', 'agents', options.agent || 'coder', 'sessions', targetSession + '.jsonl'));
+    
+    const filepath = path.join(homeDir, '.openclaw', 'agents', options.agent || 'coder', 'sessions', targetSession + '.jsonl');
+    
+    if (!fs.existsSync(filepath)) {
+      console.log('Session file not found:', filepath);
+      process.exit(1);
+    }
+    
+    // Parse and format entries from content
+    const parseEntries = (content) => {
+      const entries = [];
+      const lines = content.trim().split('\n');
+      for (const line of lines) {
+        try {
+          const entry = JSON.parse(line);
+          const type = entry.type;
+          const ts = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : '';
+          
+          if (type === 'message' && entry.message) {
+            const role = entry.message.role || '?';
+            const msg = entry.message.content || [];
+            for (const block of msg) {
+              if (block.type === 'text') {
+                const text = block.text || '';
+                entries.push(`[${ts}] ${role}: ${text.substring(0, 200)}`);
+              }
+            }
+          }
+        } catch (e) {
+          // Skip invalid lines
+        }
+      }
+      return entries;
+    };
+    
+    if (follow) {
+      // Follow mode - watch file for changes
+      console.log(`Following session: ${targetSession}`);
+      console.log(`File: ${filepath}`);
+      console.log('---');
+      console.log('(Press Ctrl+C to exit)');
+      console.log('');
+      
+      let lastSize = fs.statSync(filepath).size;
+      
+      // Show initial entries
+      const initialContent = fs.readFileSync(filepath, 'utf8');
+      const initialEntries = parseEntries(initialContent).slice(-numLines);
+      for (const e of initialEntries) {
+        console.log(e);
+      }
+      
+      // Watch for changes
+      const watcher = fs.watch(filepath, (eventType) => {
+        if (eventType === 'change') {
+          const newSize = fs.statSync(filepath).size;
+          if (newSize > lastSize) {
+            // Read new content
+            const fd = fs.openSync(filepath, 'r');
+            const buffer = Buffer.alloc(newSize - lastSize);
+            fs.readSync(fd, buffer, 0, newSize - lastSize, lastSize);
+            fs.closeSync(fd);
+            const newContent = buffer.toString('utf8');
+            lastSize = newSize;
+            
+            // Parse and display new entries
+            const newEntries = parseEntries(newContent);
+            for (const e of newEntries) {
+              console.log(e);
+            }
+          }
+        }
+      });
+      
+      // Handle Ctrl+C
+      process.on('SIGINT', () => {
+        console.log('\n---');
+        console.log('Stopped following.');
+        watcher.close();
+        process.exit(0);
+      });
+    } else {
+      // Normal mode - just show last N entries
+      const content = fs.readFileSync(filepath, 'utf8');
+      const entries = parseEntries(content).slice(-numLines);
+      for (const e of entries) {
+        console.log(e);
+      }
+    }
   });
 
 // Quota command - show API quota usage
