@@ -67,4 +67,53 @@ program
     console.log('\n');
   });
 
+
+
+// Tail command - real-time session output
+program
+  .command('tail')
+  .description('Show real-time session output')
+  .argument('[sessionId]', 'Session ID to tail (default: latest)')
+  .option('-a, --agent <name>', 'Agent name')
+  .action((sessionId, options) => {
+    const { sessionWatcher } = require('../src/services/session-watcher');
+    let targetSession = sessionId;
+    if (!targetSession && options.agent) {
+      const sessions = sessionWatcher.getAllSessions().filter(s => s.agent === options.agent);
+      if (sessions.length > 0) {
+        sessions.sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
+        targetSession = sessions[0].sessionId;
+      }
+    }
+    if (!targetSession) {
+      console.log('No session found. Specify session ID or agent name.');
+      process.exit(1);
+    }
+    console.log('Tailing session: ' + targetSession + ' (Ctrl+C to exit)');
+    console.log('File: ' + path.join(process.env.HOME || '/home/arthur', '.openclaw', 'agents', options.agent || 'coder', 'sessions', targetSession + '.jsonl'));
+  });
+
+// Quota command - show API quota usage
+program
+  .command('quota')
+  .description('Show API quota usage')
+  .option('-a, --agent <name>', 'Agent name')
+  .action((options) => {
+    const { sessionWatcher } = require('../src/services/session-watcher');
+    const sessions = sessionWatcher.getAllSessions();
+    console.log('\nAPI Quota Usage\n');
+    console.log('Agent'.padEnd(15) + 'Requests'.padEnd(12) + 'Status');
+    console.log('-'.repeat(40));
+    const byAgent = {};
+    for (const s of sessions) {
+      if (!byAgent[s.agent]) byAgent[s.agent] = { requests: 0 };
+      byAgent[s.agent].requests++;
+    }
+    for (const [agent, data] of Object.entries(byAgent)) {
+      const status = data.requests > 100 ? 'High' : 'Normal';
+      console.log(agent.padEnd(15) + String(data.requests).padEnd(12) + status);
+    }
+    console.log('\n');
+  });
+
 program.parse();
