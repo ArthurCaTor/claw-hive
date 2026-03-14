@@ -3,6 +3,27 @@
 const fs = require('fs');
 const path = require('path');
 
+// Helper function to get recordings directory
+function getRecordingsDir() {
+  return path.join(__dirname, '..', 'recordings');
+}
+
+// Helper to validate and resolve recording filepath
+function resolveRecordingPath(filename) {
+  if (!filename || filename.includes('..') || filename.includes('~') || filename.includes('/')) {
+    return { error: 'Invalid filename' };
+  }
+  
+  const recordingsDir = getRecordingsDir();
+  const filepath = path.join(recordingsDir, filename);
+  
+  if (!filepath.startsWith(recordingsDir)) {
+    return { error: 'Invalid path' };
+  }
+  
+  return { filepath, recordingsDir };
+}
+
 module.exports = function(app, { recordingStore }) {
   // Recording status
   app.get('/api/recording/status', (req, res) => {
@@ -29,7 +50,7 @@ module.exports = function(app, { recordingStore }) {
 
   // List recordings
   app.get('/api/recordings', (req, res) => {
-    const recordingsDir = path.join(__dirname, '..', 'recordings');
+    const recordingsDir = getRecordingsDir();
     if (!fs.existsSync(recordingsDir)) {
       res.json({ total: 0, recordings: [] });
       return;
@@ -72,15 +93,19 @@ module.exports = function(app, { recordingStore }) {
   // Get single recording
   app.get('/api/recordings/:filename', (req, res) => {
     const { filename } = req.params;
-    const filepath = path.join(__dirname, '..', 'recordings', filename);
+    const resolved = resolveRecordingPath(filename);
     
-    if (!fs.existsSync(filepath)) {
+    if (resolved.error) {
+      return res.status(400).json({ error: resolved.error });
+    }
+    
+    if (!fs.existsSync(resolved.filepath)) {
       res.status(404).json({ error: 'Recording not found' });
       return;
     }
 
     try {
-      const content = fs.readFileSync(filepath, 'utf-8');
+      const content = fs.readFileSync(resolved.filepath, 'utf-8');
       res.json(JSON.parse(content));
     } catch (e) {
       res.status(500).json({ error: e.message });
@@ -92,28 +117,22 @@ module.exports = function(app, { recordingStore }) {
     const { filename } = req.params;
     const { notes } = req.body || {};
     
-    // Security: prevent path traversal
-    if (filename.includes('..') || filename.includes('~')) {
-      return res.status(400).json({ error: 'Invalid filename' });
+    const resolved = resolveRecordingPath(filename);
+    
+    if (resolved.error) {
+      return res.status(400).json({ error: resolved.error });
     }
     
-    const recordingsDir = path.join(__dirname, '..', 'recordings');
-    const filepath = path.join(recordingsDir, filename);
-    
-    if (!filepath.startsWith(recordingsDir)) {
-      return res.status(400).json({ error: 'Invalid path' });
-    }
-    
-    if (!fs.existsSync(filepath)) {
+    if (!fs.existsSync(resolved.filepath)) {
       res.status(404).json({ error: 'Recording not found' });
       return;
     }
 
     try {
-      const content = fs.readFileSync(filepath, 'utf-8');
+      const content = fs.readFileSync(resolved.filepath, 'utf-8');
       const parsed = JSON.parse(content);
       parsed.notes = notes || '';
-      fs.writeFileSync(filepath, JSON.stringify(parsed, null, 2));
+      fs.writeFileSync(resolved.filepath, JSON.stringify(parsed, null, 2));
       res.json({ success: true, notes: parsed.notes });
     } catch (e) {
       res.status(500).json({ error: e.message });
@@ -124,25 +143,19 @@ module.exports = function(app, { recordingStore }) {
   app.delete('/api/recordings/:filename', (req, res) => {
     const { filename } = req.params;
     
-    // Security: prevent path traversal
-    if (filename.includes('..') || filename.includes('~')) {
-      return res.status(400).json({ error: 'Invalid filename' });
+    const resolved = resolveRecordingPath(filename);
+    
+    if (resolved.error) {
+      return res.status(400).json({ error: resolved.error });
     }
     
-    const recordingsDir = path.join(__dirname, '..', 'recordings');
-    const filepath = path.join(recordingsDir, filename);
-    
-    if (!filepath.startsWith(recordingsDir)) {
-      return res.status(400).json({ error: 'Invalid path' });
-    }
-    
-    if (!fs.existsSync(filepath)) {
+    if (!fs.existsSync(resolved.filepath)) {
       res.status(404).json({ error: 'Recording not found' });
       return;
     }
 
     try {
-      fs.unlinkSync(filepath);
+      fs.unlinkSync(resolved.filepath);
       res.json({ success: true });
     } catch (e) {
       res.status(500).json({ error: e.message });
