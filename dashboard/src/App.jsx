@@ -1374,19 +1374,32 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
       .catch(console.error);
   }, []);
 
-  // Load session events when selection changes
+  // Load session events when selection changes + auto-refresh polling
   React.useEffect(() => {
     if (!selectedAgent || !selectedSession) return;
-    fetch(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.events) {
-          setContextEvents(data.events.slice(-500));
-        }
-      })
-      .catch(console.error);
+    
+    const fetchSession = () => {
+      fetch(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.events) {
+            setContextEvents(data.events.slice(-500));
+          }
+        })
+        .catch(console.error);
+    };
+    
+    // Initial fetch
+    fetchSession();
+    
+    // Poll every 3 seconds for updates
+    const interval = setInterval(fetchSession, 3000);
+    
+    // Notify server we're watching this session
     fetch(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}/watch`, { method: 'POST' })
       .catch(console.error);
+    
+    return () => clearInterval(interval);
   }, [selectedAgent, selectedSession]);
 
   // Connect to SSE
