@@ -30,4 +30,90 @@ program
     console.log(`✅ OpenClaw Dashboard running at http://localhost:${options.port}`);
   });
 
+// Sessions command - list all historical sessions
+program
+  .command('sessions')
+  .description('List all historical sessions')
+  .option('-a, --agent <name>', 'Filter by agent name')
+  .option('-l, --limit <number>', 'Limit number of sessions', '20')
+  .action((options) => {
+    const { sessionWatcher } = require('../src/services/session-watcher');
+    const sessions = sessionWatcher.getAllSessions();
+    
+    // Filter by agent if specified
+    let filtered = sessions;
+    if (options.agent) {
+      filtered = sessions.filter(s => s.agent === options.agent);
+    }
+    
+    // Sort by mtime descending (newest first)
+    filtered.sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
+    
+    // Limit
+    filtered = filtered.slice(0, parseInt(options.limit));
+    
+    // Format output
+    console.log('\n📋 Historical Sessions\n');
+    console.log('Agent'.padEnd(15) + 'Session ID'.padEnd(40) + 'Last Modified');
+    console.log('-'.repeat(80));
+    
+    for (const s of filtered) {
+      const agent = (s.agent || 'unknown').padEnd(15);
+      const sessionId = (s.sessionId || 'unknown').substring(0, 38).padEnd(40);
+      const mtime = s.mtime ? new Date(s.mtime).toLocaleString() : 'N/A';
+      console.log(agent + sessionId + mtime);
+    }
+    
+    console.log('\n');
+  });
+
+
+
+// Tail command - real-time session output
+program
+  .command('tail')
+  .description('Show real-time session output')
+  .argument('[sessionId]', 'Session ID to tail (default: latest)')
+  .option('-a, --agent <name>', 'Agent name')
+  .action((sessionId, options) => {
+    const { sessionWatcher } = require('../src/services/session-watcher');
+    let targetSession = sessionId;
+    if (!targetSession && options.agent) {
+      const sessions = sessionWatcher.getAllSessions().filter(s => s.agent === options.agent);
+      if (sessions.length > 0) {
+        sessions.sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
+        targetSession = sessions[0].sessionId;
+      }
+    }
+    if (!targetSession) {
+      console.log('No session found. Specify session ID or agent name.');
+      process.exit(1);
+    }
+    console.log('Tailing session: ' + targetSession + ' (Ctrl+C to exit)');
+    console.log('File: ' + path.join(process.env.HOME || '/home/arthur', '.openclaw', 'agents', options.agent || 'coder', 'sessions', targetSession + '.jsonl'));
+  });
+
+// Quota command - show API quota usage
+program
+  .command('quota')
+  .description('Show API quota usage')
+  .option('-a, --agent <name>', 'Agent name')
+  .action((options) => {
+    const { sessionWatcher } = require('../src/services/session-watcher');
+    const sessions = sessionWatcher.getAllSessions();
+    console.log('\nAPI Quota Usage\n');
+    console.log('Agent'.padEnd(15) + 'Requests'.padEnd(12) + 'Status');
+    console.log('-'.repeat(40));
+    const byAgent = {};
+    for (const s of sessions) {
+      if (!byAgent[s.agent]) byAgent[s.agent] = { requests: 0 };
+      byAgent[s.agent].requests++;
+    }
+    for (const [agent, data] of Object.entries(byAgent)) {
+      const status = data.requests > 100 ? 'High' : 'Normal';
+      console.log(agent.padEnd(15) + String(data.requests).padEnd(12) + status);
+    }
+    console.log('\n');
+  });
+
 program.parse();

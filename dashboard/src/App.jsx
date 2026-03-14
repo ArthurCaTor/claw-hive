@@ -127,7 +127,7 @@ function AgentCard({ agent, selected, onClick, theme }) {
           <div style={{ color: t.textMuted, fontSize: 12 }}>{agent.role}</div>
         </div>
         <div style={{
-          fontSize: 11, fontFamily: "monospace", fontWeight: 600,
+          fontSize: 12, fontFamily: "monospace", fontWeight: 600,
           color: statusColor, background: `${statusColor}15`,
           border: `1px solid ${statusColor}30`, borderRadius: 6, padding: "3px 8px",
         }}>{statusLabel}</div>
@@ -141,16 +141,16 @@ function AgentCard({ agent, selected, onClick, theme }) {
         <span style={{ color: t.textMuted }}>Status</span>
         <span style={{ 
           color: agent.status === 'working' ? '#4ade80' : agent.status === 'error' ? '#ef4444' : '#94a3b8',
-          fontFamily: "monospace", fontSize: 11, fontWeight: 600 
+          fontFamily: "monospace", fontSize: 12, fontWeight: 600 
         }}>
           {agent.status === 'working' ? 'Working' : agent.status === 'error' ? 'Error' : 'Waiting for work'}
         </span>
         <span style={{ color: t.textMuted }}>Task</span>
-        <span style={{ color: t.text, fontSize: 11, lineHeight: 1.5 }}>
+        <span style={{ color: t.text, fontSize: 12, lineHeight: 1.5 }}>
           {agent.output ? agent.output.slice(0, 100) + (agent.output.length > 100 ? "..." : "") : "—"}
         </span>
         <span style={{ color: t.textMuted }}>Heartbeat</span>
-        <span style={{ fontSize: 11, fontFamily: "monospace",
+        <span style={{ fontSize: 12, fontFamily: "monospace",
           color: agent.heartbeat === "online" ? "#4ade80" : "#ef4444" }}>
           {agent.heartbeat === "online" ? "● Connected" : "○ Disconnected"}
         </span>
@@ -174,7 +174,7 @@ function Sidebar({ agents, stats, costData, rateLimitData, theme }) {
     }}>
       {/* Stats */}
       <div>
-        <div style={{ color: t.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
+        <div style={{ color: t.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
           Cluster Stats
         </div>
         {[
@@ -193,7 +193,7 @@ function Sidebar({ agents, stats, costData, rateLimitData, theme }) {
         {/* Cost Analysis - Trio Cards */}
         {costData && costData.breakdown && (
           <div style={{ marginTop: 16 }}>
-            <div style={{ color: t.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
+            <div style={{ color: t.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
               Cost Analysis
             </div>
             
@@ -206,11 +206,11 @@ function Sidebar({ agents, stats, costData, rateLimitData, theme }) {
                 border: '1px solid #22c55e30',
                 textAlign: 'center'
               }}>
-                <div style={{ fontSize: 9, color: t.textMuted, marginBottom: 4 }}>Today</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#22c55e', fontFamily: 'monospace' }}>
+                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>Today</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#22c55e', fontFamily: 'monospace' }}>
                   ${costData.breakdown.today?.cost || '0.00'}
                 </div>
-                <div style={{ fontSize: 9, color: t.textMuted, marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>
                   {(costData.breakdown.today?.tokens || 0).toLocaleString()} tok
                 </div>
               </div>
@@ -222,11 +222,11 @@ function Sidebar({ agents, stats, costData, rateLimitData, theme }) {
                 border: '1px solid #3b82f630',
                 textAlign: 'center'
               }}>
-                <div style={{ fontSize: 9, color: t.textMuted, marginBottom: 4 }}>All Time</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#3b82f6', fontFamily: 'monospace' }}>
+                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>All Time</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6', fontFamily: 'monospace' }}>
                   ${costData.breakdown.all_time?.cost || '0.00'}
                 </div>
-                <div style={{ fontSize: 9, color: t.textMuted, marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>
                   {(costData.breakdown.all_time?.tokens || 0).toLocaleString()} tok
                 </div>
               </div>
@@ -238,11 +238,11 @@ function Sidebar({ agents, stats, costData, rateLimitData, theme }) {
                 border: '1px solid #f59e0b30',
                 textAlign: 'center'
               }}>
-                <div style={{ fontSize: 9, color: t.textMuted, marginBottom: 4 }}>Projected</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#f59e0b', fontFamily: 'monospace' }}>
+                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>Projected</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', fontFamily: 'monospace' }}>
                   ${costData.breakdown.projected_monthly?.cost || '0.00'}
                 </div>
-                <div style={{ fontSize: 9, color: t.textMuted, marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>
                   /month
                 </div>
               </div>
@@ -251,7 +251,7 @@ function Sidebar({ agents, stats, costData, rateLimitData, theme }) {
             {/* By Model */}
             {Object.entries(costData.by_model || {}).map(([model, data]) => (
               <div key={model} style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${t.border}` }}>
-                <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>{model}</div>
+                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>{model}</div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
                   <span style={{ color: t.textMuted }}>Tokens</span>
                   <span style={{ color: t.text, fontFamily: "monospace" }}>{(data.tokens || 0).toLocaleString()}</span>
@@ -264,7 +264,7 @@ function Sidebar({ agents, stats, costData, rateLimitData, theme }) {
         {/* Rate Limit Monitoring */}
         {rateLimitData && rateLimitData.models && rateLimitData.models.length > 0 && (
           <div style={{ marginTop: 16 }}>
-            <div style={{ color: t.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
+            <div style={{ color: t.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
               Rate Limits
             </div>
             {rateLimitData.models.map((model) => (
@@ -273,7 +273,7 @@ function Sidebar({ agents, stats, costData, rateLimitData, theme }) {
                 
                 {/* RPM Usage */}
                 <div style={{ marginBottom: 4 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 2 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 2 }}>
                     <span style={{ color: t.textMuted }}>RPM</span>
                     <span style={{ color: t.text, fontFamily: "monospace" }}>{model.rpm_used}/{model.limits.rpm}</span>
                   </div>
@@ -288,7 +288,7 @@ function Sidebar({ agents, stats, costData, rateLimitData, theme }) {
                 
                 {/* TPM Usage */}
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 2 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 2 }}>
                     <span style={{ color: t.textMuted }}>TPM</span>
                     <span style={{ color: t.text, fontFamily: "monospace" }}>{(model.total_tokens || 0).toLocaleString()}/{model.limits.tpm.toLocaleString()}</span>
                   </div>
@@ -307,21 +307,21 @@ function Sidebar({ agents, stats, costData, rateLimitData, theme }) {
       </div>
       {/* Active Agents */}
       <div>
-        <div style={{ color: t.textMuted, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
+        <div style={{ color: t.textMuted, fontSize: 12, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>
           Active Now
         </div>
         {active.length === 0 && <div style={{ color: t.textMuted, fontSize: 12 }}>No active agents</div>}
         {active.map(a => (
           <div key={a.agent_id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
             <Pulse color={a.color || "#60a5fa"} active />
-            <span style={{ color: t.textMuted, fontSize: 13, fontFamily: "monospace" }}>{a.name}</span>
-            <span style={{ color: t.textMuted, fontSize: 11, marginLeft: "auto" }}>Live</span>
+            <span style={{ color: t.textMuted, fontSize: 12, fontFamily: "monospace" }}>{a.name}</span>
+            <span style={{ color: t.textMuted, fontSize: 12, marginLeft: "auto" }}>Live</span>
           </div>
         ))}
         {idle.map(a => (
           <div key={a.agent_id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#374151", display: "inline-block" }} />
-            <span style={{ color: t.textMuted, fontSize: 13, fontFamily: "monospace" }}>{a.name}</span>
+            <span style={{ color: t.textMuted, fontSize: 12, fontFamily: "monospace" }}>{a.name}</span>
           </div>
         ))}
       </div>
@@ -368,13 +368,13 @@ function AgentDetailPanel({ agent, onClose, theme }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
         {/* Status */}
         <div style={{ background: "rgba(0,0,0,0.1)", padding: 16, borderRadius: 8 }}>
-          <div style={{ color: t.textMuted, fontSize: 11, marginBottom: 6 }}>Status</div>
+          <div style={{ color: t.textMuted, fontSize: 12, marginBottom: 6 }}>Status</div>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "4px 12px", borderRadius: 6,
             background: isWorking ? `${color}20` : "#374151",
             color: isWorking ? color : t.textMuted,
-            fontWeight: 600, fontSize: 13,
+            fontWeight: 600, fontSize: 12,
           }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: isWorking ? color : "#64748b" }} />
             {isWorking ? "Working" : "Idle"}
@@ -383,13 +383,13 @@ function AgentDetailPanel({ agent, onClose, theme }) {
 
         {/* Heartbeat */}
         <div style={{ background: "rgba(0,0,0,0.1)", padding: 16, borderRadius: 8 }}>
-          <div style={{ color: t.textMuted, fontSize: 11, marginBottom: 6 }}>Heartbeat</div>
+          <div style={{ color: t.textMuted, fontSize: 12, marginBottom: 6 }}>Heartbeat</div>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 6,
             padding: "4px 12px", borderRadius: 6,
             background: agent.heartbeat === "online" ? "#22c55e20" : "#ef444420",
             color: agent.heartbeat === "online" ? "#22c55e" : "#ef4444",
-            fontWeight: 600, fontSize: 13,
+            fontWeight: 600, fontSize: 12,
           }}>
             {agent.heartbeat === "online" ? "🟢 Online" : "🔴 Offline"}
           </div>
@@ -397,28 +397,28 @@ function AgentDetailPanel({ agent, onClose, theme }) {
 
         {/* Current Task */}
         <div style={{ background: "rgba(0,0,0,0.1)", padding: 16, borderRadius: 8, gridColumn: "span 2" }}>
-          <div style={{ color: t.textMuted, fontSize: 11, marginBottom: 6 }}>Current Task</div>
+          <div style={{ color: t.textMuted, fontSize: 12, marginBottom: 6 }}>Current Task</div>
           <div style={{ color: t.text, fontSize: 14 }}>{agent.task || "—"}</div>
         </div>
 
         {/* Task Detail */}
         <div style={{ background: "rgba(0,0,0,0.1)", padding: 16, borderRadius: 8, gridColumn: "span 2" }}>
-          <div style={{ color: t.textMuted, fontSize: 11, marginBottom: 6 }}>Task Detail</div>
-          <div style={{ color: t.textMuted, fontSize: 13, lineHeight: 1.5 }}>{agent.output || "—"}</div>
+          <div style={{ color: t.textMuted, fontSize: 12, marginBottom: 6 }}>Task Detail</div>
+          <div style={{ color: t.textMuted, fontSize: 12, lineHeight: 1.5 }}>{agent.output || "—"}</div>
         </div>
 
         {/* Token Usage */}
         <div style={{ background: "rgba(0,0,0,0.1)", padding: 16, borderRadius: 8 }}>
-          <div style={{ color: t.textMuted, fontSize: 11, marginBottom: 6 }}>Token Usage</div>
-          <div style={{ color: t.text, fontSize: 14, fontFamily: "monospace" }}>
+          <div style={{ color: t.textMuted, fontSize: 12, marginBottom: 6 }}>Token Usage</div>
+          <div style={{ color: t.text, fontSize: 12, fontFamily: "monospace" }}>
             {(agent.tokens_used || 0).toLocaleString()}
           </div>
         </div>
 
         {/* Agent ID */}
         <div style={{ background: "rgba(0,0,0,0.1)", padding: 16, borderRadius: 8 }}>
-          <div style={{ color: t.textMuted, fontSize: 11, marginBottom: 6 }}>Agent ID</div>
-          <div style={{ color: t.text, fontSize: 14, fontFamily: "monospace" }}>{agent.agent_id}</div>
+          <div style={{ color: t.textMuted, fontSize: 12, marginBottom: 6 }}>Agent ID</div>
+          <div style={{ color: t.text, fontSize: 12, fontFamily: "monospace" }}>{agent.agent_id}</div>
         </div>
       </div>
     </div>
@@ -767,7 +767,7 @@ function SearchPage({ theme }) {
             border: `1px solid ${t.border}`,
             background: t.card,
             color: t.text,
-            fontSize: 14,
+            fontSize: 12,
           }}
         />
       </div>
@@ -791,7 +791,7 @@ function SearchPage({ theme }) {
                 <span style={{ color: t.border }}>|</span>
                 <span style={{ fontWeight: 500, color: t.text }}>{result.session}</span>
               </div>
-              <div style={{ fontSize: 13, color: t.textMuted, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.5 }}>
                 {result.content}
               </div>
             </div>
@@ -999,6 +999,9 @@ function DebugProxyPage({ theme }) {
   const [activeTab, setActiveTab] = React.useState('system');
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
+  const [dividerPos, setDividerPos] = React.useState(50); // percentage
+  const dividerRef = React.useRef(null);
+  const isDragging = React.useRef(false);
 
   // Fetch status
   const fetchStatus = async () => {
@@ -1056,6 +1059,25 @@ function DebugProxyPage({ theme }) {
     }
   };
 
+  // Divider drag handlers
+  const handleMouseDown = () => { isDragging.current = true; };
+  const handleMouseUp = () => { isDragging.current = false; };
+  const handleMouseMove = (e) => {
+    if (!isDragging.current || !dividerRef.current) return;
+    const container = dividerRef.current.parentElement;
+    const rect = container.getBoundingClientRect();
+    const percent = ((e.clientX - rect.left) / rect.width) * 100;
+    setDividerPos(Math.min(Math.max(percent, 20), 80));
+  };
+  React.useEffect(() => {
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
   // Initial load
   React.useEffect(() => {
     fetchStatus();
@@ -1110,243 +1132,203 @@ function DebugProxyPage({ theme }) {
     return '#ef4444';
   };
 
+  // Full width and height, no margins
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 16, overflow: 'hidden' }}>
-      {/* Proxy Status Panel */}
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: 12, width: '100%', boxSizing: 'border-box' }}>
+      {/* 1. Status Panel - Top - Horizontal layout */}
       <div style={{ 
         background: t.card, 
         border: `1px solid ${t.border}`, 
-        borderRadius: 12, 
-        padding: 16 
+        borderRadius: 8, 
+        padding: '8px 12px',
+        marginBottom: 8,
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 16,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>PROXY STATUS</span>
-            {status?.running ? (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#22c55e', fontSize: 13 }}>
-                <Pulse color="#22c55e" active={true} /> Running on :{status.port}
-              </span>
-            ) : (
-              <span style={{ color: '#64748b', fontSize: 13 }}>● Stopped</span>
-            )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: t.text }}>PROXY</span>
+          {status?.running ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#22c55e', fontSize: 12 }}>
+                :{status.port}
+            </span>
+          ) : (
+            <span style={{ color: '#64748b', fontSize: 12 }}>Stopped</span>
+          )}
+        </div>
+        {status?.running && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, color: t.textMuted, fontSize: 12 }}>
+            <span>C: {status.totalCalls}</span>
+            <span>{formatUptime(status.uptimeSeconds)}</span>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+        )}
+        <div style={{ display: 'flex', gap: 4 }}>
             {status?.running ? (
               <button onClick={stopProxy} style={{
-                background: '#dc2626', color: 'white', border: 'none', padding: '6px 14px',
-                borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 500,
-              }}>⏹ Stop Proxy</button>
+                background: '#dc2626', color: 'white', border: 'none', padding: '4px 8px',
+                borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 500,
+              }}>⏹</button>
             ) : (
               <button onClick={startProxy} style={{
-                background: '#22c55e', color: 'white', border: 'none', padding: '6px 14px',
-                borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 500,
-              }}>▶ Start Proxy</button>
+                background: '#22c55e', color: 'white', border: 'none', padding: '4px 8px',
+                borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 500,
+              }}>▶</button>
             )}
             <button onClick={() => { fetchStatus(); fetchCaptures(); }} style={{
               background: 'transparent', color: t.textMuted, border: `1px solid ${t.border}`,
-              padding: '6px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 12,
-            }}>🔄 Refresh</button>
-          </div>
-        </div>
-        
-        {status?.running && (
-          <div style={{ display: 'flex', gap: 24, color: t.textMuted, fontSize: 12 }}>
-            <span>Calls: <strong style={{ color: t.text }}>{status.totalCalls}</strong></span>
-            <span>Uptime: <strong style={{ color: t.text }}>{formatUptime(status.uptimeSeconds)}</strong></span>
-          </div>
-        )}
-
-        {/* Emergency Recovery */}
-        <div style={{ 
-          marginTop: 12, 
-          padding: 10, 
-          background: 'rgba(234, 179, 8, 0.1)', 
-          border: '1px solid rgba(234, 179, 8, 0.3)', 
-          borderRadius: 8,
-          fontSize: 11,
-          color: '#eab308'
-        }}>
-          <strong>⚠️ Emergency Recovery:</strong> If issues occur, run: <code style={{ background: 'rgba(0,0,0,0.3)', padding: '2px 6px', borderRadius: 4 }}>bash fix-proxy.sh stop</code>
+              padding: '4px 8px', borderRadius: 4, cursor: 'pointer', fontSize: 12,
+            }}>🔄</button>
         </div>
       </div>
 
-      {/* API Calls List */}
-      <div style={{ flex: 1, background: t.card, border: `1px solid ${t.border}`, borderRadius: 12, padding: 16, overflow: 'auto' }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: t.text, marginBottom: 12 }}>API CALLS</div>
-        
-        {captures.length === 0 ? (
-          <div style={{ color: t.textMuted, fontSize: 13, textAlign: 'center', padding: 24 }}>
-            {status?.running ? 'No captures yet. Send a message to OpenClaw.' : 'Start the proxy to capture LLM requests.'}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {captures.map((call) => (
-              <div key={call.id} onClick={() => { setSelectedCapture(call.id); fetchCaptureDetail(call.id); }} style={{
-                background: selectedCapture === call.id ? t.bgSecondary : 'rgba(0,0,0,0.2)',
-                border: `1px solid ${selectedCapture === call.id ? t.accent : t.border}`,
-                borderRadius: 8,
-                padding: '10px 14px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontFamily: 'monospace', fontSize: 12, color: t.textMuted }}>#{call.id}</span>
-                  <span style={{ fontSize: 12, color: t.textMuted }}>
-                    {new Date(call.timestamp).toLocaleTimeString()}
-                  </span>
-                  <span style={{ 
-                    fontSize: 11, 
-                    fontWeight: 600, 
-                    color: getStatusColor(call.status),
-                    background: `${getStatusColor(call.status)}20`,
-                    padding: '2px 8px',
-                    borderRadius: 4,
-                  }}>{call.status}</span>
-                  <span style={{ fontSize: 11, color: t.textMuted }}>{call.latency_ms}ms</span>
-                </div>
-                <div style={{ fontSize: 11, color: t.textMuted }}>
-                  {call.tokens?.input?.toLocaleString()} → {call.tokens?.output?.toLocaleString()} tok
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Capture Detail Panel */}
-      {selectedCapture && captureDetail && (
-        <div style={{ 
-          flex: 1, 
-          background: t.card, 
-          border: `1px solid ${t.border}`, 
-          borderRadius: 12, 
-          padding: 16, 
-          overflow: 'auto',
-          minHeight: 300,
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: t.text }}>
-              #{captureDetail.id} - {new Date(captureDetail.timestamp).toLocaleString()}
-            </span>
-            <button onClick={() => { setSelectedCapture(null); setCaptureDetail(null); }} style={{
-              background: 'transparent', color: t.textMuted, border: 'none', cursor: 'pointer', fontSize: 16,
-            }}>✕</button>
-          </div>
-
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-            {['system', 'messages', 'tools', 'raw'].map(tab => (
-              <button key={tab} onClick={() => setActiveTab(tab)} style={{
-                padding: '6px 12px',
-                borderRadius: 6,
-                border: 'none',
-                background: activeTab === tab ? t.accent : 'transparent',
-                color: activeTab === tab ? 'white' : t.textMuted,
-                cursor: 'pointer',
-                fontSize: 12,
-                fontWeight: 500,
-                textTransform: 'uppercase',
-              }}>
-                {tab === 'messages' ? `Messages (${captureDetail.request?.body?.messages?.length || 0})` : 
-                 tab === 'tools' ? `Tools (${captureDetail.request?.body?.tools?.length || 0})` : tab}
-              </button>
-            ))}
-          </div>
-
-          {/* Tab Content */}
-          <div style={{ 
-            background: '#0d1117', 
-            borderRadius: 8, 
-            padding: 12, 
-            fontFamily: 'JetBrains Mono, monospace', 
-            fontSize: 11, 
-            overflow: 'auto',
-            maxHeight: 400,
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-          }}>
-            {activeTab === 'system' && (
-              <div style={{ color: '#e2e8f0' }}>
-                {captureDetail.request?.body?.system || '(no system prompt)'}
-              </div>
-            )}
-            
-            {activeTab === 'messages' && (
-              <div style={{ color: '#e2e8f0' }}>
-                {captureDetail.request?.body?.messages?.map((msg, i) => (
-                  <div key={i} style={{ marginBottom: 12, borderBottom: '1px solid #30363d', paddingBottom: 8 }}>
-                    <span style={{ color: msg.role === 'user' ? '#58a6ff' : '#f0883e', fontWeight: 600 }}>
-                      {msg.role}
-                    </span>
-                    <div style={{ marginTop: 4, color: '#c9d1d9' }}>
-                      {extractContent(msg.content)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {activeTab === 'tools' && (
-              <div style={{ color: '#e2e8f0' }}>
-                {captureDetail.request?.body?.tools?.map((tool, i) => (
-                  <div key={i} style={{ marginBottom: 12, borderBottom: '1px solid #30363d', paddingBottom: 8 }}>
-                    <span style={{ color: '#7ee787', fontWeight: 600 }}>▶ {tool.name}</span>
-                    <div style={{ color: '#8b949e', marginTop: 4 }}>{tool.description}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {activeTab === 'raw' && (
-              <div style={{ color: '#e2e8f0' }}>
-                {JSON.stringify(captureDetail.request?.body, null, 2)}
-              </div>
-            )}
-          </div>
-
-          {/* Response Section */}
-          <div style={{ marginTop: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: t.text, marginBottom: 8 }}>RESPONSE</div>
-            <div style={{ 
-              background: '#0d1117', 
-              borderRadius: 8, 
-              padding: 12, 
-              fontFamily: 'JetBrains Mono, monospace', 
-              fontSize: 11,
-            }}>
-              <div style={{ color: '#c9d1d9', marginBottom: 8 }}>
-                {captureDetail.response?.body?.assistant_text || '(no text)'}
-              </div>
-              <div style={{ color: '#8b949e', fontSize: 10, marginTop: 8, borderTop: '1px solid #30363d', paddingTop: 8 }}>
-                usage: input={captureDetail.tokens?.input} output={captureDetail.tokens?.output}
-              </div>
+      {/* 2 & 3: Calls List + Detail - Side by Side with Resizable Divider */}
+      <div ref={dividerRef} style={{ flex: 1, display: 'flex', gap: 4, overflow: 'hidden' }}>
+        {/* 2. API Calls List - auto-fit columns */}
+        <div style={{ width: `${dividerPos}%`, minWidth: 200, background: t.card, border: `1px solid ${t.border}`, borderRadius: 8, padding: 6, overflow: 'auto' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: t.text, marginBottom: 4 }}>API CALLS</div>
+          {captures.length === 0 ? (
+            <div style={{ color: t.textMuted, fontSize: 12, textAlign: 'center', padding: 8 }}>
+              {status?.running ? 'No captures' : 'Start proxy'}
             </div>
-          </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {captures.map((call) => (
+                <div key={call.id} onClick={() => { setSelectedCapture(call.id); fetchCaptureDetail(call.id); }} style={{
+                  background: selectedCapture === call.id ? t.bgSecondary : 'rgba(0,0,0,0.2)',
+                  border: `1px solid ${selectedCapture === call.id ? t.accent : t.border}`,
+                  borderRadius: 3,
+                  padding: '3px 6px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 11,
+                  whiteSpace: 'nowrap',
+                }}>
+                  <span style={{ color: t.textMuted, minWidth: 24 }}>#{call.id}</span>
+                  <span style={{ color: t.textMuted, minWidth: 70 }}>{new Date(call.timestamp).toLocaleTimeString()}</span>
+                  <span style={{ color: getStatusColor(call.status), fontWeight: 600, minWidth: 28 }}>{call.status}</span>
+                  <span style={{ color: t.textMuted, minWidth: 45 }}>{call.latency_ms}ms</span>
+                  <span style={{ color: t.textMuted }}>{call.tokens?.input}→{call.tokens?.output}</span>
+                </div>
+              ))}
+
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Resizable Divider */}
+        <div 
+          onMouseDown={handleMouseDown}
+          style={{ 
+            width: 6, 
+            cursor: 'col-resize', 
+            background: t.border, 
+            borderRadius: 3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div style={{ width: 2, height: 20, background: t.textMuted, borderRadius: 1, opacity: 0.5 }} />
+        </div>
+
+        {/* 3. Capture Detail */}
+        <div style={{ width: `${100 - dividerPos}%`, background: t.card, border: `1px solid ${t.border}`, borderRadius: 8, padding: 6, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {selectedCapture && captureDetail ? (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: t.text }}>#{captureDetail.id}</span>
+                <button onClick={() => { setSelectedCapture(null); setCaptureDetail(null); }} style={{
+                  background: 'transparent', color: t.textMuted, border: 'none', cursor: 'pointer', fontSize: 12,
+                }}>✕</button>
+              </div>
+              <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+                {['system', 'messages', 'tools', 'raw'].map(tab => (
+                  <button key={tab} onClick={() => setActiveTab(tab)} style={{
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    border: 'none',
+                    background: activeTab === tab ? t.accent : 'transparent',
+                    color: activeTab === tab ? 'white' : t.textMuted,
+                    cursor: 'pointer',
+                    fontSize: 12,
+                  }}>
+                    {tab === 'messages' ? `Msg(${captureDetail.request?.body?.messages?.length || 0})` : 
+                     tab === 'tools' ? `Tool(${captureDetail.request?.body?.tools?.length || 0})` : tab}
+                  </button>
+                ))}
+              </div>
+              <div style={{ background: '#0d1117', borderRadius: 4, padding: 8, fontSize: 12, fontFamily: 'monospace', overflow: 'auto', flex: 1 }}>
+                {activeTab === 'system' && (
+                  <div style={{ color: '#e2e8f0', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                    {Array.isArray(captureDetail.request?.body?.system) 
+                      ? captureDetail.request.body.system.map((block, i) => block.type === 'text' ? block.text : '').join('\n')
+                      : captureDetail.request?.body?.system || '(none)'}
+                  </div>
+                )}
+                {activeTab === 'messages' && (
+                  <div style={{ color: '#e2e8f0' }}>
+                    {captureDetail.request?.body?.messages?.slice(0, 10).map((msg, i) => (
+                      <div key={i} style={{ marginBottom: 5, paddingBottom: 4, borderBottom: '1px solid #30363d' }}>
+                        <span style={{ color: msg.role === 'user' ? '#58a6ff' : '#f0883e', fontWeight: 600 }}>{msg.role}</span>
+                        <div style={{ color: '#c9d1d9', marginTop: 2 }}>
+                          {Array.isArray(msg.content) ? msg.content.filter(b => b.type === 'text').map(b => b.text || '').join('\n') : msg.content}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {activeTab === 'tools' && (
+                  <div style={{ color: '#e2e8f0' }}>
+                    {captureDetail.request?.body?.tools?.slice(0, 5).map((tool, i) => (
+                      <div key={i} style={{ marginBottom: 5, paddingBottom: 4, borderBottom: '1px solid #30363d' }}>
+                        <span style={{ color: '#7ee787' }}>▶ {tool.name}</span>
+                        <div style={{ color: '#8b949e' }}>{tool.description}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {activeTab === 'raw' && (
+                  <div style={{ color: '#e2e8f0', whiteSpace: 'pre-wrap' }}>
+                    {JSON.stringify(captureDetail.request?.body, null, 2)}
+                  </div>
+                )}
+              </div>
+              <div style={{ marginTop: 8, fontSize: 12, color: t.textMuted }}>
+                {captureDetail.response?.body?.assistant_text?.slice(0, 200) || '(no response)'}...
+              </div>
+            </>
+          ) : (
+            <div style={{ color: t.textMuted, fontSize: 12, textAlign: 'center', padding: 20 }}>
+              Select a call to view
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-// Context Stream Inspector Page
 function ContextPage({ contextEvents, setContextEvents, recordingStatus, setRecordingStatus, recordingsList, setRecordingsList, theme }) {
   const t = themes[theme];
-  const [view, setView] = React.useState('live');
-  const [agents, setAgents] = React.useState({});
   const [selectedAgent, setSelectedAgent] = React.useState('');
   const [selectedSession, setSelectedSession] = React.useState('');
+  const [agents, setAgents] = React.useState({});
+  const [autoScroll, setAutoScroll] = React.useState(true);
+  const [view, setView] = React.useState('live');
   const [filters, setFilters] = React.useState({
     message: true,
     thinking: true,
+    tool_use: true,
     thinking_level_change: true,
     tool_use: true,
     custom: true,
     compaction: true,
     error: true,
   });
-  const [autoScroll, setAutoScroll] = React.useState(true);
   const eventListRef = React.useRef(null);
 
   // Auto-scroll to bottom when new events arrive
@@ -1374,32 +1356,19 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
       .catch(console.error);
   }, []);
 
-  // Load session events when selection changes + auto-refresh polling
+  // Load session events when selection changes
   React.useEffect(() => {
     if (!selectedAgent || !selectedSession) return;
-    
-    const fetchSession = () => {
-      fetch(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.events) {
-            setContextEvents(data.events.slice(-500));
-          }
-        })
-        .catch(console.error);
-    };
-    
-    // Initial fetch
-    fetchSession();
-    
-    // Poll every 3 seconds for updates
-    const interval = setInterval(fetchSession, 3000);
-    
-    // Notify server we're watching this session
+    fetch(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.events) {
+          setContextEvents(data.events.slice(-500));
+        }
+      })
+      .catch(console.error);
     fetch(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}/watch`, { method: 'POST' })
       .catch(console.error);
-    
-    return () => clearInterval(interval);
   }, [selectedAgent, selectedSession]);
 
   // Connect to SSE
@@ -1515,8 +1484,8 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
     if (type === 'message' && extractRole(event) === 'user') {
       return (
         <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: 8 }}>
-          <div style={{ maxWidth: '80%', padding: '10px 14px', borderRadius: 12, background: '#2d4a7a', color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', fontSize: 11, lineHeight: 1.5 }}>
-            <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 4 }}>👤 user {time}</div>
+          <div style={{ maxWidth: '80%', padding: '10px 14px', borderRadius: 12, background: '#2d4a7a', color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', fontSize: 12, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>👤 user {time}</div>
             <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{extractContent(event)}</div>
           </div>
         </div>
@@ -1527,8 +1496,8 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
       const usage = extractUsage(event);
       return (
         <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 8 }}>
-          <div style={{ maxWidth: '85%', padding: '10px 14px', borderRadius: 12, background: t.bgSecondary || '#1e2a3a', color: t.text, fontSize: 11, lineHeight: 1.5 }}>
-            <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 4, display: 'flex', gap: 8 }}>
+          <div style={{ maxWidth: '85%', padding: '10px 14px', borderRadius: 12, background: t.bgSecondary || '#1e2a3a', color: t.text, fontSize: 12, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 3, display: 'flex', gap: 8 }}>
               <span>🤖 assistant</span>
               <span>{time}</span>
               {usage && <span style={{ color: '#22c55e' }}>${usage.cost?.total || 0}</span>}
@@ -1541,7 +1510,7 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
     
     if (type === 'message' && event.data?.type === 'thinking') {
       return (
-        <div key={idx} style={{ padding: '6px 10px', marginBottom: 6, borderRadius: 6, background: 'rgba(100,100,100,0.2)', border: '1px dashed #666', fontSize: 10, color: '#9ca3af' }}>
+        <div key={idx} style={{ padding: '6px 10px', marginBottom: 5, borderRadius: 6, background: 'rgba(100,100,100,0.2)', border: '1px dashed #666', fontSize: 12, color: '#9ca3af' }}>
           💭 thinking {time}
         </div>
       );
@@ -1551,8 +1520,8 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
       const tool = event.data?.name || event.data?.tool || 'tool';
       const input = event.data?.input || '';
       return (
-        <div key={idx} style={{ padding: 8, marginBottom: 6, borderRadius: 6, background: '#1f2937', color: '#e5e7eb', fontSize: 11, fontFamily: "'JetBrains Mono', monospace" }}>
-          <div style={{ marginBottom: 4, color: '#fbbf24' }}>🔧 {tool} {time}</div>
+        <div key={idx} style={{ padding: 8, marginBottom: 5, borderRadius: 6, background: '#1f2937', color: '#e5e7eb', fontSize: 12, fontFamily: "'JetBrains Mono', monospace" }}>
+          <div style={{ marginBottom: 3, color: '#fbbf24' }}>🔧 {tool} {time}</div>
           <div style={{ color: '#9ca3af', whiteSpace: 'pre-wrap' }}>{typeof input === 'string' ? input : JSON.stringify(input, null, 2)}</div>
         </div>
       );
@@ -1560,7 +1529,7 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
     
     if (type === 'error') {
       return (
-        <div key={idx} style={{ padding: 10, marginBottom: 6, borderRadius: 6, background: '#7f1d1d', color: '#fecaca', fontSize: 11 }}>
+        <div key={idx} style={{ padding: 10, marginBottom: 5, borderRadius: 6, background: '#7f1d1d', color: '#fecaca', fontSize: 11 }}>
           ⚠️ ERROR {time}
           <div>{event.message || event.data?.message || 'Unknown error'}</div>
         </div>
@@ -1571,7 +1540,7 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
       const customType = event.customType || 'custom';
       const data = event.data || {};
       return (
-        <div key={idx} style={{ padding: 8, marginBottom: 6, borderRadius: 6, background: '#1e3a5f', color: '#93c5fd', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>
+        <div key={idx} style={{ padding: 8, marginBottom: 5, borderRadius: 6, background: '#1e3a5f', color: '#93c5fd', fontSize: 12, fontFamily: "'JetBrains Mono', monospace" }}>
           <div style={{ marginBottom: 4 }}>⚙️ {customType} {time}</div>
           {Object.keys(data).length > 0 && (
             <div style={{ color: '#9ca3af', whiteSpace: 'pre-wrap' }}>
@@ -1585,7 +1554,7 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
     if (type === 'compaction') {
       const summary = event.summary || '';
       return (
-        <div key={idx} style={{ padding: 8, marginBottom: 6, borderRadius: 6, background: '#3f2f2f', color: '#d4a574', fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}>
+        <div key={idx} style={{ padding: 8, marginBottom: 5, borderRadius: 6, background: '#3f2f2f', color: '#d4a574', fontSize: 12, fontFamily: "'JetBrains Mono', monospace" }}>
           <div style={{ marginBottom: 4 }}>🗜️ compaction {time}</div>
           {summary && (
             <div style={{ color: '#9ca3af', whiteSpace: 'pre-wrap', maxHeight: 200, overflow: 'auto' }}>
@@ -1598,14 +1567,14 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
     
     if (type === 'thinking_level_change') {
       return (
-        <div key={idx} style={{ padding: '6px 10px', marginBottom: 6, borderRadius: 6, background: 'rgba(100,100,100,0.2)', border: '1px dashed #666', fontSize: 10, color: '#9ca3af' }}>
+        <div key={idx} style={{ padding: '6px 10px', marginBottom: 5, borderRadius: 6, background: 'rgba(100,100,100,0.2)', border: '1px dashed #666', fontSize: 12, color: '#9ca3af' }}>
           💭 thinking_level_change: {event.thinkingLevel} {time}
         </div>
       );
     }
     
     return (
-      <div key={idx} style={{ padding: 6, marginBottom: 4, fontSize: 10, color: t.textMuted, fontFamily: 'monospace' }}>
+      <div key={idx} style={{ padding: 6, marginBottom: 3, fontSize: 12, color: t.textMuted, fontFamily: 'monospace' }}>
         [{type}] {time}
       </div>
     );
@@ -1620,7 +1589,7 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
             { id: 'live', label: '📡 Live' },
             { id: 'recordings', label: '📂 Recordings' },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setView(tab.id)} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: view === tab.id ? t.accent : 'transparent', color: view === tab.id ? 'white' : t.textMuted, cursor: 'pointer', fontSize: 11, fontWeight: 500 }}>
+            <button key={tab.id} onClick={() => setView(tab.id)} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: view === tab.id ? t.accent : 'transparent', color: view === tab.id ? 'white' : t.textMuted, cursor: 'pointer', fontSize: 12, fontWeight: 500 }}>
               {tab.label}
             </button>
           ))}
@@ -1636,7 +1605,7 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
                 ⏺ Record
               </button>
             )}
-            <span style={{ fontSize: 11, color: t.textMuted }}>{contextEvents.length} events</span>
+            <span style={{ fontSize: 12, color: t.textMuted }}>{contextEvents.length} events</span>
           </div>
         )}
       </div>
@@ -1646,14 +1615,14 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
           {/* Left Panel */}
           <div style={{ width: 200, borderRight: `1px solid ${t.border}`, padding: 12, background: t.bgSecondary || '#1a1a2e', overflowY: 'auto', fontSize: 11 }}>
             <div style={{ marginBottom: 12 }}>
-              <div style={{ color: t.textMuted, marginBottom: 4, fontWeight: 500 }}>AGENT</div>
+              <div style={{ color: t.textMuted, marginBottom: 3, fontWeight: 500 }}>AGENT</div>
               <select value={selectedAgent} onChange={e => { setSelectedAgent(e.target.value); const sessions = agents[e.target.value]; if (sessions?.length > 0) setSelectedSession(sessions[0].sessionId); }} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontSize: 11 }}>
                 {Object.keys(agents).map(agent => <option key={agent} value={agent}>{agent}</option>)}
               </select>
             </div>
             {selectedAgent && agents[selectedAgent] && (
               <div style={{ marginBottom: 12 }}>
-                <div style={{ color: t.textMuted, marginBottom: 4, fontWeight: 500 }}>SESSION</div>
+                <div style={{ color: t.textMuted, marginBottom: 3, fontWeight: 500 }}>SESSION</div>
                 <select value={selectedSession} onChange={e => setSelectedSession(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontSize: 11 }}>
                   {agents[selectedAgent].map(s => <option key={s.sessionId} value={s.sessionId}>{s.sessionId.slice(0, 12)}...</option>)}
                 </select>
@@ -1663,16 +1632,16 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
               <div style={{ marginBottom: 16, color: '#22c55e', fontSize: 10 }}>● Watching: {selectedAgent}/{selectedSession.slice(0, 8)}...</div>
             )}
             <div style={{ marginBottom: 8 }}>
-              <div style={{ color: t.textMuted, marginBottom: 6, fontWeight: 500 }}>FILTERS</div>
+              <div style={{ color: t.textMuted, marginBottom: 5, fontWeight: 500 }}>FILTERS</div>
               {Object.entries(filters).map(([key, val]) => (
-                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, color: t.text }}>
+                <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5, color: t.text }}>
                   <input type="checkbox" checked={val} onChange={e => setFilters(f => ({...f, [key]: e.target.checked}))} />
                   {key.replace('_', ' ')}
                 </label>
               ))}
             </div>
             <div>
-              <div style={{ color: t.textMuted, marginBottom: 6, fontWeight: 500 }}>AUTO-SCROLL</div>
+              <div style={{ color: t.textMuted, marginBottom: 5, fontWeight: 500 }}>AUTO-SCROLL</div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: t.text }}>
                 <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} />
                 Enabled
@@ -1691,14 +1660,14 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
         </div>
       ) : (
         <div style={{ flex: 1, padding: 16, overflowY: 'auto' }}>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>📂 Recordings</div>
+          <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 16 }}>📂 Recordings</div>
           {recordingsList.length === 0 ? (
             <div style={{ color: t.textMuted }}>No recordings yet</div>
           ) : (
             recordingsList.map(rec => (
-              <div key={rec.filename} style={{ padding: 12, marginBottom: 8, borderRadius: 8, background: t.bgSecondary, border: `1px solid ${t.border}` }}>
+              <div key={rec.filename} style={{ padding: 12, marginBottom: 5, borderRadius: 8, background: t.bgSecondary, border: `1px solid ${t.border}` }}>
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>{rec.name}</div>
-                <div style={{ fontSize: 11, color: t.textMuted }}>
+                <div style={{ fontSize: 12, color: t.textMuted }}>
                   {rec.started_at && new Date(rec.started_at).toLocaleString()}
                   {rec.duration_seconds && ` • ${Math.floor(rec.duration_seconds/60)}m ${rec.duration_seconds%60}s`}
                   {rec.event_count && ` • ${rec.event_count} events`}
@@ -1760,7 +1729,7 @@ function MemoryPage({ memoryData, selectedMemoryId, onSelectMemory, theme }) {
     <div style={{ display: 'flex', height: '100%', gap: 16 }}>
       {/* Memory List */}
       <div style={{ width: 280, flexShrink: 0, overflowY: 'auto', paddingRight: 8 }}>
-        <div style={{ color: t.textMuted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+        <div style={{ color: t.textMuted, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
           Memory Files ({memoryData?.memories?.length || 0})
         </div>
         
@@ -1772,7 +1741,7 @@ function MemoryPage({ memoryData, selectedMemoryId, onSelectMemory, theme }) {
               style={{ 
                 cursor: 'pointer',
                 fontSize: 12, fontWeight: 600, color: t.text, 
-                marginBottom: 4, padding: '6px 8px',
+                marginBottom: 3, padding: '6px 8px',
                 borderRadius: 6,
                 background: t.bgSecondary,
                 display: 'flex',
@@ -1781,7 +1750,7 @@ function MemoryPage({ memoryData, selectedMemoryId, onSelectMemory, theme }) {
               }}
             >
               <span>📁 {workspace}</span>
-              <span style={{ fontSize: 10, color: t.textMuted }}>
+              <span style={{ fontSize: 12, color: t.textMuted }}>
                 {expandedFolders[workspace] ? '▼' : '▶'}
               </span>
             </div>
@@ -1801,10 +1770,10 @@ function MemoryPage({ memoryData, selectedMemoryId, onSelectMemory, theme }) {
                   border: selectedMemoryId === mem.id ? `1px solid ${t.primary}` : 'none',
                 }}
               >
-                <div style={{ fontSize: 11, color: t.text, fontFamily: 'monospace' }}>
+                <div style={{ fontSize: 12, color: t.text, fontFamily: 'monospace' }}>
                   📄 {mem.filename}
                 </div>
-                <div style={{ fontSize: 9, color: t.textMuted, marginTop: 1 }}>
+                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 1 }}>
                   {(mem.size / 1024).toFixed(1)} KB
                 </div>
               </div>
@@ -1942,7 +1911,7 @@ function LogPage({ logData, selectedLogId, onSelectLog, theme }) {
     <div style={{ display: 'flex', height: '100%', gap: 16 }}>
       {/* Log List */}
       <div style={{ width: 280, flexShrink: 0, overflowY: 'auto', paddingRight: 8 }}>
-        <div style={{ color: t.textMuted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+        <div style={{ color: t.textMuted, fontSize: 12, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
           Log Files ({logData?.logs?.length || 0})
         </div>
         
@@ -1954,7 +1923,7 @@ function LogPage({ logData, selectedLogId, onSelectLog, theme }) {
               style={{ 
                 cursor: 'pointer',
                 fontSize: 12, fontWeight: 600, color: t.text, 
-                marginBottom: 4, padding: '6px 8px',
+                marginBottom: 3, padding: '6px 8px',
                 borderRadius: 6,
                 background: t.bgSecondary,
                 display: 'flex',
@@ -1963,7 +1932,7 @@ function LogPage({ logData, selectedLogId, onSelectLog, theme }) {
               }}
             >
               <span>📁 {category}</span>
-              <span style={{ fontSize: 10, color: t.textMuted }}>
+              <span style={{ fontSize: 12, color: t.textMuted }}>
                 {expandedFolders[category] ? '▼' : '▶'}
               </span>
             </div>
@@ -1983,10 +1952,10 @@ function LogPage({ logData, selectedLogId, onSelectLog, theme }) {
                   border: selectedLogId === log.id ? `1px solid ${t.primary}` : 'none',
                 }}
               >
-                <div style={{ fontSize: 11, color: t.text, fontFamily: 'monospace' }}>
+                <div style={{ fontSize: 12, color: t.text, fontFamily: 'monospace' }}>
                   📄 {log.name}
                 </div>
-                <div style={{ fontSize: 9, color: t.textMuted, marginTop: 1 }}>
+                <div style={{ fontSize: 12, color: t.textMuted, marginTop: 1 }}>
                   {(log.size / 1024).toFixed(1)} KB
                 </div>
               </div>
@@ -2002,7 +1971,7 @@ function LogPage({ logData, selectedLogId, onSelectLog, theme }) {
             <div style={{ color: t.textMuted }}>Loading...</div>
           ) : (
             <pre style={{ 
-              color: t.text, fontSize: 11, fontFamily: 'monospace', 
+              color: t.text, fontSize: 12, fontFamily: 'monospace', 
               whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0
             }}>
               {logContent}
@@ -2039,7 +2008,7 @@ function SessionsPage({ agents, searchQuery, onSearch, searchResults, theme }) {
             border: `1px solid ${t.border}`,
             background: t.bgSecondary,
             color: t.text,
-            fontSize: 14,
+            fontSize: 12,
             outline: 'none',
           }}
         />
@@ -2068,7 +2037,7 @@ function SessionsPage({ agents, searchQuery, onSearch, searchResults, theme }) {
                       {session.name}
                     </span>
                     <span style={{
-                      fontSize: 10,
+                      fontSize: 12,
                       padding: '2px 6px',
                       borderRadius: 4,
                       background: session.status === 'working' ? '#22c55e20' : '#374151',
@@ -2080,7 +2049,7 @@ function SessionsPage({ agents, searchQuery, onSearch, searchResults, theme }) {
                   <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>
                     {session.task || 'No task'}
                   </div>
-                  <div style={{ fontSize: 11, color: t.textMuted, fontFamily: 'monospace' }}>
+                  <div style={{ fontSize: 12, color: t.textMuted, fontFamily: 'monospace' }}>
                     {session.model}
                   </div>
                 </div>
@@ -2128,7 +2097,7 @@ function SessionsPage({ agents, searchQuery, onSearch, searchResults, theme }) {
                   {selectedSession.avatar || '🤖'}
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: t.textMuted }}>Agent</div>
+                  <div style={{ fontSize: 12, color: t.textMuted }}>Agent</div>
                   <div style={{ color: t.text, fontWeight: 600, fontSize: 16 }}>
                     {selectedSession.name}
                   </div>
@@ -2137,7 +2106,7 @@ function SessionsPage({ agents, searchQuery, onSearch, searchResults, theme }) {
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Status</div>
+                  <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>Status</div>
                   <span style={{
                     fontSize: 12,
                     padding: '4px 8px',
@@ -2150,7 +2119,7 @@ function SessionsPage({ agents, searchQuery, onSearch, searchResults, theme }) {
                 </div>
                 
                 <div>
-                  <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Heartbeat</div>
+                  <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>Heartbeat</div>
                   <span style={{
                     fontSize: 12,
                     padding: '4px 8px',
@@ -2164,27 +2133,27 @@ function SessionsPage({ agents, searchQuery, onSearch, searchResults, theme }) {
               </div>
               
               <div>
-                <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Role</div>
+                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>Role</div>
                 <div style={{ color: t.text }}>{selectedSession.role || 'Agent'}</div>
               </div>
               
               <div>
-                <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Model</div>
+                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>Model</div>
                 <div style={{ color: t.text, fontFamily: 'monospace', fontSize: 12 }}>{selectedSession.model}</div>
               </div>
               
               <div>
-                <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Tokens Used</div>
+                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>Tokens Used</div>
                 <div style={{ color: t.text, fontFamily: 'monospace' }}>{(selectedSession.tokens_used || 0).toLocaleString()}</div>
               </div>
               
               <div>
-                <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Current Task</div>
+                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>Current Task</div>
                 <div style={{ color: t.text, fontSize: 13 }}>{selectedSession.task || '—'}</div>
               </div>
               
               <div>
-                <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Output</div>
+                <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>Output</div>
                 <div style={{ 
                   color: t.textMuted, 
                   fontSize: 12, 
@@ -2201,7 +2170,7 @@ function SessionsPage({ agents, searchQuery, onSearch, searchResults, theme }) {
               
               {selectedSession.updated_at && (
                 <div>
-                  <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Last Updated</div>
+                  <div style={{ fontSize: 12, color: t.textMuted, marginBottom: 4 }}>Last Updated</div>
                   <div style={{ color: t.textMuted, fontSize: 12 }}>
                     {new Date(selectedSession.updated_at).toLocaleString()}
                   </div>
@@ -2439,7 +2408,7 @@ function AppContent() {
                 borderRadius: 6,
                 cursor: 'pointer',
                 color: currentPage === tab.id ? t.text : t.textMuted,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: currentPage === tab.id ? 600 : 400,
                 display: 'flex',
                 alignItems: 'center',
@@ -2492,7 +2461,7 @@ function AppContent() {
             gap: 4,
           }}
         >
-          �_proxy
+          🔌 Proxy
         </button>
         
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
@@ -2535,14 +2504,14 @@ function AppContent() {
                   color: t.text, fontSize: 16, outline: 'none',
                 }}
               />
-              <div style={{ marginTop: 8, fontSize: 11, color: t.textMuted }}>
+              <div style={{ marginTop: 8, fontSize: 12, color: t.textMuted }}>
                 Press <kbd style={{ background: t.bgSecondary, padding: '2px 6px', borderRadius: 4 }}>Esc</kbd> to close • <kbd style={{ background: t.bgSecondary, padding: '2px 6px', borderRadius: 4 }}>Enter</kbd> to select
               </div>
             </div>
             <div style={{ flex: 1, overflow: 'auto', padding: 8 }}>
               {cmdKResults.agents.length > 0 && (
                 <div>
-                  <div style={{ fontSize: 11, color: t.textMuted, padding: '8px 12px', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: 12, color: t.textMuted, padding: '8px 12px', textTransform: 'uppercase' }}>
                     Agents
                   </div>
                   {cmdKResults.agents.map(agent => (
@@ -2589,8 +2558,8 @@ function AppContent() {
           <>
             <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
               <div style={{ marginBottom: 20 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 6, color: t.text }}>Agent Overview</h1>
-                <p style={{ color: t.textMuted, fontSize: 13, margin: 0 }}>
+                <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, marginBottom: 5, color: t.text }}>Agent Overview</h1>
+                <p style={{ color: t.textMuted, fontSize: 12, margin: 0 }}>
                   Real-time status, tasks, and heartbeat for all OpenClaw Agents
                 </p>
               </div>
