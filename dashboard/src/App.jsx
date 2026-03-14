@@ -1039,12 +1039,12 @@ function DebugProxyPage({ theme }) {
     setLoading(false);
   };
 
-  // Start proxy mode (call fix-proxy.sh start)
+  // Start proxy mode (full flow)
   const startProxy = async () => {
     try {
       setError('');
       setLoading(true);
-      const res = await fetch(`${API_BASE}/api/debug-proxy/start`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/proxy-mode/start`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || 'Failed to start proxy mode');
@@ -1057,12 +1057,12 @@ function DebugProxyPage({ theme }) {
     }
   };
 
-  // Stop proxy mode (call fix-proxy.sh stop)
+  // Stop proxy mode (full flow)
   const stopProxy = async () => {
     try {
       setError('');
       setLoading(true);
-      const res = await fetch(`${API_BASE}/api/debug-proxy/stop`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/proxy-mode/stop`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || 'Failed to stop proxy mode');
