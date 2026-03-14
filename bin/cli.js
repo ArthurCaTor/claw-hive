@@ -99,11 +99,13 @@ program
   .argument('[sessionId]', 'Session ID to show')
   .option('-a, --agent <name>', 'Agent name (gets latest session)')
   .option('-n, --lines <number>', 'Number of recent messages to show', '5')
+  .option('-f, --follow', 'Follow mode - keep watching for new messages (Ctrl+C to exit)')
   .action((sessionId, options) => {
     const fs = require('fs');
     const path = require('path');
     const homeDir = process.env.HOME || '/home/arthur';
     const numLines = parseInt(options.lines) || 5;
+    const follow = options.follow || false;
     
     let targetSession = sessionId;
     
@@ -135,36 +137,86 @@ program
       process.exit(1);
     }
     
-    const content = fs.readFileSync(filepath, 'utf8');
-    const lines = content.trim().split('\n');
+    // Parse and format entries from content
+    const parseEntries = (content) => {
+      const entries = [];
+      const lines = content.trim().split('\n');
+      for (const line of lines) {
+        try {
+          const entry = JSON.parse(line);
+          const type = entry.type;
+          const ts = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : '';
+          
+          if (type === 'message' && entry.message) {
+            const role = entry.message.role || '?';
+            const msg = entry.message.content || [];
+            for (const block of msg) {
+              if (block.type === 'text') {
+                const text = block.text || '';
+                entries.push(`[${ts}] ${role}: ${text.substring(0, 200)}`);
+              }
+            }
+          }
+        } catch (e) {
+          // Skip invalid lines
+        }
+      }
+      return entries;
+    };
     
-    // Parse and format each line as readable messages
-    const entries = [];
-    for (const line of lines) {
-      try {
-        const entry = JSON.parse(line);
-        const type = entry.type;
-        const ts = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : '';
-        
-        if (type === 'message' && entry.message) {
-          const role = entry.message.role || '?';
-          const msg = entry.message.content || [];
-          for (const block of msg) {
-            if (block.type === 'text') {
-              const text = block.text || '';
-              entries.push(`[${ts}] ${role}: ${text.substring(0, 200)}`);
+    if (follow) {
+      // Follow mode - watch file for changes
+      console.log(`Following session: ${targetSession}`);
+      console.log(`File: ${filepath}`);
+      console.log('---');
+      console.log('(Press Ctrl+C to exit)');
+      console.log('');
+      
+      let lastSize = fs.statSync(filepath).size;
+      
+      // Show initial entries
+      const initialContent = fs.readFileSync(filepath, 'utf8');
+      const initialEntries = parseEntries(initialContent).slice(-numLines);
+      for (const e of initialEntries) {
+        console.log(e);
+      }
+      
+      // Watch for changes
+      const watcher = fs.watch(filepath, (eventType) => {
+        if (eventType === 'change') {
+          const newSize = fs.statSync(filepath).size;
+          if (newSize > lastSize) {
+            // Read new content
+            const fd = fs.openSync(filepath, 'r');
+            const buffer = Buffer.alloc(newSize - lastSize);
+            fs.readSync(fd, buffer, 0, newSize - lastSize, lastSize);
+            fs.closeSync(fd);
+            const newContent = buffer.toString('utf8');
+            lastSize = newSize;
+            
+            // Parse and display new entries
+            const newEntries = parseEntries(newContent);
+            for (const e of newEntries) {
+              console.log(e);
             }
           }
         }
-      } catch (e) {
-        // Skip invalid lines
+      });
+      
+      // Handle Ctrl+C
+      process.on('SIGINT', () => {
+        console.log('\n---');
+        console.log('Stopped following.');
+        watcher.close();
+        process.exit(0);
+      });
+    } else {
+      // Normal mode - just show last N entries
+      const content = fs.readFileSync(filepath, 'utf8');
+      const entries = parseEntries(content).slice(-numLines);
+      for (const e of entries) {
+        console.log(e);
       }
-    }
-    
-    // Show last N entries
-    const lastEntries = entries.slice(-numLines);
-    for (const e of lastEntries) {
-      console.log(e);
     }
   });
 
