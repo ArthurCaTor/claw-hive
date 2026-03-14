@@ -73,7 +73,8 @@ program
     filtered.sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
     
     // Limit
-    filtered = filtered.slice(0, parseInt(options.limit));
+    const limit = parseInt(options.limit, 10);
+    filtered = filtered.slice(0, isNaN(limit) ? 20 : limit);
     
     // Format output
     console.log('\n📋 Historical Sessions\n');
@@ -104,7 +105,8 @@ program
     const fs = require('fs');
     const path = require('path');
     const homeDir = process.env.HOME || '/home/arthur';
-    const numLines = parseInt(options.lines) || 5;
+    const linesVal = parseInt(options.lines, 10);
+    const numLines = isNaN(linesVal) ? 5 : linesVal;
     const follow = options.follow || false;
     
     let targetSession = sessionId;
