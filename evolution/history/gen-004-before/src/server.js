@@ -1387,10 +1387,8 @@ app.get('/api/sessions/search', (req, res) => {
 // Debug Proxy Routes (must be BEFORE SPA fallback)
 const debugProxyRoutes = require('./routes/debug-proxy-routes');
 const healthRoutes = require('./routes/health-routes');
-const agentRoutes = require('./routes/agent-routes');
 app.use(debugProxyRoutes);
 healthRoutes(app);
-agentRoutes(app, { agentStore, findConfigPath });
 
 // Serve index.html for all other routes
 app.get('*', (req, res) => {
