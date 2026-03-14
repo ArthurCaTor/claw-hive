@@ -118,7 +118,18 @@ router.get('/api/debug-proxy/history', (req, res) => {
 
 // Read history file
 router.get('/api/debug-proxy/history/:filename', (req, res) => {
-  const filepath = path.join(CAPTURES_DIR, req.params.filename);
+  const { filename } = req.params;
+  
+  // Security: prevent path traversal
+  if (filename.includes('..') || filename.includes('~') || filename.includes('/')) {
+    return res.status(400).json({ error: 'Invalid filename' });
+  }
+  
+  const filepath = path.join(CAPTURES_DIR, filename);
+  if (!filepath.startsWith(CAPTURES_DIR)) {
+    return res.status(400).json({ error: 'Invalid path' });
+  }
+  
   if (!fs.existsSync(filepath)) {
     return res.status(404).json({ error: 'Not found' });
   }

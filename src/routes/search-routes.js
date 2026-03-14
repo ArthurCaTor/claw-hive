@@ -10,6 +10,11 @@ module.exports = function(app, { agentStore }) {
     const { q } = req.query;
     const query = (q || '').toLowerCase();
     
+    // Input validation: limit query length
+    if (query.length > 200) {
+      return res.status(400).json({ error: 'Query too long (max 200 characters)' });
+    }
+    
     if (!query) {
       res.json({ query: '', results: { agents: [], memory: [], files: [] } });
       return;
