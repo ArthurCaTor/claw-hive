@@ -1,2 +1,3 @@
 
 {"cycle":2,"area":"bug-detection","file":"src/routes/session-search-routes.js","type":"BUG-MEDIUM","description":"Accessing agent properties without null checks could crash","fix":"Added defensive null checks and default values","lines_changed":17,"test_passed":true,"committed":true,"commit_hash":"f6c18c9"}
+{"cycle":3,"area":"bug-detection","file":"src/routes/log-routes.js","type":"BUG-HIGH","description":"Path traversal vulnerability in /api/logs/* endpoint","fix":"Added validation to reject paths with .. or ~","lines_changed":7,"test_passed":true,"committed":true,"commit_hash":"b4de971"}

@@ -9,6 +9,11 @@ module.exports = function(app) {
   app.get('/api/files', (req, res) => {
     const { path: reqPath, workspace } = req.query;
     
+    // Security: prevent path traversal
+    if (reqPath && (reqPath.includes('..') || reqPath.includes('~'))) {
+      return res.status(400).json({ error: 'Invalid path' });
+    }
+    
     const workspacePaths = {
       nova: path.join(os.homedir(), '.openclaw', 'workspace-nova'),
       coder: path.join(os.homedir(), '.openclaw', 'workspace-coder'),
@@ -18,6 +23,11 @@ module.exports = function(app) {
     
     const basePath = workspacePaths[workspace] || workspacePaths.coder;
     const targetPath = reqPath ? path.join(basePath, reqPath) : basePath;
+    
+    // Security: ensure path is within workspace
+    if (!targetPath.startsWith(basePath)) {
+      return res.status(400).json({ error: 'Path outside workspace' });
+    }
     
     if (!fs.existsSync(targetPath)) {
       res.json({ error: 'Path not found' });
@@ -48,6 +58,11 @@ module.exports = function(app) {
   app.get('/api/files/content', (req, res) => {
     const { workspace, path: filePath } = req.query;
     
+    // Security: prevent path traversal
+    if (filePath && (filePath.includes('..') || filePath.includes('~'))) {
+      return res.status(400).json({ error: 'Invalid path' });
+    }
+    
     const workspacePaths = {
       nova: path.join(os.homedir(), '.openclaw', 'workspace-nova'),
       coder: path.join(os.homedir(), '.openclaw', 'workspace-coder'),
@@ -57,6 +72,11 @@ module.exports = function(app) {
     
     const basePath = workspacePaths[workspace] || workspacePaths.coder;
     const fullPath = path.join(basePath, filePath);
+    
+    // Security: ensure path is within workspace
+    if (!fullPath.startsWith(basePath)) {
+      return res.status(400).json({ error: 'Path outside workspace' });
+    }
     
     if (!fs.existsSync(fullPath)) {
       res.status(404).json({ error: 'File not found' });
