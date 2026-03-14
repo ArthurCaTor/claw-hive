@@ -9,7 +9,7 @@ const { llmProxy } = require('../services/llm-proxy');
 const router = express.Router();
 const CAPTURES_DIR = path.join(process.cwd(), 'captures');
 const HOMEDIR = process.env.HOME || '/home/arthur';
-const SCRIPT_PATH = path.join(HOMEDIR, 'fix-proxy.sh');
+const SCRIPT_PATH = path.join(process.cwd(), 'fix-proxy.sh');
 
 // Proxy status
 router.get('/api/debug-proxy/status', (req, res) => {
