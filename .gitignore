@@ -3,3 +3,4 @@ dashboard/node_modules/
 *.log
 .env
 .DS_Store
+captures/

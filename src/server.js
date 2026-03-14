@@ -1392,6 +1392,10 @@ app.get('/api/sessions/search', (req, res) => {
   });
 });
 
+// Debug Proxy Routes (must be BEFORE SPA fallback)
+const debugProxyRoutes = require('./routes/debug-proxy-routes');
+app.use(debugProxyRoutes);
+
 // Serve index.html for all other routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
