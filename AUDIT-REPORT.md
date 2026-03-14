@@ -1,24 +1,25 @@
 # ClawHive Audit Report
 
 ## Executive Summary
-- Total cycles: 10 (partial run)
-- Bugs found: 8
-- Bugs fixed: 8
-- Security vulnerabilities fixed: 5 (HIGH)
-- Code improvements: 3
+- Total cycles: 20 (partial run)
+- Bugs found: 9
+- Bugs fixed: 9
+- Security vulnerabilities fixed: 6 (HIGH)
+- Code improvements: 11
 - Tests: All passing (13/13)
 
 ## Section 1: Bugs Found and Fixed
 
 ### Critical Bugs (None in this audit run)
 
-### High Priority Bugs (5 fixed)
+### High Priority Bugs (6 fixed)
 | Cycle | File | Issue | Fix |
 |-------|------|-------|-----|
 | 3 | log-routes.js | Path traversal in /api/logs/* | Added validation for .. and ~ |
 | 4 | files-routes.js | Path traversal in /api/files | Added validation and boundary checks |
 | 8 | recording-routes.js | Path traversal in recordings | Added validation and boundary checks |
 | 9 | system-routes.js | Path traversal in sessions | Added parameter validation |
+| 11 | memory-routes.js | Path traversal in memory | Added validation and ID format check |
 
 ### Medium Priority Bugs (2 fixed)
 | Cycle | File | Issue | Fix |
@@ -88,9 +89,10 @@ CLI (bin/cli.js) has these commands:
 | 7 | f5cd7e1 | audit-7: add proper radix and NaN checks in CLI parseInt |
 | 8 | 3f424bd | audit-8: add path traversal protection to recording-routes |
 | 9 | 404e132 | audit-9: add path validation to session endpoints |
+| 11 | 4c1747a | audit-11: add path validation to memory-routes |
 
 ---
 
 **Report Generated:** March 14, 2026  
-**Audit Status:** Partial (10/100 cycles completed)  
+**Audit Status:** Partial (20/100 cycles completed)  
 **All Tests:** ✅ Passing
