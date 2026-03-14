@@ -27,7 +27,7 @@ class RecordingStore {
     this.ensureDir();
     const files = fs.readdirSync(RECORDINGS_DIR).filter(f => f.endsWith('.json'));
     if (files.length === 0) return '001';
-    const nums = files.map(f => parseInt(f.match(/recording-(\d+)/)?.[1] || '0'));
+    const nums = files.map(f => parseInt(f.match(/recording-(\d+)/)?.[1] || '0', 10));
     return String(Math.max(...nums) + 1).padStart(3, '0');
   }
 
@@ -41,7 +41,7 @@ class RecordingStore {
     this.tokenTotal = 0;
     this.sessionIds.clear();
     this.recordingId = this.getNextId();
-    this.recordingName = name || `Recording #${parseInt(this.recordingId)}`;
+    this.recordingName = name || `Recording #${parseInt(this.recordingId, 10)}`;
 
     const pad = (n) => String(n).padStart(2, '0');
     const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}-${pad(now.getHours())}h${pad(now.getMinutes())}m`;
