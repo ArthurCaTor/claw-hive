@@ -90,8 +90,19 @@ module.exports = function(app, { recordingStore }) {
   // Update recording notes
   app.patch('/api/recordings/:filename', (req, res) => {
     const { filename } = req.params;
-    const { notes } = req.body;
-    const filepath = path.join(__dirname, '..', 'recordings', filename);
+    const { notes } = req.body || {};
+    
+    // Security: prevent path traversal
+    if (filename.includes('..') || filename.includes('~')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    
+    const recordingsDir = path.join(__dirname, '..', 'recordings');
+    const filepath = path.join(recordingsDir, filename);
+    
+    if (!filepath.startsWith(recordingsDir)) {
+      return res.status(400).json({ error: 'Invalid path' });
+    }
     
     if (!fs.existsSync(filepath)) {
       res.status(404).json({ error: 'Recording not found' });
@@ -112,7 +123,18 @@ module.exports = function(app, { recordingStore }) {
   // Delete recording
   app.delete('/api/recordings/:filename', (req, res) => {
     const { filename } = req.params;
-    const filepath = path.join(__dirname, '..', 'recordings', filename);
+    
+    // Security: prevent path traversal
+    if (filename.includes('..') || filename.includes('~')) {
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+    
+    const recordingsDir = path.join(__dirname, '..', 'recordings');
+    const filepath = path.join(recordingsDir, filename);
+    
+    if (!filepath.startsWith(recordingsDir)) {
+      return res.status(400).json({ error: 'Invalid path' });
+    }
     
     if (!fs.existsSync(filepath)) {
       res.status(404).json({ error: 'Recording not found' });
