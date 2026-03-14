@@ -11,7 +11,9 @@
     "dev:server": "node src/server.js",
     "dev:ui": "cd dashboard && npx vite",
     "build": "cd dashboard && npx vite build --outDir ../public",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "node tests/smoke.test.js",
+    "evolve": "node evolution/runner.js"
   },
   "keywords": [
     "openclaw",
