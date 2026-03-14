@@ -98,10 +98,12 @@ program
   .description('Show session output')
   .argument('[sessionId]', 'Session ID to show')
   .option('-a, --agent <name>', 'Agent name (gets latest session)')
+  .option('-n, --lines <number>', 'Number of recent messages to show', '5')
   .action((sessionId, options) => {
     const fs = require('fs');
     const path = require('path');
     const homeDir = process.env.HOME || '/home/arthur';
+    const numLines = parseInt(options.lines) || 5;
     
     let targetSession = sessionId;
     
@@ -133,15 +135,12 @@ program
       process.exit(1);
     }
     
-    console.log('Session:', targetSession);
-    console.log('File:', filepath);
-    console.log('---');
-    
     const content = fs.readFileSync(filepath, 'utf8');
     const lines = content.trim().split('\n');
     
     // Parse and format each line as readable messages
-    for (const line of lines.slice(-50)) { // Last 50 entries
+    const entries = [];
+    for (const line of lines) {
       try {
         const entry = JSON.parse(line);
         const type = entry.type;
@@ -153,17 +152,19 @@ program
           for (const block of msg) {
             if (block.type === 'text') {
               const text = block.text || '';
-              console.log(`[${ts}] ${role}: ${text.substring(0, 200)}`);
+              entries.push(`[${ts}] ${role}: ${text.substring(0, 200)}`);
             }
           }
-        } else if (type === 'thinking') {
-          console.log(`[${ts}] thinking: ${entry.thinking?.substring(0, 100) || '(hidden)'}...`);
-        } else if (type === 'tool_use') {
-          console.log(`[${ts}] 🔧 tool: ${entry.name || entry.tool}`);
         }
       } catch (e) {
         // Skip invalid lines
       }
+    }
+    
+    // Show last N entries
+    const lastEntries = entries.slice(-numLines);
+    for (const e of lastEntries) {
+      console.log(e);
     }
   });
 
