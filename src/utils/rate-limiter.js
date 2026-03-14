@@ -3,13 +3,23 @@ const rateLimits = new Map();
 
 const DEFAULT_WINDOW_MS = 60000; // 1 minute
 const DEFAULT_MAX_REQUESTS = 100;
+const CLEANUP_INTERVAL_MS = 60000;
+
+// Store references to cleanup intervals
+const cleanupIntervals = new Map();
 
 const createRateLimiter = (options = {}) => {
   const windowMs = options.windowMs || DEFAULT_WINDOW_MS;
   const maxRequests = options.maxRequests || DEFAULT_MAX_REQUESTS;
   
   return (req, res, next) => {
-    const key = req.ip || req.connection.remoteAddress || 'unknown';
+    // Validate IP to prevent memory issues
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    if (!ip || ip.length > 45) {
+      return res.status(400).json({ error: 'Invalid request' });
+    }
+    
+    const key = ip;
     const now = Date.now();
     
     let record = rateLimits.get(key);
@@ -37,13 +47,24 @@ const createRateLimiter = (options = {}) => {
 };
 
 // Cleanup old entries periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, record] of rateLimits) {
-    if (now - record.windowStart > DEFAULT_WINDOW_MS * 2) {
-      rateLimits.delete(key);
-    }
+const startCleanup = (windowMs) => {
+  const interval = Math.max(windowMs * 2, CLEANUP_INTERVAL_MS);
+  
+  if (!cleanupIntervals.has(windowMs)) {
+    const id = setInterval(() => {
+      const now = Date.now();
+      for (const [key, record] of rateLimits) {
+        if (now - record.windowStart > windowMs * 2) {
+          rateLimits.delete(key);
+        }
+      }
+    }, interval);
+    
+    cleanupIntervals.set(windowMs, id);
   }
-}, 60000);
+};
+
+// Start default cleanup
+startCleanup(DEFAULT_WINDOW_MS);
 
 module.exports = { createRateLimiter };
