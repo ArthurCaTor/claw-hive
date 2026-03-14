@@ -7,20 +7,24 @@ module.exports = function(app, { agentStore }) {
     const { q } = req.query;
     const query = (q || '').toLowerCase();
     
-    // Get all sessions from agentStore
+    // Get all sessions from agentStore with defensive coding
+    if (!agentStore) {
+      return res.json({ query, total: 0, sessions: [], error: 'agentStore not initialized' });
+    }
+    
     const sessions = Object.values(agentStore).map(agent => ({
-      agent_id: agent.agent_id,
-      name: agent.name,
-      role: agent.role,
-      avatar: agent.avatar,
-      color: agent.color,
-      status: agent.status,
-      task: agent.task,
-      output: agent.output,
-      model: agent.model,
-      heartbeat: agent.heartbeat,
-      tokens_used: agent.tokens_used,
-      updated_at: agent.updated_at,
+      agent_id: agent?.agent_id || 'unknown',
+      name: agent?.name || 'Unknown',
+      role: agent?.role || 'unknown',
+      avatar: agent?.avatar || '🤖',
+      color: agent?.color || '#60a5fa',
+      status: agent?.status || 'unknown',
+      task: agent?.task || '',
+      output: agent?.output || '',
+      model: agent?.model || 'unknown',
+      heartbeat: agent?.heartbeat || null,
+      tokens_used: agent?.tokens_used || 0,
+      updated_at: agent?.updated_at || null,
     }));
     
     // Filter by query if provided
