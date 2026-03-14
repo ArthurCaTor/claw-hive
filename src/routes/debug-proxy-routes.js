@@ -15,28 +15,25 @@ router.get('/api/debug-proxy/status', (req, res) => {
   res.json(llmProxy.getStatus());
 });
 
-// Start Proxy - call fix-proxy.sh start
+// Start Proxy - call fix-proxy.sh start (async)
 router.post('/api/debug-proxy/start', (req, res) => {
   const cwd = process.cwd();
+  // Run in background, return immediately
   exec(`bash ${SCRIPT_PATH} start`, { cwd, timeout: 90000 }, (error, stdout, stderr) => {
-    if (error) {
-      res.status(500).json({ error: error.message, stderr });
-      return;
-    }
-    res.json({ success: true, stdout, stderr: stderr || undefined });
+    // Log result but don't wait
+    console.log('[proxy-start]', error ? 'error' : 'success');
   });
+  res.json({ success: true, message: 'Proxy mode starting in background...' });
 });
 
-// Stop Proxy - call fix-proxy.sh stop
+// Stop Proxy - call fix-proxy.sh stop (async)
 router.post('/api/debug-proxy/stop', (req, res) => {
   const cwd = process.cwd();
+  // Run in background, return immediately
   exec(`bash ${SCRIPT_PATH} stop`, { cwd, timeout: 90000 }, (error, stdout, stderr) => {
-    if (error) {
-      res.status(500).json({ error: error.message, stderr });
-      return;
-    }
-    res.json({ success: true, stdout, stderr: stderr || undefined });
+    console.log('[proxy-stop]', error ? 'error' : 'success');
   });
+  res.json({ success: true, message: 'Proxy mode stopping in background...' });
 });
 
 // Stop Proxy
@@ -53,7 +50,7 @@ router.post('/api/debug-proxy/stop', async (req, res) => {
 // Proxy Mode Control - Direct implementation of fix-proxy.sh
 // ============================================================
 
-const { exec, spawn } = require('child_process');
+const { spawn } = require('child_process');
 const HOMEDIR = process.env.HOME || '/home/arthur';
 const OPENCLAW_JSON = path.join(HOMEDIR, '.openclaw', 'openclaw.json');
 const BACKUP_FILE = path.join(HOMEDIR, '.openclaw', 'openclaw.json.backup.proxy-fix');
