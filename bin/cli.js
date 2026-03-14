@@ -92,28 +92,79 @@ program
 
 
 
-// Tail command - real-time session output
+// Tail command - show session output
 program
   .command('tail')
-  .description('Show real-time session output')
-  .argument('[sessionId]', 'Session ID to tail (default: latest)')
-  .option('-a, --agent <name>', 'Agent name')
+  .description('Show session output')
+  .argument('[sessionId]', 'Session ID to show')
+  .option('-a, --agent <name>', 'Agent name (gets latest session)')
   .action((sessionId, options) => {
-    const { sessionWatcher } = require('../src/services/session-watcher');
+    const fs = require('fs');
+    const path = require('path');
+    const homeDir = process.env.HOME || '/home/arthur';
+    
     let targetSession = sessionId;
+    
     if (!targetSession && options.agent) {
-      const sessions = sessionWatcher.getAllSessions().filter(s => s.agent === options.agent);
-      if (sessions.length > 0) {
-        sessions.sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
-        targetSession = sessions[0].sessionId;
+      const agentsDir = path.join(homeDir, '.openclaw', 'agents');
+      const sessionsDir = path.join(agentsDir, options.agent, 'sessions');
+      if (fs.existsSync(sessionsDir)) {
+        const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.jsonl'));
+        if (files.length > 0) {
+          const withStats = files.map(f => ({
+            file: f,
+            mtime: fs.statSync(path.join(sessionsDir, f)).mtime
+          }));
+          withStats.sort((a, b) => b.mtime - a.mtime);
+          targetSession = withStats[0].file.replace('.jsonl', '');
+        }
       }
     }
+    
     if (!targetSession) {
       console.log('No session found. Specify session ID or agent name.');
       process.exit(1);
     }
-    console.log('Tailing session: ' + targetSession + ' (Ctrl+C to exit)');
-    console.log('File: ' + path.join(process.env.HOME || '/home/arthur', '.openclaw', 'agents', options.agent || 'coder', 'sessions', targetSession + '.jsonl'));
+    
+    const filepath = path.join(homeDir, '.openclaw', 'agents', options.agent || 'coder', 'sessions', targetSession + '.jsonl');
+    
+    if (!fs.existsSync(filepath)) {
+      console.log('Session file not found:', filepath);
+      process.exit(1);
+    }
+    
+    console.log('Session:', targetSession);
+    console.log('File:', filepath);
+    console.log('---');
+    
+    const content = fs.readFileSync(filepath, 'utf8');
+    const lines = content.trim().split('\n');
+    
+    // Parse and format each line as readable messages
+    for (const line of lines.slice(-50)) { // Last 50 entries
+      try {
+        const entry = JSON.parse(line);
+        const type = entry.type;
+        const ts = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : '';
+        
+        if (type === 'message' && entry.message) {
+          const role = entry.message.role || '?';
+          const msg = entry.message.content || [];
+          for (const block of msg) {
+            if (block.type === 'text') {
+              const text = block.text || '';
+              console.log(`[${ts}] ${role}: ${text.substring(0, 200)}`);
+            }
+          }
+        } else if (type === 'thinking') {
+          console.log(`[${ts}] thinking: ${entry.thinking?.substring(0, 100) || '(hidden)'}...`);
+        } else if (type === 'tool_use') {
+          console.log(`[${ts}] 🔧 tool: ${entry.name || entry.tool}`);
+        }
+      } catch (e) {
+        // Skip invalid lines
+      }
+    }
   });
 
 // Quota command - show API quota usage
