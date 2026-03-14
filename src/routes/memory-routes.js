@@ -54,8 +54,18 @@ module.exports = function(app) {
   app.get('/api/memory/*', (req, res) => {
     let id = req.params[0];
     
+    // Security: prevent path traversal
+    if (id && (id.includes('..') || id.includes('~'))) {
+      return res.status(400).json({ error: 'Invalid path' });
+    }
+    
     if (id && id.includes('/')) {
       id = id.split('/').pop();
+    }
+    
+    // Additional validation: only allow alphanumeric and hyphens
+    if (id && !/^[a-zA-Z0-9\-]+$/.test(id)) {
+      return res.status(400).json({ error: 'Invalid memory ID' });
     }
     
     const memoryPaths = [
