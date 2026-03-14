@@ -51,7 +51,10 @@ router.get('/api/debug-proxy/captures', (req, res) => {
 
 // Get single capture
 router.get('/api/debug-proxy/captures/:id', (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    return res.status(400).json({ error: 'Invalid capture ID' });
+  }
   const capture = llmProxy.getCapture(id);
   if (!capture) {
     return res.status(404).json({ error: 'Capture not found' });
