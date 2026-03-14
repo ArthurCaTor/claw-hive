@@ -4,6 +4,7 @@
   "description": "Real-time monitoring dashboard for OpenClaw AI agents",
   "main": "src/server.js",
   "bin": {
+    "claw-hive": "./bin/cli.js",
     "openclaw-dashboard": "./bin/cli.js"
   },
   "scripts": {
