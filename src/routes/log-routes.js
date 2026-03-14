@@ -55,6 +55,12 @@ module.exports = function(app) {
   // Get specific log file content
   app.get('/api/logs/*', (req, res) => {
     const id = req.params[0];
+    
+    // Security: prevent path traversal
+    if (id.includes('..') || id.includes('~')) {
+      return res.status(400).json({ error: 'Invalid path' });
+    }
+    
     const [category, ...nameParts] = id.split('/');
     const name = nameParts.join('/');
     
