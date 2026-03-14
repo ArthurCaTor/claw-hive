@@ -37,13 +37,36 @@ program
   .option('-a, --agent <name>', 'Filter by agent name')
   .option('-l, --limit <number>', 'Limit number of sessions', '20')
   .action((options) => {
-    const { sessionWatcher } = require('../src/services/session-watcher');
-    const sessions = sessionWatcher.getAllSessions();
+    const fs = require('fs');
+    const path = require('path');
+    const homeDir = process.env.HOME || '/home/arthur';
+    const agentsDir = path.join(homeDir, '.openclaw', 'agents');
+    
+    let allSessions = [];
+    
+    if (fs.existsSync(agentsDir)) {
+      const agents = fs.readdirSync(agentsDir);
+      for (const agent of agents) {
+        const sessionsDir = path.join(agentsDir, agent, 'sessions');
+        if (fs.existsSync(sessionsDir)) {
+          const files = fs.readdirSync(sessionsDir).filter(f => f.endsWith('.jsonl'));
+          for (const file of files) {
+            const sessionId = file.replace('.jsonl', '');
+            const stats = fs.statSync(path.join(sessionsDir, file));
+            allSessions.push({
+              agent,
+              sessionId,
+              mtime: stats.mtime,
+            });
+          }
+        }
+      }
+    }
     
     // Filter by agent if specified
-    let filtered = sessions;
+    let filtered = allSessions;
     if (options.agent) {
-      filtered = sessions.filter(s => s.agent === options.agent);
+      filtered = allSessions.filter(s => s.agent === options.agent);
     }
     
     // Sort by mtime descending (newest first)
@@ -58,8 +81,8 @@ program
     console.log('-'.repeat(80));
     
     for (const s of filtered) {
-      const agent = (s.agent || 'unknown').padEnd(15);
-      const sessionId = (s.sessionId || 'unknown').substring(0, 38).padEnd(40);
+      const agent = s.agent.padEnd(15);
+      const sessionId = s.sessionId.substring(0, 38).padEnd(40);
       const mtime = s.mtime ? new Date(s.mtime).toLocaleString() : 'N/A';
       console.log(agent + sessionId + mtime);
     }
