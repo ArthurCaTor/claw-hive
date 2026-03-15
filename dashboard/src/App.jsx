@@ -1387,11 +1387,8 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
 
   // Handle agent selection change
   const handleAgentChange = (newAgent) => {
-    console.log('Agent changed to:', newAgent, 'Available sessions:', agentSessions);
-    
     // Get sessions for the new agent from cached data
     const sessions = agentSessions[newAgent] || [];
-    console.log('Sessions for', newAgent, ':', sessions);
     
     // Update selected agent
     setSelectedAgent(newAgent);
