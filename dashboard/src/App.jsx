@@ -1387,7 +1387,6 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
 
   // Fetch sessions when user selects a different agent (Requirement 2)
   const handleAgentChange = (newAgent) => {
-    setSelectedAgent(newAgent);
     // Fetch fresh sessions for the selected agent
     fetch(`${API_BASE}/api/sessions`)
       .then(r => r.json())
@@ -1396,15 +1395,18 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
         const sortedSessions = [...(data[newAgent] || [])].sort((a, b) => 
           new Date(b.mtime) - new Date(a.mtime)
         );
-        // Update the sessions for this agent
+        // Update sessions for this agent
         setAgentSessions(prev => ({
           ...prev,
           [newAgent]: sortedSessions
         }));
-        // Auto-select the most recent session
+        
+        // Update BOTH agent and session together to prevent useEffect race condition
         if (sortedSessions.length > 0) {
+          setSelectedAgent(newAgent);
           setSelectedSession(sortedSessions[0].sessionId);
         } else {
+          setSelectedAgent(newAgent);
           setSelectedSession('');
         }
       })
@@ -1414,7 +1416,6 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
   // Handle session selection (Requirement 3)
   const handleSessionChange = (newSession) => {
     setSelectedSession(newSession);
-    // Right panel updates automatically via the useEffect below
   };
 
   // Load session events when selection changes
