@@ -808,9 +808,10 @@ function ModelsPage({ theme }) {
   const [modelsConfig, setModelsConfig] = React.useState(null);
 
   React.useEffect(() => {
-    fetch(`${API_BASE}/api/agents`)
+    // ✅ Use new direct file reader API (no CLI calls!)
+    fetch(`${API_BASE}/api/openclaw/agents`)
       .then(r => r.json())
-      .then(setAgents)
+      .then(data => setAgents(data.agents || []))
       .catch(console.error);
     
     fetch(`${API_BASE}/api/config/models`)
@@ -1403,23 +1404,36 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
 
   // Fetch all agents on mount
   React.useEffect(() => {
-    fetch(`${API_BASE}/api/sessions`)
+    // ✅ Use new direct file reader API (no CLI calls!)
+    fetch(`${API_BASE}/api/openclaw/dashboard`)
       .then(r => r.json())
       .then(data => {
-        // Get list of agent names
-        const agentList = Object.keys(data);
-        setAgents(agentList);
+        // Get list of agent names from sessions
+        const agentSet = new Set();
+        (data.sessions || []).forEach(s => {
+          if (s.agent) agentSet.add(s.agent);
+        });
+        setAgents(Array.from(agentSet));
         
-        // Sort sessions by mtime (newest first) for each agent
+        // Group sessions by agent
         const sortedSessions = {};
-        agentList.forEach(agent => {
-          sortedSessions[agent] = [...data[agent]].sort((a, b) => 
+        (data.sessions || []).forEach(session => {
+          const agent = session.agent || 'unknown';
+          if (!sortedSessions[agent]) sortedSessions[agent] = [];
+          sortedSessions[agent].push(session);
+        });
+        
+        // Sort each agent's sessions by mtime (newest first)
+        Object.keys(sortedSessions).forEach(agent => {
+          sortedSessions[agent].sort((a, b) => 
             new Date(b.mtime) - new Date(a.mtime)
           );
         });
+        
         setAgentSessions(sortedSessions);
         
-        // Default to "coder" if available, otherwise first agent
+        // Default to "coder" if available
+        const agentList = Array.from(agentSet);
         if (agentList.length > 0 && !selectedAgent) {
           const defaultAgent = agentList.includes('coder') ? 'coder' : agentList[0];
           setSelectedAgent(defaultAgent);
@@ -2320,13 +2334,20 @@ function AppContent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [agentsRes, statsRes] = await Promise.all([
-          fetch(`${API_BASE}/api/agents`),
+        // ✅ Use new direct file reader API (no CLI calls!)
+        const [dashboardRes, statsRes] = await Promise.all([
+          fetch(`${API_BASE}/api/openclaw/dashboard`),
           fetch(`${API_BASE}/api/stats`),
         ]);
-        const agentsData = await agentsRes.json();
+        const dashboardData = await dashboardRes.json();
         const statsData = await statsRes.json();
-        setAgents(agentsData);
+        
+        // Get unique agents from sessions
+        const agentSet = new Set();
+        (dashboardData.sessions || []).forEach(s => {
+          if (s.agent) agentSet.add(s.agent);
+        });
+        setAgents(Array.from(agentSet));
         setStats(statsData);
         setLastUpdate(new Date());
         setApiError(false);
@@ -2373,10 +2394,10 @@ function AppContent() {
       .then(d => setRecordingsList(d.recordings || []))
       .catch(console.error);
     
-    // Search sessions function
+    // Search sessions function - use new API
     const searchSessions = (query) => {
       setSessionSearchQuery(query);
-      fetch(`${API_BASE}/api/sessions/search?q=${encodeURIComponent(query)}`)
+      fetch(`${API_BASE}/api/openclaw/sessions?search=${encodeURIComponent(query)}`)
         .then(r => r.json())
         .then(setSessionResults)
         .catch(console.error);
