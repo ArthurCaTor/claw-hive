@@ -1181,17 +1181,7 @@ function DebugProxyPage({ theme }) {
           </div>
         )}
         <div style={{ display: 'flex', gap: 4 }}>
-            {status?.running ? (
-              <button onClick={stopProxy} style={{
-                background: '#dc2626', color: 'white', border: 'none', padding: '4px 8px',
-                borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 500,
-              }}>⏹</button>
-            ) : (
-              <button onClick={startProxy} style={{
-                background: '#22c55e', color: 'white', border: 'none', padding: '4px 8px',
-                borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 500,
-              }}>▶</button>
-            )}
+            {/* Start/Stop buttons hidden - not used */}
             <button onClick={() => { fetchStatus(); fetchCaptures(); }} style={{
               background: 'transparent', color: t.textMuted, border: `1px solid ${t.border}`,
               padding: '4px 8px', borderRadius: 4, cursor: 'pointer', fontSize: 12,
