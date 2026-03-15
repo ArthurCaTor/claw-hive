@@ -734,3 +734,18 @@ httpServer.listen(PORT, HOST, () => {
 });
 
 module.exports = app;
+
+// Graceful shutdown handler
+process.on('SIGTERM', async () => {
+  console.log('Received SIGTERM, shutting down gracefully...');
+  const { captureFileWriter } = require('./services/capture-file-writer');
+  await captureFileWriter.shutdown();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('Received SIGINT, shutting down gracefully...');
+  const { captureFileWriter } = require('./services/capture-file-writer');
+  await captureFileWriter.shutdown();
+  process.exit(0);
+});

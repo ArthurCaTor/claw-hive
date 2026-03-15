@@ -5,6 +5,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { EventEmitter } = require('events');
+const { captureFileWriter } = require('./capture-file-writer');
 
 const CAPTURES_DIR = path.join(process.cwd(), 'captures');
 const REAL_API = 'https://api.minimax.io';
@@ -89,6 +90,11 @@ class LLMProxy extends EventEmitter {
     // ✅ FIX: Memory leak prevention
     this.MAX_CAPTURES = 100;
     this.MAX_BODY_SIZE = 100 * 1024 * 1024; // 100MB - store full body
+    
+    // ✅ Initialize file writer
+    captureFileWriter.initialize().catch(err => {
+      console.error('[LLMProxy] Failed to initialize file writer:', err);
+    });
     
     // ✅ FIX: Memory monitoring (every 60 seconds)
     this.memoryCheckInterval = setInterval(() => {
@@ -235,6 +241,9 @@ class LLMProxy extends EventEmitter {
             }
             this.saveCaptureToFile(capture);
             this.emit('capture', capture);
+            
+            // ✅ Write to file (non-blocking)
+            captureFileWriter.write('default', capture);
 
             console.log(
               `[Proxy] #${callId} STREAM ${req.method} ${req.path} → ` +
@@ -281,6 +290,9 @@ class LLMProxy extends EventEmitter {
             this.saveCaptureToFile(capture);
             this.emit('capture', capture);
 
+            // ✅ Write to file (non-blocking)
+            captureFileWriter.write('default', capture);
+
             console.log(
               `[Proxy] #${callId} JSON ${req.method} ${req.path} → ` +
               `${apiResponse.status} ${latency}ms ` +
@@ -289,7 +301,8 @@ class LLMProxy extends EventEmitter {
           } catch (recordErr) {
             console.error(`[Proxy] #${callId} Record error (non-fatal):`, recordErr.message);
           }
-        }
+
+        } 
 
       } catch (err) {
         const latency = Date.now() - startTime;
@@ -310,6 +323,9 @@ class LLMProxy extends EventEmitter {
         }
         this.saveCaptureToFile(errorCapture);
         this.emit('capture', errorCapture);
+
+        // ✅ Write to file (non-blocking)
+        captureFileWriter.write('default', errorCapture);
 
         res.status(502).json({
           error: 'Proxy forward failed',
@@ -368,7 +384,7 @@ class LLMProxy extends EventEmitter {
         resolve({ success: true, totalCalls: 0 });
         return;
       }
-      this.server.close(() => {
+      this.server.close(async () => {
         this.server = null;
         this.app = null;
         this.startedAt = null;
@@ -377,6 +393,8 @@ class LLMProxy extends EventEmitter {
           clearInterval(this.memoryCheckInterval);
           this.memoryCheckInterval = null;
         }
+        // ✅ Shutdown file writer
+        await captureFileWriter.shutdown();
         console.log(`[Proxy] Stopped. Total calls captured: ${totalCalls}`);
         resolve({ success: true, totalCalls });
       });
