@@ -451,6 +451,8 @@ class LLMProxy extends EventEmitter {
       tokens: tokens,
     };
   }
+
+  sanitizeHeaders(headers) {
     const safe = {};
     for (const [key, value] of Object.entries(headers || {})) {
       if (!value) continue;
