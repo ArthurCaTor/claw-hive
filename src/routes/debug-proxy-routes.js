@@ -1,209 +1,53 @@
-// Debug Proxy Routes
+// Debug Proxy Routes - Fixed version
+// 修复：/api/debug-proxy/start 直接调用 llmProxy.start()
 
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
+
 const { llmProxy } = require('../services/llm-proxy');
 
 const router = express.Router();
 const CAPTURES_DIR = path.join(process.cwd(), 'captures');
-const SCRIPT_PATH = path.join(process.cwd(), 'fix-proxy.sh');
 
-// Proxy status
+// ============================================================
+// Proxy 控制 - 直接启动/停止 Proxy 服务
+// ============================================================
+
+// Proxy 状态
 router.get('/api/debug-proxy/status', (req, res) => {
   res.json(llmProxy.getStatus());
 });
 
-// Start Proxy - call fix-proxy.sh start (async)
-router.post('/api/debug-proxy/start', (req, res) => {
-  const cwd = process.cwd();
-  // Run in background, return immediately
-  exec(`bash ${SCRIPT_PATH} start`, { cwd, timeout: 90000 }, (error, stdout, stderr) => {
-    // Log result but don't wait
-    console.log('[proxy-start]', error ? 'error' : 'success');
-  });
-  res.json({ success: true, message: 'Proxy mode starting in background...' });
-});
-
-// Stop Proxy - call fix-proxy.sh stop (async)
-router.post('/api/debug-proxy/stop', (req, res) => {
-  const cwd = process.cwd();
-  // Run in background, return immediately
-  exec(`bash ${SCRIPT_PATH} stop`, { cwd, timeout: 90000 }, (error, stdout, stderr) => {
-    console.log('[proxy-stop]', error ? 'error' : 'success');
-  });
-  res.json({ success: true, message: 'Proxy mode stopping in background...' });
-});
-
-// Stop Proxy
-router.post('/api/debug-proxy/stop', async (req, res) => {
+// 启动 Proxy（直接调用 llmProxy.start）
+router.post('/api/debug-proxy/start', async (req, res) => {
   try {
-    const result = await llmProxy.stop();
+    console.log('[debug-proxy] Starting Proxy service...');
+    const result = await llmProxy.start();
+    console.log('[debug-proxy] Proxy start result:', result);
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[debug-proxy] Failed to start proxy:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 停止 Proxy
+router.post('/api/debug-proxy/stop', async (req, res) => {
+  try {
+    console.log('[debug-proxy] Stopping Proxy service...');
+    const result = await llmProxy.stop();
+    console.log('[debug-proxy] Proxy stop result:', result);
+    res.json(result);
+  } catch (err) {
+    console.error('[debug-proxy] Failed to stop proxy:', err.message);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
 // ============================================================
-// Proxy Mode Control - Direct implementation of fix-proxy.sh
+// Captures - 获取捕获的请求
 // ============================================================
-
-const { spawn } = require('child_process');
-const HOMEDIR = process.env.HOME || '/home/arthur';
-const OPENCLAW_JSON = path.join(HOMEDIR, '.openclaw', 'openclaw.json');
-const BACKUP_FILE = path.join(HOMEDIR, '.openclaw', 'openclaw.json.backup.proxy-fix');
-const LLM_PROXY_FILE = path.join(process.cwd(), 'src/services/llm-proxy.js');
-const PROXY_PORT = 8999;
-const PROXY_URL = `http://localhost:${PROXY_PORT}/anthropic`;
-const ORIGINAL_URL = 'https://api.minimax.io/anthropic';
-
-// Helper: Kill gateway process
-function killGateway() {
-  return new Promise((resolve) => {
-    exec('pkill -f "openclaw.*gateway" || pkill -f "openclaw-gateway" || true', (err) => {
-      setTimeout(() => {
-        exec('pkill -9 -f "openclaw.*gateway" || true', () => resolve());
-      }, 1000);
-    });
-  });
-}
-
-// Helper: Restart claw-hive server
-function restartClawHive() {
-  return new Promise((resolve, reject) => {
-    // Kill existing
-    exec('pkill -f "node.*server.js" || true', (err) => {
-      setTimeout(() => {
-        // Start new
-        const child = spawn('node', ['src/server.js'], { 
-          cwd: process.cwd(), 
-          detached: true, 
-          stdio: 'ignore' 
-        });
-        child.unref();
-        setTimeout(() => resolve(), 3000);
-      }, 2000);
-    });
-  });
-}
-
-// Helper: Start proxy service
-function startProxyService() {
-  return new Promise((resolve, reject) => {
-    exec(`curl -s -X POST http://localhost:8080/api/debug-proxy/start`, (err) => {
-      setTimeout(() => resolve(), 2000);
-    });
-  });
-}
-
-// Helper: Check proxy health
-function checkProxyHealth() {
-  return new Promise((resolve) => {
-    exec(`curl -s http://localhost:${PROXY_PORT}/_health`, (err, stdout) => {
-      resolve(stdout && stdout.includes('"ok"'));
-    });
-  });
-}
-
-// Helper: Restart gateway
-function restartGateway() {
-  return new Promise((resolve) => {
-    exec('nohup npx openclaw gateway > /tmp/openclaw-gateway.log 2>&1 &', (err) => {
-      setTimeout(() => resolve(), 5000);
-    });
-  });
-}
-
-// Start Proxy Mode
-router.post('/api/proxy-mode/start', async (req, res) => {
-  const logs = [];
-  
-  try {
-    // Step 1: Fix llm-proxy.js
-    logs.push('Fixing llm-proxy.js...');
-    if (fs.existsSync(LLM_PROXY_FILE)) {
-      let content = fs.readFileSync(LLM_PROXY_FILE, 'utf8');
-      content = content.replace(/console\.log.*Content-Type.*isStreaming.*\n/g, '');
-      content = content.replace(
-        /const isStreaming = contentType\.includes.*/g,
-        'const isStreaming = true; // FORCE: MiniMax always streams'
-      );
-      fs.writeFileSync(LLM_PROXY_FILE, content);
-    }
-    
-    // Step 2: Backup openclaw.json
-    logs.push('Backing up openclaw.json...');
-    if (fs.existsSync(OPENCLAW_JSON)) {
-      fs.copyFileSync(OPENCLAW_JSON, BACKUP_FILE);
-    }
-    
-    // Step 3: Restart claw-hive
-    logs.push('Restarting claw-hive server...');
-    await restartClawHive();
-    
-    // Step 4: Start proxy service
-    logs.push('Starting proxy service...');
-    await startProxyService();
-    
-    // Step 5: Check proxy health
-    const healthy = await checkProxyHealth();
-    if (!healthy) {
-      throw new Error('Proxy service failed to start');
-    }
-    logs.push('Proxy service started');
-    
-    // Step 6: Modify openclaw.json baseUrl
-    logs.push('Modifying openclaw.json...');
-    if (fs.existsSync(OPENCLAW_JSON)) {
-      let content = fs.readFileSync(OPENCLAW_JSON, 'utf8');
-      content = content.replace(/https:\/\/api\.minimax\.io\/anthropic/g, PROXY_URL);
-      fs.writeFileSync(OPENCLAW_JSON, content);
-    }
-    
-    // Step 7: Kill and restart gateway
-    logs.push('Restarting gateway...');
-    await killGateway();
-    await restartGateway();
-    
-    logs.push('Done! Proxy mode enabled.');
-    res.json({ success: true, logs });
-    
-  } catch (err) {
-    logs.push(`Error: ${err.message}`);
-    res.status(500).json({ success: false, logs, error: err.message });
-  }
-});
-
-// Stop Proxy Mode
-router.post('/api/proxy-mode/stop', async (req, res) => {
-  const logs = [];
-  
-  try {
-    // Step 1: Restore openclaw.json
-    logs.push('Restoring openclaw.json...');
-    if (fs.existsSync(BACKUP_FILE)) {
-      fs.copyFileSync(BACKUP_FILE, OPENCLAW_JSON);
-    } else if (fs.existsSync(OPENCLAW_JSON)) {
-      let content = fs.readFileSync(OPENCLAW_JSON, 'utf8');
-      content = content.replace(new RegExp(PROXY_URL, 'g'), ORIGINAL_URL);
-      fs.writeFileSync(OPENCLAW_JSON, content);
-    }
-    
-    // Step 2: Kill and restart gateway
-    logs.push('Restarting gateway...');
-    await killGateway();
-    await restartGateway();
-    
-    logs.push('Done! Proxy mode disabled.');
-    res.json({ success: true, logs });
-    
-  } catch (err) {
-    logs.push(`Error: ${err.message}`);
-    res.status(500).json({ success: false, logs, error: err.message });
-  }
-});
 
 // Get all captures (summary)
 router.get('/api/debug-proxy/captures', (req, res) => {
@@ -251,7 +95,7 @@ router.get('/api/debug-proxy/stream', (req, res) => {
       model: capture.request.body?.model || 'unknown',
       messageCount: capture.request.body?.messages?.length || 0,
       toolCount: capture.request.body?.tools?.length || 0,
-      hasSystem: !!capture.request.body?.system,
+      hasSystem: !!c.request.body?.system,
     };
     res.write(`data: ${JSON.stringify(summary)}\n\n`);
   };
@@ -259,6 +103,10 @@ router.get('/api/debug-proxy/stream', (req, res) => {
   llmProxy.on('capture', onCapture);
   req.on('close', () => llmProxy.off('capture', onCapture));
 });
+
+// ============================================================
+// History - 历史文件操作
+// ============================================================
 
 // History files list
 router.get('/api/debug-proxy/history', (req, res) => {

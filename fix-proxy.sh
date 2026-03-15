@@ -1,13 +1,11 @@
 #!/bin/bash
 # ============================================================
-# Debug Proxy 开关脚本 v2
-# 用法: bash fix-proxy.sh [start|stop|status]
-#   start  — 修复代码 + 启动 proxy + 切换 gateway 到 proxy
-#   stop   — 恢复一切到正常状态
-#   status — 检查当前状态
+# Debug Proxy 开关脚本 v5
+# 修复：移除 set -e，添加更好的错误处理和调试输出
+# 用法: bash fix-proxy.sh [start|stop|status|killall]
 # ============================================================
 
-set -e
+# 不使用 set -e，手动检查关键错误
 
 OPENCLAW_JSON="$HOME/.openclaw/openclaw.json"
 BACKUP_FILE="$HOME/.openclaw/openclaw.json.backup.proxy-fix"
@@ -15,7 +13,6 @@ CLAW_HIVE_DIR="$HOME/claw-hive"
 LLM_PROXY_FILE="$CLAW_HIVE_DIR/src/services/llm-proxy.js"
 PROXY_PORT=8999
 CLAW_HIVE_PORT=8080
-PROXY_URL="http://192.168.2.22:$PROXY_PORT/anthropic"
 ORIGINAL_URL="https://api.minimax.io/anthropic"
 
 RED='\033[0;31m'
@@ -27,71 +24,198 @@ log_ok()   { echo -e "${GREEN}✅ $1${NC}"; }
 log_warn() { echo -e "${YELLOW}⚠️  $1${NC}"; }
 log_err()  { echo -e "${RED}❌ $1${NC}"; }
 log_info() { echo -e "   $1"; }
+log_debug() { echo -e "   [DEBUG] $1"; }
 
 # ============================================================
-# 强制杀掉 gateway（4 层递进，确保干净）
+# 自动获取本机 IP 地址
 # ============================================================
-force_kill_gateway() {
-    log_info "强制停止 gateway..."
-
-    # 层 1: openclaw 自带 stop
-    openclaw gateway stop 2>/dev/null || true
-    sleep 1
-
-    # 层 2: systemctl stop
-    systemctl --user stop openclaw-gateway.service 2>/dev/null || true
-    sleep 1
-
-    # 层 3: pkill
-    pkill -f "openclaw.*gateway" 2>/dev/null || true
-    pkill -f "openclaw-gateway" 2>/dev/null || true
-    sleep 1
-
-    # 层 4: kill -9（最后手段）
-    if pgrep -f "openclaw.*gateway" > /dev/null 2>&1; then
-        log_warn "Gateway 顽固，kill -9..."
-        pkill -9 -f "openclaw.*gateway" 2>/dev/null || true
-        sleep 1
+get_local_ip() {
+    if [ -n "$PROXY_HOST" ]; then
+        echo "$PROXY_HOST"
+        return
     fi
+    
+    local IP=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K[0-9.]+' | head -1)
+    if [ -n "$IP" ]; then
+        echo "$IP"
+        return
+    fi
+    
+    IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+    if [ -n "$IP" ] && [ "$IP" != "127.0.0.1" ]; then
+        echo "$IP"
+        return
+    fi
+    
+    echo "127.0.0.1"
+}
 
-    # 确认
-    if pgrep -f "openclaw.*gateway" > /dev/null 2>&1; then
-        log_err "Gateway 无法停止！PID: $(pgrep -f 'openclaw.*gateway')"
-        return 1
+LOCAL_IP=$(get_local_ip)
+PROXY_URL="http://${LOCAL_IP}:${PROXY_PORT}/anthropic"
+
+# ============================================================
+# 使用 Python 修改 baseUrl
+# ============================================================
+set_baseurl() {
+    local NEW_URL="$1"
+    log_info "设置 baseUrl: $NEW_URL"
+    
+    python3 << EOF
+import json
+import sys
+
+config_path = "$OPENCLAW_JSON"
+new_url = "$NEW_URL"
+
+try:
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+    
+    if 'models' in config and 'providers' in config['models'] and 'minimax-portal' in config['models']['providers']:
+        old_url = config['models']['providers']['minimax-portal'].get('baseUrl', 'N/A')
+        config['models']['providers']['minimax-portal']['baseUrl'] = new_url
+        print(f"修改: {old_url} -> {new_url}")
+    else:
+        print("ERROR: Cannot find minimax-portal provider", file=sys.stderr)
+        sys.exit(1)
+    
+    with open(config_path, 'w') as f:
+        json.dump(config, f, indent=2)
+    
+    print("OK")
+except Exception as e:
+    print(f"ERROR: {e}", file=sys.stderr)
+    sys.exit(1)
+EOF
+    
+    local RESULT=$?
+    if [ $RESULT -eq 0 ]; then
+        log_ok "baseUrl 已设置"
+        return 0
     else
-        log_ok "Gateway 已完全停止"
+        log_err "baseUrl 设置失败"
+        return 1
     fi
 }
 
 # ============================================================
-# 启动 gateway 并验证
+# 获取当前 baseUrl
+# ============================================================
+get_baseurl() {
+    python3 -c "
+import json
+try:
+    with open('$OPENCLAW_JSON', 'r') as f:
+        config = json.load(f)
+    print(config['models']['providers']['minimax-portal']['baseUrl'])
+except Exception as e:
+    print('ERROR: ' + str(e))
+" 2>/dev/null
+}
+
+# ============================================================
+# 彻底杀死所有 openclaw 相关进程
+# ============================================================
+kill_all_openclaw() {
+    echo ""
+    log_info "=== 彻底清理所有 openclaw 进程 ==="
+    
+    local COUNT=$(pgrep -f "openclaw" 2>/dev/null | wc -l)
+    if [ "$COUNT" -eq 0 ]; then
+        log_ok "没有 openclaw 进程在运行"
+        return 0
+    fi
+    log_warn "发现 $COUNT 个 openclaw 相关进程"
+    
+    log_info "层 1: 停止 systemctl 服务..."
+    systemctl --user stop openclaw-gateway.service 2>/dev/null || true
+    systemctl --user stop openclaw.service 2>/dev/null || true
+    sleep 1
+    
+    log_info "层 2: openclaw gateway stop..."
+    openclaw gateway stop 2>/dev/null || true
+    sleep 1
+    
+    log_info "层 3: pkill 正常终止..."
+    pkill -f "openclaw-gateway" 2>/dev/null || true
+    pkill -f "openclaw gateway" 2>/dev/null || true
+    pkill -f "npx openclaw" 2>/dev/null || true
+    pkill -f "node.*openclaw" 2>/dev/null || true
+    pkill -x "openclaw" 2>/dev/null || true
+    pkill -f "openclaw" 2>/dev/null || true
+    sleep 2
+    
+    COUNT=$(pgrep -f "openclaw" 2>/dev/null | wc -l)
+    if [ "$COUNT" -gt 0 ]; then
+        log_warn "还有 $COUNT 个进程存活，使用 kill -9..."
+        pkill -9 -f "openclaw-gateway" 2>/dev/null || true
+        pkill -9 -f "openclaw gateway" 2>/dev/null || true
+        pkill -9 -f "npx openclaw" 2>/dev/null || true
+        pkill -9 -f "node.*openclaw" 2>/dev/null || true
+        pkill -9 -x "openclaw" 2>/dev/null || true
+        pkill -9 -f "openclaw" 2>/dev/null || true
+        sleep 2
+    fi
+    
+    COUNT=$(pgrep -f "openclaw" 2>/dev/null | wc -l)
+    if [ "$COUNT" -gt 0 ]; then
+        log_warn "还有 $COUNT 个顽固进程，逐个 kill -9..."
+        for PID in $(pgrep -f "openclaw" 2>/dev/null); do
+            log_info "  杀死 PID: $PID"
+            kill -9 $PID 2>/dev/null || true
+        done
+        sleep 1
+    fi
+    
+    COUNT=$(pgrep -f "openclaw" 2>/dev/null | wc -l)
+    if [ "$COUNT" -eq 0 ]; then
+        log_ok "所有 openclaw 进程已清理完毕"
+        FREE_MEM=$(free -m | awk '/Mem:/ {print $4}')
+        log_info "当前可用内存: ${FREE_MEM}MB"
+    else
+        log_err "警告：仍有 $COUNT 个 openclaw 进程存活！"
+    fi
+}
+
+# ============================================================
+# 启动 gateway（使用 systemctl）
 # ============================================================
 start_gateway() {
-    local MODE=$1  # "proxy" 或 "normal"
-
+    local MODE=$1
+    
+    log_info "启动 gateway ($MODE 模式)..."
+    
+    # 尝试使用 systemctl 启动
+    systemctl --user start openclaw-gateway.service 2>/dev/null
+    sleep 3
+    
+    # 检查是否启动成功
+    if systemctl --user is-active openclaw-gateway.service >/dev/null 2>&1; then
+        log_ok "Gateway 已通过 systemctl 启动"
+        return 0
+    fi
+    
+    # 如果 systemctl 失败，尝试直接启动
+    log_warn "systemctl 启动失败，尝试直接启动..."
+    
     nohup npx openclaw gateway > /tmp/openclaw-gateway.log 2>&1 &
     local GATEWAY_PID=$!
     log_info "等待 gateway 启动 (PID: $GATEWAY_PID)..."
 
-    # 最多等 15 秒
-    for i in $(seq 1 15); do
+    for i in $(seq 1 10); do
         sleep 1
         if pgrep -f "openclaw.*gateway" > /dev/null 2>&1; then
-            # 检查是否真正在监听
-            if grep -q "listening on" /tmp/openclaw-gateway.log 2>/dev/null; then
-                log_ok "Gateway 已启动（$MODE 模式）"
-                return 0
-            fi
+            log_ok "Gateway 已启动（$MODE 模式）"
+            return 0
         fi
     done
 
-    # 超时
     if pgrep -f "openclaw.*gateway" > /dev/null 2>&1; then
         log_ok "Gateway 进程存在（$MODE 模式）"
         return 0
     else
         log_err "Gateway 启动失败！"
-        tail -15 /tmp/openclaw-gateway.log 2>/dev/null
+        tail -10 /tmp/openclaw-gateway.log 2>/dev/null || true
         return 1
     fi
 }
@@ -106,40 +230,43 @@ do_stop() {
     echo "=============================="
     echo ""
 
-    # 1. 恢复 openclaw.json（先改配置再重启）
-    if [ -f "$BACKUP_FILE" ]; then
-        cp "$BACKUP_FILE" "$OPENCLAW_JSON"
-        log_ok "openclaw.json 已从备份恢复"
+    # Step 1: 杀死所有 openclaw 进程
+    kill_all_openclaw
+
+    # Step 2: 恢复 baseUrl
+    echo ""
+    log_info "=== Step 2: 恢复 baseUrl ==="
+    
+    CURRENT_URL=$(get_baseurl)
+    log_info "当前 baseUrl: $CURRENT_URL"
+    
+    if [ "$CURRENT_URL" = "$ORIGINAL_URL" ]; then
+        log_ok "baseUrl 已经是正常状态"
     else
-        if grep -q "192.168.2.22:$PROXY_PORT" "$OPENCLAW_JSON" 2>/dev/null; then
-            sed -i "s|http://192.168.2.22:$PROXY_PORT/anthropic|https://api.minimax.io/anthropic|g" "$OPENCLAW_JSON"
-            log_ok "openclaw.json baseUrl 已改回 api.minimax.io"
+        set_baseurl "$ORIGINAL_URL"
+        
+        # 验证
+        NEW_URL=$(get_baseurl)
+        log_info "验证 baseUrl: $NEW_URL"
+        if [ "$NEW_URL" = "$ORIGINAL_URL" ]; then
+            log_ok "baseUrl 已恢复"
         else
-            log_ok "openclaw.json 已经是正常状态"
+            log_err "baseUrl 恢复失败！"
         fi
     fi
 
-    # 2. 验证配置
-    CURRENT_URL=$(cat "$OPENCLAW_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['models']['providers']['minimax-portal']['baseUrl'])" 2>/dev/null || echo "unknown")
-    log_info "baseUrl: $CURRENT_URL"
-
-    # 3. 强制杀掉 gateway
+    # Step 3: 启动 gateway
     echo ""
-    force_kill_gateway
-
-    # 4. 重新启动（读取已恢复的配置）
-    echo ""
-    if ! start_gateway "正常"; then
-        log_err "请手动运行: npx openclaw gateway"
-    fi
+    log_info "=== Step 3: 启动 Gateway ==="
+    start_gateway "正常"
 
     echo ""
-    log_ok "恢复完成！OpenClaw 直连 MiniMax，不走 proxy。"
+    log_ok "恢复完成！OpenClaw 直连 MiniMax。"
     echo ""
 }
 
 # ============================================================
-# start — 修复代码 + 启动 proxy + 切换 gateway
+# start — 启动 proxy 模式
 # ============================================================
 do_start() {
     echo ""
@@ -147,8 +274,18 @@ do_start() {
     echo "  启动 Debug Proxy 模式"
     echo "=============================="
     echo ""
+    
+    log_info "检测到本机 IP: $LOCAL_IP"
+    log_info "Proxy URL: $PROXY_URL"
+    echo ""
 
-    # ---- Step 1: 检查文件存在 ----
+    # Step 1: 杀死所有 openclaw 进程
+    log_info "=== Step 1: 清理进程 ==="
+    kill_all_openclaw
+
+    # Step 2: 检查文件
+    echo ""
+    log_info "=== Step 2: 检查文件 ==="
     if [ ! -f "$LLM_PROXY_FILE" ]; then
         log_err "找不到 $LLM_PROXY_FILE"
         exit 1
@@ -159,11 +296,10 @@ do_start() {
     fi
     log_ok "文件检查通过"
 
-    # ---- Step 2: 修复 llm-proxy.js ----
+    # Step 3: 修复 llm-proxy.js
     echo ""
-    log_info "检查 llm-proxy.js..."
-
-    sed -i '/console.log.*Content-Type.*isStreaming/d' "$LLM_PROXY_FILE"
+    log_info "=== Step 3: 检查 llm-proxy.js ==="
+    sed -i '/console.log.*Content-Type.*isStreaming/d' "$LLM_PROXY_FILE" 2>/dev/null || true
 
     if grep -q "const isStreaming = true" "$LLM_PROXY_FILE"; then
         log_ok "isStreaming = true（已设置）"
@@ -171,125 +307,166 @@ do_start() {
         sed -i "s/const isStreaming = contentType.includes.*/const isStreaming = true; \/\/ FORCE: MiniMax always streams/" "$LLM_PROXY_FILE"
         log_ok "isStreaming 已改为 true"
     else
-        log_warn "找不到 isStreaming 行，请手动检查"
+        log_warn "找不到 isStreaming 行"
     fi
 
-    # ---- Step 3: 备份 openclaw.json ----
+    # Step 4: 备份
     echo ""
+    log_info "=== Step 4: 备份配置 ==="
     cp "$OPENCLAW_JSON" "$BACKUP_FILE"
     log_ok "openclaw.json 已备份"
 
-    # ---- Step 4: 重启 claw-hive server ----
+    # Step 5: 重启 claw-hive server
     echo ""
-    log_info "重启 claw-hive server..."
-    kill $(pgrep -f "node src/server.js" 2>/dev/null) 2>/dev/null || true
+    log_info "=== Step 5: 重启 claw-hive server ==="
+    
+    # 彻底杀掉所有 claw-hive 相关进程
+    log_info "清理 claw-hive 相关进程..."
+    
+    # 杀掉所有可能占用 8080 端口的进程
+    for PID in $(lsof -ti :8080 2>/dev/null); do
+        log_info "杀掉占用 8080 端口的进程: $PID"
+        kill -9 $PID 2>/dev/null || true
+    done
+    
+    # 杀掉所有 node src/server.js 进程
+    for PID in $(pgrep -f "node src/server.js" 2>/dev/null); do
+        log_info "杀掉 claw-hive 进程: $PID"
+        kill -9 $PID 2>/dev/null || true
+    done
+    
+    # 杀掉所有 claw-hive 相关的 node 进程
+    for PID in $(pgrep -f "claw-hive" 2>/dev/null); do
+        log_info "杀掉 claw-hive 相关进程: $PID"
+        kill -9 $PID 2>/dev/null || true
+    done
+    
     sleep 2
+    
+    # 确认 8080 端口已释放
+    if lsof -ti :8080 >/dev/null 2>&1; then
+        log_err "端口 8080 仍被占用！"
+        lsof -i :8080
+        exit 1
+    fi
+    log_ok "端口 8080 已释放"
 
     cd "$CLAW_HIVE_DIR"
     nohup node src/server.js > /tmp/claw-hive.log 2>&1 &
     CLAW_PID=$!
+    log_info "等待 claw-hive 启动 (PID: $CLAW_PID)..."
     sleep 3
 
     if kill -0 $CLAW_PID 2>/dev/null; then
         log_ok "claw-hive server 启动成功 (PID: $CLAW_PID)"
     else
         log_err "claw-hive server 启动失败！"
-        tail -20 /tmp/claw-hive.log 2>/dev/null
+        tail -20 /tmp/claw-hive.log 2>/dev/null || true
         exit 1
     fi
 
-    # ---- Step 5: 启动 proxy ----
-    log_info "启动 proxy..."
-    curl -s -X POST http://localhost:$CLAW_HIVE_PORT/api/debug-proxy/start > /dev/null 2>&1
-    sleep 2
+    # Step 6: 启动 proxy
+    echo ""
+    log_info "=== Step 6: 启动 Proxy ==="
+    
+    log_info "调用 /api/debug-proxy/start..."
+    PROXY_RESPONSE=$(curl -s -X POST http://localhost:$CLAW_HIVE_PORT/api/debug-proxy/start 2>&1)
+    log_debug "Proxy 响应: $PROXY_RESPONSE"
+    
+    # 等待 Proxy 启动（最多 10 秒）
+    log_info "等待 Proxy 启动..."
+    PROXY_OK=0
+    for i in $(seq 1 10); do
+        sleep 1
+        HEALTH=$(curl -s http://localhost:$PROXY_PORT/_health 2>&1)
+        if echo "$HEALTH" | grep -q '"status"' || echo "$HEALTH" | grep -q '"ok"'; then
+            log_ok "Proxy 启动成功 (尝试 $i 次)"
+            log_debug "Health: $HEALTH"
+            PROXY_OK=1
+            break
+        fi
+        log_info "  等待中... ($i/10)"
+    done
+    
+    if [ "$PROXY_OK" -eq 0 ]; then
+        log_err "Proxy 启动失败！"
+        log_info "查看日志: tail -100 /tmp/claw-hive.log"
+        log_info "手动检查: curl http://localhost:$PROXY_PORT/_health"
+        # 继续执行，不退出
+    fi
 
-    HEALTH=$(curl -s http://localhost:$PROXY_PORT/_health 2>/dev/null)
+    # Step 7: 修改 baseUrl
+    echo ""
+    log_info "=== Step 7: 修改 baseUrl ==="
+    
+    CURRENT_URL=$(get_baseurl)
+    log_info "当前 baseUrl: $CURRENT_URL"
+    
+    set_baseurl "$PROXY_URL"
+    
+    # 验证
+    NEW_URL=$(get_baseurl)
+    log_info "新的 baseUrl: $NEW_URL"
+    
+    if [ "$NEW_URL" = "$PROXY_URL" ]; then
+        log_ok "baseUrl 已修改成功"
+    else
+        log_err "baseUrl 修改失败！"
+        log_err "预期: $PROXY_URL"
+        log_err "实际: $NEW_URL"
+    fi
+
+    # Step 8: 启动 gateway
+    echo ""
+    log_info "=== Step 8: 启动 Gateway ==="
+    start_gateway "proxy"
+
+    # Step 9: 最终验证
+    echo ""
+    log_info "=== Step 9: 最终验证 ==="
+
+    # 验证 proxy
+    HEALTH=$(curl -s http://localhost:$PROXY_PORT/_health 2>&1)
     if echo "$HEALTH" | grep -q '"ok"'; then
-        log_ok "Proxy 启动成功"
+        log_ok "Proxy: 运行中"
     else
-        log_err "Proxy 启动失败！查看: tail -50 /tmp/claw-hive.log"
-        exit 1
-    fi
-
-    # ---- Step 6: 改 baseUrl 指向 proxy ----
-    echo ""
-    log_info "修改 baseUrl → proxy..."
-    sed -i "s|https://api.minimax.io/anthropic|http://192.168.2.22:$PROXY_PORT/anthropic|g" "$OPENCLAW_JSON"
-
-    CURRENT_URL=$(cat "$OPENCLAW_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['models']['providers']['minimax-portal']['baseUrl'])" 2>/dev/null || echo "error")
-    if echo "$CURRENT_URL" | grep -q "$PROXY_PORT"; then
-        log_ok "baseUrl: $CURRENT_URL"
-    else
-        log_err "baseUrl 修改失败: $CURRENT_URL"
-        cp "$BACKUP_FILE" "$OPENCLAW_JSON"
-        exit 1
-    fi
-
-    # ---- Step 7: 强制重启 gateway（最关键的一步）----
-    echo ""
-    log_info "=== 强制重启 gateway（确保读取新配置）==="
-
-    force_kill_gateway
-
-    # 二次确认
-    sleep 1
-    if pgrep -f "openclaw.*gateway" > /dev/null 2>&1; then
-        log_err "Gateway 未能完全停止，恢复配置..."
-        cp "$BACKUP_FILE" "$OPENCLAW_JSON"
-        exit 1
-    fi
-    log_ok "确认 gateway 已完全停止"
-
-    # 启动新 gateway
-    echo ""
-    if ! start_gateway "proxy"; then
-        log_err "Gateway 启动失败，恢复配置..."
-        cp "$BACKUP_FILE" "$OPENCLAW_JSON"
-        force_kill_gateway
-        start_gateway "正常" || true
-        exit 1
-    fi
-
-    # ---- Step 8: 最终验证 ----
-    echo ""
-    log_info "最终验证..."
-
-    # 验证 proxy 还在
-    HEALTH=$(curl -s http://localhost:$PROXY_PORT/_health 2>/dev/null)
-    if echo "$HEALTH" | grep -q '"ok"'; then
-        log_ok "Proxy 正常"
-    else
-        log_err "Proxy 挂了！"
+        log_err "Proxy: 未运行"
     fi
 
     # 验证 baseUrl
-    CURRENT_URL=$(cat "$OPENCLAW_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['models']['providers']['minimax-portal']['baseUrl'])" 2>/dev/null || echo "error")
+    CURRENT_URL=$(get_baseurl)
     if echo "$CURRENT_URL" | grep -q "$PROXY_PORT"; then
-        log_ok "配置正确: $CURRENT_URL"
+        log_ok "baseUrl: $CURRENT_URL (走 Proxy)"
     else
-        log_err "配置异常: $CURRENT_URL"
+        log_err "baseUrl: $CURRENT_URL (未修改!)"
     fi
 
-    # ---- 完成 ----
+    # 验证 gateway
+    if pgrep -f "openclaw" > /dev/null 2>&1; then
+        COUNT=$(pgrep -f "openclaw" 2>/dev/null | wc -l)
+        log_ok "Gateway: 运行中 ($COUNT 个进程)"
+    else
+        log_err "Gateway: 未运行"
+    fi
+
+    # 完成
     echo ""
     echo "=============================="
-    echo -e "  ${GREEN}🎉 Debug Proxy 已启动！${NC}"
+    echo -e "  ${GREEN}🎉 Debug Proxy 模式${NC}"
     echo "=============================="
     echo ""
-    echo "  Proxy:     http://192.168.2.22:$PROXY_PORT"
-    echo "  Dashboard: http://192.168.2.22:$CLAW_HIVE_PORT"
+    echo "  本机 IP:   $LOCAL_IP"
+    echo "  Proxy:     http://${LOCAL_IP}:$PROXY_PORT"
+    echo "  Dashboard: http://${LOCAL_IP}:$CLAW_HIVE_PORT"
     echo ""
-    echo "  现在通过 Telegram 发一条消息给 coder 测试。"
-    echo "  ❌ 不要发: hi / test / hello"
-    echo "  ✅ 要发: 请帮我检查一下 claw-hive 项目的文件结构"
+    echo "  测试方法:"
+    echo "    通过 Telegram 发消息给 coder"
     echo ""
-    echo "  查看结果:"
-    echo "    curl http://192.168.2.22:$CLAW_HIVE_PORT/api/debug-proxy/captures"
+    echo "  查看捕获:"
+    echo "    curl http://${LOCAL_IP}:$CLAW_HIVE_PORT/api/debug-proxy/captures"
     echo ""
-    echo "  查看日志:"
-    echo "    tail -f /tmp/claw-hive.log | grep Proxy"
-    echo ""
-    echo "  ⚠️  恢复正常: bash $0 stop"
+    echo "  恢复正常:"
+    echo "    bash $0 stop"
     echo ""
 }
 
@@ -302,57 +479,78 @@ do_status() {
     echo "  当前状态检查"
     echo "=============================="
     echo ""
+    
+    log_info "本机 IP: $LOCAL_IP"
+    echo ""
 
-    # claw-hive server
-    if pgrep -f "node src/server.js" > /dev/null; then
-        log_ok "claw-hive server: 运行中 (PID: $(pgrep -f 'node src/server.js' | head -1))"
+    # openclaw 进程
+    COUNT=$(pgrep -f "openclaw" 2>/dev/null | wc -l)
+    if [ "$COUNT" -gt 5 ]; then
+        log_err "openclaw 进程数: $COUNT（过多！运行: bash $0 killall）"
+    elif [ "$COUNT" -gt 0 ]; then
+        log_ok "openclaw 进程数: $COUNT"
+    else
+        log_warn "openclaw 进程数: 0（未运行）"
+    fi
+
+    # 内存
+    OPENCLAW_MEM=$(ps aux 2>/dev/null | grep openclaw | grep -v grep | awk '{sum += $6} END {print int(sum/1024)}')
+    if [ -n "$OPENCLAW_MEM" ] && [ "$OPENCLAW_MEM" -gt 1000 ]; then
+        log_err "openclaw 内存: ${OPENCLAW_MEM}MB（过高！）"
+    else
+        log_ok "openclaw 内存: ${OPENCLAW_MEM:-0}MB"
+    fi
+
+    # claw-hive
+    if pgrep -f "node src/server.js" > /dev/null 2>&1; then
+        log_ok "claw-hive server: 运行中"
     else
         log_err "claw-hive server: 未运行"
     fi
 
-    # proxy health
+    # proxy
     HEALTH=$(curl -s http://localhost:$PROXY_PORT/_health 2>/dev/null)
     if echo "$HEALTH" | grep -q '"ok"'; then
-        log_ok "Proxy: 运行中 — $HEALTH"
+        log_ok "Proxy: 运行中"
     else
         log_err "Proxy: 未运行"
     fi
 
     # gateway
-    if pgrep -f "openclaw.*gateway" > /dev/null; then
-        log_ok "Gateway: 运行中 (PID: $(pgrep -f 'openclaw.*gateway' | head -1))"
+    if pgrep -f "openclaw.*gateway" > /dev/null 2>&1; then
+        log_ok "Gateway: 运行中"
     else
         log_err "Gateway: 未运行"
     fi
 
     # baseUrl
-    CURRENT_URL=$(cat "$OPENCLAW_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['models']['providers']['minimax-portal']['baseUrl'])" 2>/dev/null || echo "parse error")
+    CURRENT_URL=$(get_baseurl)
     if echo "$CURRENT_URL" | grep -q "$PROXY_PORT"; then
-        log_warn "baseUrl: $CURRENT_URL (走 proxy)"
+        log_warn "baseUrl: $CURRENT_URL (走 Proxy)"
+    elif [ "$CURRENT_URL" = "$ORIGINAL_URL" ]; then
+        log_ok "baseUrl: $CURRENT_URL (正常)"
     else
-        log_ok "baseUrl: $CURRENT_URL (正常模式)"
+        log_err "baseUrl: $CURRENT_URL (异常)"
     fi
 
-    # captures
-    CAPTURES=$(curl -s http://localhost:$CLAW_HIVE_PORT/api/debug-proxy/status 2>/dev/null)
-    if [ -n "$CAPTURES" ]; then
-        log_info "Proxy 状态: $CAPTURES"
-    fi
+    echo ""
+}
 
-    # backup
-    if [ -f "$BACKUP_FILE" ]; then
-        log_ok "备份文件: 存在"
-    else
-        log_warn "备份文件: 不存在"
-    fi
-
-    # isStreaming
-    if grep -q "const isStreaming = true" "$LLM_PROXY_FILE" 2>/dev/null; then
-        log_ok "isStreaming: 强制 true"
-    else
-        log_warn "isStreaming: Content-Type 检测"
-    fi
-
+# ============================================================
+# killall — 只杀死所有 openclaw 进程
+# ============================================================
+do_killall() {
+    echo ""
+    echo "=============================="
+    echo "  清理所有 openclaw 进程"
+    echo "=============================="
+    
+    kill_all_openclaw
+    
+    echo ""
+    echo "重新启动 gateway:"
+    echo "  systemctl --user start openclaw-gateway.service"
+    echo "  或: npx openclaw gateway"
     echo ""
 }
 
@@ -369,12 +567,19 @@ case "${1:-status}" in
     status)
         do_status
         ;;
+    killall)
+        do_killall
+        ;;
     *)
-        echo "用法: bash $0 [start|stop|status]"
+        echo "用法: bash $0 [start|stop|status|killall]"
         echo ""
-        echo "  start  — 启动 proxy 模式（拦截所有 LLM 请求）"
-        echo "  stop   — 恢复正常模式（直连 MiniMax）"
-        echo "  status — 检查当前状态"
+        echo "  start   — 启动 proxy 模式"
+        echo "  stop    — 恢复正常模式"
+        echo "  status  — 检查当前状态"
+        echo "  killall — 杀死所有 openclaw 进程"
+        echo ""
+        echo "环境变量:"
+        echo "  PROXY_HOST — 指定 IP（默认自动检测）"
         exit 1
         ;;
 esac
