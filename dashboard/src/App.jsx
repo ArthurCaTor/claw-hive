@@ -1387,31 +1387,20 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
 
   // Handle agent selection change
   const handleAgentChange = (newAgent) => {
-    // Immediately update selected agent
+    console.log('Agent changed to:', newAgent, 'Available sessions:', agentSessions);
+    
+    // Get sessions for the new agent from cached data
+    const sessions = agentSessions[newAgent] || [];
+    console.log('Sessions for', newAgent, ':', sessions);
+    
+    // Update selected agent
     setSelectedAgent(newAgent);
     
-    // Check if we already have sessions for this agent from initial load
-    if (agentSessions[newAgent] && agentSessions[newAgent].length > 0) {
-      // Use cached sessions, auto-select most recent
-      setSelectedSession(agentSessions[newAgent][0].sessionId);
+    // Auto-select the most recent session (if available)
+    if (sessions.length > 0) {
+      setSelectedSession(sessions[0].sessionId);
     } else {
-      // Fetch fresh sessions if not cached
       setSelectedSession('');
-      fetch(`${API_BASE}/api/sessions`)
-        .then(r => r.json())
-        .then(data => {
-          const sortedSessions = [...(data[newAgent] || [])].sort((a, b) => 
-            new Date(b.mtime) - new Date(a.mtime)
-          );
-          setAgentSessions(prev => ({
-            ...prev,
-            [newAgent]: sortedSessions
-          }));
-          if (sortedSessions.length > 0) {
-            setSelectedSession(sortedSessions[0].sessionId);
-          }
-        })
-        .catch(console.error);
     }
   };
 
