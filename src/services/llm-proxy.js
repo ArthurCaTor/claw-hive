@@ -239,7 +239,8 @@ class LLMProxy extends EventEmitter {
             if (this.captures.length > this.MAX_CAPTURES) {
               this.captures = this.captures.slice(-this.MAX_CAPTURES);
             }
-            this.saveCaptureToFile(capture);
+            // ✅ OLD: Disabled - use CaptureFileWriter instead
+            // this.saveCaptureToFile(capture);
             this.emit('capture', capture);
             
             // ✅ Write to file (non-blocking)
@@ -287,7 +288,8 @@ class LLMProxy extends EventEmitter {
               this.captures = this.captures.slice(-this.MAX_CAPTURES);
             }
 
-            this.saveCaptureToFile(capture);
+            // ✅ OLD: Disabled - use CaptureFileWriter instead
+            // this.saveCaptureToFile(capture);
             this.emit('capture', capture);
 
             // ✅ Write to file (non-blocking)
@@ -321,7 +323,8 @@ class LLMProxy extends EventEmitter {
         if (this.captures.length > this.MAX_CAPTURES) {
           this.captures = this.captures.slice(-this.MAX_CAPTURES);
         }
-        this.saveCaptureToFile(errorCapture);
+        // ✅ OLD: Disabled - use CaptureFileWriter instead
+        // this.saveCaptureToFile(errorCapture);
         this.emit('capture', errorCapture);
 
         // ✅ Write to file (non-blocking)
