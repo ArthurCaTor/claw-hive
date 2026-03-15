@@ -1408,15 +1408,22 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
 
   // Load session events when selection changes
   React.useEffect(() => {
+    console.log('Loading session:', selectedAgent, selectedSession);
     if (!selectedAgent || !selectedSession) return;
+    
     fetch(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}`)
-      .then(r => r.json())
+      .then(r => {
+        console.log('Session response status:', r.status);
+        return r.json();
+      })
       .then(data => {
+        console.log('Session data:', data);
         if (data.events) {
           setContextEvents(data.events.slice(-500));
         }
       })
-      .catch(console.error);
+      .catch(err => console.error('Session fetch error:', err));
+      
     fetch(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}/watch`, { method: 'POST' })
       .catch(console.error);
   }, [selectedAgent, selectedSession]);
