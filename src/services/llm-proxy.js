@@ -438,13 +438,11 @@ class LLMProxy extends EventEmitter {
         method: capturedRequest.method,
         path: capturedRequest.path,
         headers: capturedRequest.headers,
-        // ✅ Only store truncated body preview
-        bodyPreview: this.truncateBody(capturedRequest.body),
+        body: capturedRequest.body, // Full body
       },
       response: {
         status: responseData.status,
-        // ✅ Only store truncated response preview  
-        bodyPreview: this.truncateBody(responseData.body),
+        body: responseData.body, // Full body
         tokens: tokens,
       },
       latency_ms: latency,
