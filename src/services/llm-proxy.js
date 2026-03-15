@@ -88,7 +88,7 @@ class LLMProxy extends EventEmitter {
     
     // ✅ FIX: Memory leak prevention
     this.MAX_CAPTURES = 100;
-    this.MAX_BODY_SIZE = 1024; // 1KB preview only
+    this.MAX_BODY_SIZE = 100 * 1024 * 1024; // 100MB - store full body
     
     // ✅ FIX: Memory monitoring (every 60 seconds)
     this.memoryCheckInterval = setInterval(() => {
