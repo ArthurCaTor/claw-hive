@@ -808,10 +808,10 @@ function ModelsPage({ theme }) {
   const [modelsConfig, setModelsConfig] = React.useState(null);
 
   React.useEffect(() => {
-    // ✅ Use new direct file reader API (no CLI calls!)
-    fetch(`${API_BASE}/api/openclaw/agents`)
+    // ✅ Get agent STATUS from old API (uses agentStore, not CLI)
+    fetch(`${API_BASE}/api/agents`)
       .then(r => r.json())
-      .then(data => setAgents(data.agents || []))
+      .then(data => setAgents(data)) // Array of agents with status
       .catch(console.error);
     
     fetch(`${API_BASE}/api/config/models`)
@@ -1404,7 +1404,7 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
 
   // Fetch all agents on mount
   React.useEffect(() => {
-    // ✅ Use new direct file reader API (no CLI calls!)
+    // ✅ Get sessions from new API (no CLI calls!)
     fetch(`${API_BASE}/api/openclaw/dashboard`)
       .then(r => r.json())
       .then(data => {
