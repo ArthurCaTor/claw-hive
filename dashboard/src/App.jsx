@@ -1332,7 +1332,8 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
   const t = themes[theme];
   const [selectedAgent, setSelectedAgent] = React.useState('');
   const [selectedSession, setSelectedSession] = React.useState('');
-  const [agents, setAgents] = React.useState({});
+  const [agentSessions, setAgentSessions] = React.useState({}); // Store sessions per agent
+  const [agents, setAgents] = React.useState([]); // List of agent names
   const [autoScroll, setAutoScroll] = React.useState(true);
   const [view, setView] = React.useState('live');
   const [filters, setFilters] = React.useState({
@@ -1354,32 +1355,67 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
     }
   }, [contextEvents, autoScroll]);
 
-  // Fetch agents and sessions
+  // Fetch all agents on mount
   React.useEffect(() => {
     fetch(`${API_BASE}/api/sessions`)
       .then(r => r.json())
       .then(data => {
+        // Get list of agent names
+        const agentList = Object.keys(data);
+        setAgents(agentList);
+        
         // Sort sessions by mtime (newest first) for each agent
-        const sortedData = {};
-        Object.keys(data).forEach(agent => {
-          sortedData[agent] = [...data[agent]].sort((a, b) => 
+        const sortedSessions = {};
+        agentList.forEach(agent => {
+          sortedSessions[agent] = [...data[agent]].sort((a, b) => 
             new Date(b.mtime) - new Date(a.mtime)
           );
         });
-        setAgents(sortedData);
+        setAgentSessions(sortedSessions);
         
-        const agentList = Object.keys(sortedData);
+        // Default to "coder" if available, otherwise first agent
         if (agentList.length > 0 && !selectedAgent) {
-          // Default to "coder" if available, otherwise first agent
           const defaultAgent = agentList.includes('coder') ? 'coder' : agentList[0];
           setSelectedAgent(defaultAgent);
-          if (sortedData[defaultAgent].length > 0) {
-            setSelectedSession(sortedData[defaultAgent][0].sessionId);
+          if (sortedSessions[defaultAgent]?.length > 0) {
+            setSelectedSession(sortedSessions[defaultAgent][0].sessionId);
           }
         }
       })
       .catch(console.error);
   }, []);
+
+  // Fetch sessions when user selects a different agent (Requirement 2)
+  const handleAgentChange = (newAgent) => {
+    setSelectedAgent(newAgent);
+    // Fetch fresh sessions for the selected agent
+    fetch(`${API_BASE}/api/sessions`)
+      .then(r => r.json())
+      .then(data => {
+        // Sort sessions by mtime (newest first)
+        const sortedSessions = [...(data[newAgent] || [])].sort((a, b) => 
+          new Date(b.mtime) - new Date(a.mtime)
+        );
+        // Update the sessions for this agent
+        setAgentSessions(prev => ({
+          ...prev,
+          [newAgent]: sortedSessions
+        }));
+        // Auto-select the most recent session
+        if (sortedSessions.length > 0) {
+          setSelectedSession(sortedSessions[0].sessionId);
+        } else {
+          setSelectedSession('');
+        }
+      })
+      .catch(console.error);
+  };
+
+  // Handle session selection (Requirement 3)
+  const handleSessionChange = (newSession) => {
+    setSelectedSession(newSession);
+    // Right panel updates automatically via the useEffect below
+  };
 
   // Load session events when selection changes
   React.useEffect(() => {
@@ -1641,15 +1677,15 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
           <div style={{ width: 200, borderRight: `1px solid ${t.border}`, padding: 12, background: t.bgSecondary || '#1a1a2e', overflowY: 'auto', fontSize: 11 }}>
             <div style={{ marginBottom: 12 }}>
               <div style={{ color: t.textMuted, marginBottom: 3, fontWeight: 500 }}>AGENT</div>
-              <select value={selectedAgent} onChange={e => { setSelectedAgent(e.target.value); const sessions = agents[e.target.value]; if (sessions?.length > 0) setSelectedSession(sessions[0].sessionId); }} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontSize: 11 }}>
-                {Object.keys(agents).map(agent => <option key={agent} value={agent}>{agent}</option>)}
+              <select value={selectedAgent} onChange={e => handleAgentChange(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontSize: 11 }}>
+                {agents.map(agent => <option key={agent} value={agent}>{agent}</option>)}
               </select>
             </div>
-            {selectedAgent && agents[selectedAgent] && (
+            {selectedAgent && agentSessions[selectedAgent] && (
               <div style={{ marginBottom: 12 }}>
                 <div style={{ color: t.textMuted, marginBottom: 3, fontWeight: 500 }}>SESSION</div>
-                <select value={selectedSession} onChange={e => setSelectedSession(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontSize: 11 }}>
-                  {agents[selectedAgent].map(s => <option key={s.sessionId} value={s.sessionId}>{s.sessionId.slice(0, 12)}...</option>)}
+                <select value={selectedSession} onChange={e => handleSessionChange(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: `1px solid ${t.border}`, background: t.bg, color: t.text, fontSize: 11 }}>
+                  {agentSessions[selectedAgent].map(s => <option key={s.sessionId} value={s.sessionId}>{s.sessionId.slice(0, 12)}... ({new Date(s.mtime).toLocaleString()})</option>)}
                 </select>
               </div>
             )}
