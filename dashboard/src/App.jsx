@@ -2334,20 +2334,19 @@ function AppContent() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // ✅ Use new direct file reader API (no CLI calls!)
-        const [dashboardRes, statsRes] = await Promise.all([
-          fetch(`${API_BASE}/api/openclaw/dashboard`),
+        // ✅ Get STATUS from /api/agents (agentStore), SESSIONS from /api/openclaw
+        const [agentsRes, dashboardRes, statsRes] = await Promise.all([
+          fetch(`${API_BASE}/api/agents`),  // For status/heartbeat
+          fetch(`${API_BASE}/api/openclaw/dashboard`),  // For sessions
           fetch(`${API_BASE}/api/stats`),
         ]);
-        const dashboardData = await dashboardRes.json();
+        
+        const agentsData = await agentsRes.json(); // Array with status
+        const dashboardData = await dashboardRes.json(); // Sessions
         const statsData = await statsRes.json();
         
-        // Get unique agents from sessions
-        const agentSet = new Set();
-        (dashboardData.sessions || []).forEach(s => {
-          if (s.agent) agentSet.add(s.agent);
-        });
-        setAgents(Array.from(agentSet));
+        // ✅ Keep original agents data (with status/heartbeat)
+        setAgents(agentsData);
         setStats(statsData);
         setLastUpdate(new Date());
         setApiError(false);
