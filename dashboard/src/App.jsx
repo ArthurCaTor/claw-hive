@@ -1385,33 +1385,34 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
       .catch(console.error);
   }, []);
 
-  // Fetch sessions when user selects a different agent (Requirement 2)
+  // Handle agent selection change
   const handleAgentChange = (newAgent) => {
-    // Immediately update selected agent (UI will update dropdown options)
+    // Immediately update selected agent
     setSelectedAgent(newAgent);
-    setSelectedSession(''); // Clear session while loading
     
-    // Fetch fresh sessions for the selected agent
-    fetch(`${API_BASE}/api/sessions`)
-      .then(r => r.json())
-      .then(data => {
-        // Sort sessions by mtime (newest first)
-        const sortedSessions = [...(data[newAgent] || [])].sort((a, b) => 
-          new Date(b.mtime) - new Date(a.mtime)
-        );
-        
-        // Update sessions for this agent in state
-        setAgentSessions(prev => ({
-          ...prev,
-          [newAgent]: sortedSessions
-        }));
-        
-        // Auto-select the most recent session (c)
-        if (sortedSessions.length > 0) {
-          setSelectedSession(sortedSessions[0].sessionId);
-        }
-      })
-      .catch(console.error);
+    // Check if we already have sessions for this agent from initial load
+    if (agentSessions[newAgent] && agentSessions[newAgent].length > 0) {
+      // Use cached sessions, auto-select most recent
+      setSelectedSession(agentSessions[newAgent][0].sessionId);
+    } else {
+      // Fetch fresh sessions if not cached
+      setSelectedSession('');
+      fetch(`${API_BASE}/api/sessions`)
+        .then(r => r.json())
+        .then(data => {
+          const sortedSessions = [...(data[newAgent] || [])].sort((a, b) => 
+            new Date(b.mtime) - new Date(a.mtime)
+          );
+          setAgentSessions(prev => ({
+            ...prev,
+            [newAgent]: sortedSessions
+          }));
+          if (sortedSessions.length > 0) {
+            setSelectedSession(sortedSessions[0].sessionId);
+          }
+        })
+        .catch(console.error);
+    }
   };
 
   // Handle session selection (Requirement 3)
