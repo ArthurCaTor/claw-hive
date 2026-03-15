@@ -1075,6 +1075,57 @@ function DebugProxyPage({ theme }) {
     }
   };
 
+  // Save capture as .md file
+  const saveCaptureAsMd = () => {
+    if (!captureDetail) return;
+    
+    const now = new Date();
+    const timestamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    const apiName = captureDetail.api || 'api-call';
+    const filename = `${apiName}-${timestamp}-${captureDetail.id}.md`;
+    
+    // Generate markdown content
+    const md = `# API Call #${captureDetail.id}
+
+**Timestamp:** ${new Date(captureDetail.timestamp).toLocaleString()}
+**Status:** ${captureDetail.status}
+
+## Request
+
+### System
+\`\`\`
+${typeof captureDetail.request?.body?.system === 'string' 
+  ? captureDetail.request.body.system 
+  : JSON.stringify(captureDetail.request?.body?.system, null, 2)}
+\`\`\`
+
+### Messages
+${captureDetail.request?.body?.messages?.map((msg, i) => `### ${msg.role}
+${JSON.stringify(msg.content || msg, null, 2)}`).join('\n\n') || '(none)'}
+
+### Tools
+${captureDetail.request?.body?.tools?.map(tool => `#### ${tool.name}
+${tool.description || ''}
+\`\`\`json
+${JSON.stringify(tool.parameters || {}, null, 2)}
+\`\`\``).join('\n\n') || '(none)'}
+
+## Response
+\`\`\`
+${captureDetail.response?.body?.assistant_text || JSON.stringify(captureDetail.response?.body, null, 2)}
+\`\`\`
+`;
+    
+    // Create and trigger download
+    const blob = new Blob([md], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   // Divider drag handlers
   const handleMouseDown = () => { isDragging.current = true; };
   const handleMouseUp = () => { isDragging.current = false; };
@@ -1247,9 +1298,14 @@ function DebugProxyPage({ theme }) {
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: t.text }}>#{captureDetail.id}</span>
-                <button onClick={() => { setSelectedCapture(null); setCaptureDetail(null); }} style={{
-                  background: 'transparent', color: t.textMuted, border: 'none', cursor: 'pointer', fontSize: 12,
-                }}>✕</button>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button onClick={saveCaptureAsMd} title="Save as .md" style={{
+                    background: 'transparent', color: t.textMuted, border: 'none', cursor: 'pointer', fontSize: 12,
+                  }}>💾</button>
+                  <button onClick={() => { setSelectedCapture(null); setCaptureDetail(null); }} style={{
+                    background: 'transparent', color: t.textMuted, border: 'none', cursor: 'pointer', fontSize: 12,
+                  }}>✕</button>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
                 {['system', 'messages', 'tools', 'raw'].map(tab => (
