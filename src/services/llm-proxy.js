@@ -85,6 +85,23 @@ class LLMProxy extends EventEmitter {
     this.captures = [];
     this.callCounter = 0;
     this.startedAt = null;
+    
+    // ✅ FIX: Memory leak prevention
+    this.MAX_CAPTURES = 100;
+    this.MAX_BODY_SIZE = 1024; // 1KB preview only
+    
+    // ✅ FIX: Memory monitoring (every 60 seconds)
+    this.memoryCheckInterval = setInterval(() => {
+      const usage = process.memoryUsage();
+      const heapUsedMB = Math.round(usage.heapUsed / 1024 / 1024);
+      const heapTotalMB = Math.round(usage.heapTotal / 1024 / 1024);
+      
+      console.log(`[Proxy-Memory] Heap: ${heapUsedMB}MB / ${heapTotalMB}MB`);
+      
+      if (heapUsedMB > 500) {
+        console.warn(`[Proxy-Memory] WARNING: High memory usage! ${heapUsedMB}MB`);
+      }
+    }, 60000);
   }
 
   async start() {
@@ -196,30 +213,25 @@ class LLMProxy extends EventEmitter {
           const assistantText = extractTextFromSSE(fullStreamText);
 
           try {
-            const capture = {
-              id: callId,
-              timestamp: new Date().toISOString(),
-              request: capturedRequest,
-              response: {
+            // ✅ Use safe capture with truncated bodies
+            const capture = this.createSafeCapture(
+              callId,
+              new Date().toISOString(),
+              capturedRequest,
+              {
                 status: apiResponse.status,
-                headers: Object.fromEntries(apiResponse.headers.entries()),
-                body: {
-                  _streaming: true,
-                  _raw_length: fullStreamText.length,
-                  assistant_text: assistantText,
-                  usage: usage,
-                },
+                body: { _streaming: true, _raw_length: fullStreamText.length, assistant_text: assistantText, usage: usage },
               },
-              latency_ms: latency,
-              tokens: {
+              latency,
+              {
                 input: usage?.input_tokens || 0,
                 output: usage?.output_tokens || 0,
-              },
-            };
+              }
+            );
 
             this.captures.push(capture);
-            if (this.captures.length > MAX_MEMORY_CAPTURES) {
-              this.captures = this.captures.slice(-MAX_MEMORY_CAPTURES);
+            if (this.captures.length > this.MAX_CAPTURES) {
+              this.captures = this.captures.slice(-this.MAX_CAPTURES);
             }
             this.saveCaptureToFile(capture);
             this.emit('capture', capture);
@@ -244,26 +256,26 @@ class LLMProxy extends EventEmitter {
 
           // Record (after response, won't block OpenClaw)
           try {
-            const capture = {
-              id: callId,
-              timestamp: new Date().toISOString(),
-              request: capturedRequest,
-              response: {
+            // ✅ Use safe capture with truncated bodies
+            const capture = this.createSafeCapture(
+              callId,
+              new Date().toISOString(),
+              capturedRequest,
+              {
                 status: apiResponse.status,
-                headers: Object.fromEntries(apiResponse.headers.entries()),
                 body: responseBody,
               },
-              latency_ms: latency,
-              tokens: {
+              latency,
+              {
                 input: responseBody?.usage?.input_tokens || 0,
                 output: responseBody?.usage?.output_tokens || 0,
-              },
-            };
+              }
+            );
 
             // Mechanism 5: Memory protection
             this.captures.push(capture);
-            if (this.captures.length > MAX_MEMORY_CAPTURES) {
-              this.captures = this.captures.slice(-MAX_MEMORY_CAPTURES);
+            if (this.captures.length > this.MAX_CAPTURES) {
+              this.captures = this.captures.slice(-this.MAX_CAPTURES);
             }
 
             this.saveCaptureToFile(capture);
@@ -283,19 +295,19 @@ class LLMProxy extends EventEmitter {
         const latency = Date.now() - startTime;
         console.error(`[Proxy] #${callId} ERROR:`, err.message);
 
-        const errorCapture = {
-          id: callId,
-          timestamp: new Date().toISOString(),
-          request: capturedRequest,
-          response: {
-            status: 502,
-            body: { error: err.message },
-          },
-          latency_ms: latency,
-          tokens: { input: 0, output: 0 },
-        };
+        const errorCapture = this.createSafeCapture(
+          callId,
+          new Date().toISOString(),
+          capturedRequest,
+          { status: 502, body: { error: err.message } },
+          latency,
+          { input: 0, output: 0 }
+        );
 
         this.captures.push(errorCapture);
+        if (this.captures.length > this.MAX_CAPTURES) {
+          this.captures = this.captures.slice(-this.MAX_CAPTURES);
+        }
         this.saveCaptureToFile(errorCapture);
         this.emit('capture', errorCapture);
 
@@ -360,6 +372,11 @@ class LLMProxy extends EventEmitter {
         this.server = null;
         this.app = null;
         this.startedAt = null;
+        // ✅ Clear memory monitoring interval
+        if (this.memoryCheckInterval) {
+          clearInterval(this.memoryCheckInterval);
+          this.memoryCheckInterval = null;
+        }
         console.log(`[Proxy] Stopped. Total calls captured: ${totalCalls}`);
         resolve({ success: true, totalCalls });
       });
@@ -386,7 +403,54 @@ class LLMProxy extends EventEmitter {
     return this.captures.find(c => c.id === id);
   }
 
-  sanitizeHeaders(headers) {
+  /**
+   * Truncate body to prevent memory bloat
+   */
+  truncateBody(body) {
+    if (!body) return null;
+    
+    let str;
+    if (typeof body === 'string') {
+      str = body;
+    } else {
+      try {
+        str = JSON.stringify(body);
+      } catch (e) {
+        return '[Unable to stringify]';
+      }
+    }
+    
+    if (str.length <= this.MAX_BODY_SIZE) {
+      return str;
+    }
+    
+    return str.substring(0, this.MAX_BODY_SIZE) + '... [TRUNCATED]';
+  }
+
+  /**
+   * Create a memory-safe capture record
+   */
+  createSafeCapture(callId, timestamp, capturedRequest, responseData, latency, tokens) {
+    return {
+      id: callId,
+      timestamp: timestamp,
+      request: {
+        method: capturedRequest.method,
+        path: capturedRequest.path,
+        headers: capturedRequest.headers,
+        // ✅ Only store truncated body preview
+        bodyPreview: this.truncateBody(capturedRequest.body),
+      },
+      response: {
+        status: responseData.status,
+        // ✅ Only store truncated response preview  
+        bodyPreview: this.truncateBody(responseData.body),
+        tokens: tokens,
+      },
+      latency_ms: latency,
+      tokens: tokens,
+    };
+  }
     const safe = {};
     for (const [key, value] of Object.entries(headers || {})) {
       if (!value) continue;
