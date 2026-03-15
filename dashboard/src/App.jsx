@@ -1359,13 +1359,22 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
     fetch(`${API_BASE}/api/sessions`)
       .then(r => r.json())
       .then(data => {
-        setAgents(data);
-        const agentList = Object.keys(data);
+        // Sort sessions by mtime (newest first) for each agent
+        const sortedData = {};
+        Object.keys(data).forEach(agent => {
+          sortedData[agent] = [...data[agent]].sort((a, b) => 
+            new Date(b.mtime) - new Date(a.mtime)
+          );
+        });
+        setAgents(sortedData);
+        
+        const agentList = Object.keys(sortedData);
         if (agentList.length > 0 && !selectedAgent) {
-          const agent = agentList[0];
-          setSelectedAgent(agent);
-          if (data[agent].length > 0) {
-            setSelectedSession(data[agent][0].sessionId);
+          // Default to "coder" if available, otherwise first agent
+          const defaultAgent = agentList.includes('coder') ? 'coder' : agentList[0];
+          setSelectedAgent(defaultAgent);
+          if (sortedData[defaultAgent].length > 0) {
+            setSelectedSession(sortedData[defaultAgent][0].sessionId);
           }
         }
       })
