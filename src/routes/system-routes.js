@@ -74,7 +74,7 @@ module.exports = function(app, { sessionWatcher, debugService, OPENCLAW_DIR, fin
   });
 
   // Get single session
-  app.get('/api/sessions/:Agent/:sessionId', (req, res) => {
+  app.get('/api/sessions/:agent/:sessionId', (req, res) => {
     const { agent, sessionId } = req.params;
     
     // Security: validate inputs
@@ -99,7 +99,7 @@ module.exports = function(app, { sessionWatcher, debugService, OPENCLAW_DIR, fin
   });
 
   // Watch a session
-  app.post('/api/sessions/:Agent/:sessionId/watch', (req, res) => {
+  app.post('/api/sessions/:agent/:sessionId/watch', (req, res) => {
     const { agent, sessionId } = req.params;
     
     // Security: validate inputs
