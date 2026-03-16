@@ -177,7 +177,7 @@ class LLMProxy extends EventEmitter {
 
         // ========== 检测 Streaming vs JSON ==========
         const contentType = apiResponse.headers.get('content-type') || '';
-        const isStreaming = contentType.includes('text/event-stream') ||
+        const isStreaming = true; // FORCE: MiniMax always streams
           contentType.includes('text/plain') ||
           (req.body?.stream === true);
 

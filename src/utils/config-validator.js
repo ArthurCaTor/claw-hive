@@ -32,10 +32,13 @@ function validateConfig(config) {
     } else {
       // Validate each agent
       config.agents.list.forEach((agent, idx) => {
-        if (!agent.agent_id) {
-          errors.push(`agents.list[${idx}]: missing agent_id`);
+        // Accept both 'id' and 'agent_id'
+        const agentId = agent.agent_id || agent.id;
+        if (!agentId) {
+          errors.push(`agents.list[${idx}]: missing id/agent_id`);
         }
-        if (!agent.name) {
+        // Warn if name is missing but prefer identity.name
+        if (!agent.name && !agent.identity?.name) {
           warnings.push(`agents.list[${idx}]: missing name`);
         }
       });
