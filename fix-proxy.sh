@@ -495,7 +495,7 @@ do_status() {
 
     # 内存
     OPENCLAW_MEM=$(ps aux 2>/dev/null | grep openclaw | grep -v grep | awk '{sum += $6} END {print int(sum/1024)}')
-    if [ -n "$OPENCLAW_MEM" ] && [ "$OPENCLAW_MEM" -gt 1000 ]; then
+    if [ -n "$OPENCLAW_MEM" ] && [ "$OPENCLAW_MEM" -gt 3000 ]; then
         log_err "openclaw 内存: ${OPENCLAW_MEM}MB（过高！）"
     else
         log_ok "openclaw 内存: ${OPENCLAW_MEM:-0}MB"

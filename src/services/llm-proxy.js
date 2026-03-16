@@ -1,4 +1,5 @@
 // LLM Proxy Service - Intercept and record LLM API requests
+// LLM 代理服务 - 拦截并记录 LLM API 请求
 
 const express = require('express');
 const http = require('http');
@@ -6,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { EventEmitter } = require('events');
 const { captureFileWriter } = require('./capture-file-writer');
+const { logger } = require('../utils/logger');
 
 const CAPTURES_DIR = path.join(process.cwd(), 'captures');
 const REAL_API = 'https://api.minimax.io';
@@ -93,7 +95,7 @@ class LLMProxy extends EventEmitter {
     
     // ✅ Initialize file writer
     captureFileWriter.initialize().catch(err => {
-      console.error('[LLMProxy] Failed to initialize file writer:', err);
+      logger.error({ err }, '[LLMProxy] Failed to initialize file writer');
     });
     
     // ✅ FIX: Memory monitoring (every 60 seconds)
@@ -102,10 +104,10 @@ class LLMProxy extends EventEmitter {
       const heapUsedMB = Math.round(usage.heapUsed / 1024 / 1024);
       const heapTotalMB = Math.round(usage.heapTotal / 1024 / 1024);
       
-      console.log(`[Proxy-Memory] Heap: ${heapUsedMB}MB / ${heapTotalMB}MB`);
+      logger.info({ heapUsedMB, heapTotalMB }, '[LLMProxy] [Proxy-Memory] Heap');
       
       if (heapUsedMB > 500) {
-        console.warn(`[Proxy-Memory] WARNING: High memory usage! ${heapUsedMB}MB`);
+        logger.warn({ heapUsedMB }, '[LLMProxy] [Proxy-Memory] WARNING: High memory usage');
       }
     }, 60000);
   }
@@ -123,7 +125,7 @@ class LLMProxy extends EventEmitter {
 
     // Log ALL incoming requests for debugging
     this.app.use((req, res, next) => {
-      console.log(`[Proxy] INCOMING: ${req.method} ${req.url} ${req.path}`);
+      logger.info({ method: req.method, url: req.url, path: req.path }, '[LLMProxy] [Proxy] INCOMING');
       next();
     });
 
@@ -175,7 +177,9 @@ class LLMProxy extends EventEmitter {
 
         // ========== 检测 Streaming vs JSON ==========
         const contentType = apiResponse.headers.get('content-type') || '';
-        const isStreaming = true;
+        const isStreaming = contentType.includes('text/event-stream') ||
+          contentType.includes('text/plain') ||
+          (req.body?.stream === true);
 
         if (isStreaming) {
           // ========== STREAMING 模式 ==========
@@ -204,7 +208,7 @@ class LLMProxy extends EventEmitter {
               chunks.push(decoder.decode(value, { stream: true }));
             }
           } catch (pipeErr) {
-            console.error(`[Proxy] #${callId} Stream pipe error:`, pipeErr.message);
+            logger.error({ callId, err: pipeErr.message }, '[LLMProxy] [Proxy] Stream pipe error');
           }
 
           res.end();
@@ -246,13 +250,17 @@ class LLMProxy extends EventEmitter {
             // ✅ Write to file (non-blocking)
             captureFileWriter.write('default', capture);
 
-            console.log(
-              `[Proxy] #${callId} STREAM ${req.method} ${req.path} → ` +
-              `${apiResponse.status} ${latency}ms ` +
-              `(in:${usage?.input_tokens || '?'} out:${usage?.output_tokens || '?'})`
-            );
+            logger.info({ 
+              callId, 
+              method: req.method, 
+              path: req.path, 
+              status: apiResponse.status, 
+              latency,
+              inputTokens: usage?.input_tokens,
+              outputTokens: usage?.output_tokens
+            }, '[LLMProxy] [Proxy] STREAM');
           } catch (recordErr) {
-            console.error(`[Proxy] #${callId} Record error (non-fatal):`, recordErr.message);
+            logger.error({ callId, err: recordErr.message }, '[LLMProxy] [Proxy] Record error (non-fatal)');
           }
 
         } else {
@@ -295,20 +303,24 @@ class LLMProxy extends EventEmitter {
             // ✅ Write to file (non-blocking)
             captureFileWriter.write('default', capture);
 
-            console.log(
-              `[Proxy] #${callId} JSON ${req.method} ${req.path} → ` +
-              `${apiResponse.status} ${latency}ms ` +
-              `(in:${capture.tokens.input} out:${capture.tokens.output})`
-            );
+            logger.info({ 
+              callId, 
+              method: req.method, 
+              path: req.path, 
+              status: apiResponse.status, 
+              latency,
+              inputTokens: capture.tokens.input,
+              outputTokens: capture.tokens.output
+            }, '[LLMProxy] [Proxy] JSON');
           } catch (recordErr) {
-            console.error(`[Proxy] #${callId} Record error (non-fatal):`, recordErr.message);
+            logger.error({ callId, err: recordErr.message }, '[LLMProxy] [Proxy] Record error (non-fatal)');
           }
 
         } 
 
       } catch (err) {
         const latency = Date.now() - startTime;
-        console.error(`[Proxy] #${callId} ERROR:`, err.message);
+        logger.error({ callId, err: err.message }, `[LLMProxy] [Proxy] #${callId} ERROR`);
 
         const errorCapture = this.createSafeCapture(
           callId,
@@ -339,7 +351,7 @@ class LLMProxy extends EventEmitter {
 
     // Mechanism 2: Global error fallback - direct passthrough
     this.app.use((err, req, res, next) => {
-      console.error('[Proxy] Unhandled error, attempting direct passthrough:', err.message);
+      logger.error({ err: err.message }, '[LLMProxy] [Proxy] Unhandled error, attempting direct passthrough');
       try {
         const targetUrl = `${REAL_API}${req.path}`;
         fetch(targetUrl, {
@@ -362,10 +374,10 @@ class LLMProxy extends EventEmitter {
         this.captures = [];
         this.callCounter = 0;
 
-        console.log(`[Proxy] Running on http://localhost:${this.port}`);
-        console.log(`[Proxy] Forwarding to ${REAL_API}`);
-        console.log(`[Proxy] Start OpenClaw with:`);
-        console.log(`  MINIMAX_API_HOST=http://localhost:${this.port} openclaw`);
+        logger.info({ port: this.port }, `[LLMProxy] [Proxy] Running on http://localhost:${this.port}`);
+        logger.info({ target: REAL_API }, `[LLMProxy] [Proxy] Forwarding to ${REAL_API}`);
+        logger.info('[LLMProxy] [Proxy] Start OpenClaw with:');
+        logger.info('  MINIMAX_API_HOST=http://localhost:${this.port} openclaw');
 
         resolve({ success: true, port: this.port });
       });
@@ -398,7 +410,7 @@ class LLMProxy extends EventEmitter {
         }
         // ✅ Shutdown file writer
         await captureFileWriter.shutdown();
-        console.log(`[Proxy] Stopped. Total calls captured: ${totalCalls}`);
+        logger.info({ totalCalls }, '[LLMProxy] [Proxy] Stopped. Total calls captured');
         resolve({ success: true, totalCalls });
       });
     });
@@ -492,7 +504,7 @@ class LLMProxy extends EventEmitter {
       const filepath = path.join(CAPTURES_DIR, filename);
       fs.writeFileSync(filepath, JSON.stringify(capture, null, 2));
     } catch (err) {
-      console.error('[Proxy] Failed to save capture:', err.message);
+      logger.error({ err: err.message }, '[LLMProxy] [Proxy] Failed to save capture');
     }
   }
 }

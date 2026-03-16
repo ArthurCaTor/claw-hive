@@ -2,6 +2,7 @@
 
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const WebSocket = require('ws');
 const path = require('path');
 const os = require('os');
@@ -10,29 +11,44 @@ const fs = require('fs');
 
 // Utils
 const { createRateLimiter } = require('./utils/rate-limiter');
+const { logger, child } = require('./utils/logger');
+const { validateConfig, validateAgentUpdate, validateCronJob } = require('./utils/config-validator');
+const swaggerSpec = require('./utils/openapi-spec');
+const swaggerUi = require('swagger-ui-express');
 
 // Services
 const { debugService } = require('./services/debug-service');
 const { sessionWatcher, OPENCLAW_DIR } = require('./services/session-watcher');
 const { recordingStore } = require('./services/recording-store');
+const { openclawReader } = require('./services/openclaw-reader');
+const { llmTracker } = require('./services/llm-tracker');
 
 const app = express();
 const PORT = process.env.OPENCLAW_DASHBOARD_PORT || process.env.PORT || 8080;
 
 // Global error handlers for stability
 process.on('uncaughtException', (err) => {
-  console.error('[FATAL] Uncaught Exception:', err.message);
-  console.error(err.stack);
+  logger.fatal({ err: err.message, stack: err.stack }, '[FATAL] Uncaught Exception');
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('[ERROR] Unhandled Rejection at:', promise, 'reason:', reason);
+  logger.error({ reason }, '[ERROR] Unhandled Rejection');
 });
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+// Compression with filter to skip SSE endpoints
+app.use(compression({
+  filter: (req, res) => {
+    // Don't compress SSE streams
+    if (req.path.includes('context-stream') || req.path.includes('debug-proxy/stream')) {
+      return false;
+    }
+    return compression.filter(req, res);
+  }
+}));
+app.use(express.json({ limit: '10mb' }));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -40,7 +56,12 @@ app.use((req, res, next) => {
   res.on('finish', () => {
     const duration = Date.now() - start;
     if (duration > 500 || req.path.startsWith('/api')) {
-      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
+      logger.info({
+        duration,
+        method: req.method,
+        path: req.path,
+        status: res.statusCode,
+      }, `${req.method} ${req.path} ${res.statusCode} ${duration}ms`);
     }
   });
   next();
@@ -53,7 +74,9 @@ app.use('/api', apiRateLimiter);
 // Serve static files from public/
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Config paths
+// Swagger API docs
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/api/spec', (req, res) => res.json(swaggerSpec));
 const CONFIG_PATHS = [
   process.env.OPENCLAW_CONFIG,
   path.join(os.homedir(), '.openclaw', 'openclaw.json'),
@@ -73,6 +96,15 @@ function loadAgentsFromConfig() {
   
   try {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    
+    // Validate config structure
+    const validation = validateConfig(config);
+    if (!validation.valid) {
+      logger.error({ errors: validation.errors }, '[ConfigValidator] Invalid config, using defaults');
+    } else if (validation.warnings.length > 0) {
+      logger.warn({ warnings: validation.warnings }, '[ConfigValidator] Config warnings');
+    }
+    
     const agents = config.agents?.list || [];
     const result = {};
     for (const agent of agents) {
@@ -86,7 +118,7 @@ function loadAgentsFromConfig() {
     }
     return result;
   } catch (e) {
-    console.error('Error loading config:', e.message);
+    logger.error({ err: e.message }, 'Error loading config');
     return {};
   }
 }
@@ -106,7 +138,7 @@ const httpServer = createServer(app);
 const wss = new WebSocket.Server({ server: httpServer });
 
 wss.on('connection', (ws) => {
-  console.log('WebSocket client connected');
+  logger.info('WebSocket client connected');
   ws.send(JSON.stringify({ type: 'connected', timestamp: new Date().toISOString() }));
 });
 
@@ -119,20 +151,8 @@ function broadcast(data) {
 }
 
 function getOpenclawSessions() {
-  return new Promise((resolve, reject) => {
-    execFile(OPENCLAW_CMD, ['sessions', '--all-agents', '--json'], { timeout: 10000 }, (error, stdout, stderr) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-      try {
-        const data = JSON.parse(stdout);
-        resolve(data.sessions || []);
-      } catch (e) {
-        reject(e);
-      }
-    });
-  });
+  // Use OpenClawReader instead of CLI to avoid process spawning
+  return openclawReader.getSessions();
 }
 
 function pollOpenclaw() {
@@ -162,12 +182,12 @@ function pollOpenclaw() {
   
   getOpenclawSessions()
     .then((sessions) => {
-      console.log(`Found ${sessions.length} sessions`);
+      logger.info({ count: sessions.length }, `Found ${sessions.length} sessions`);
       
       for (const session of sessions) {
+        // Support both CLI format (key) and OpenClawReader format (agent)
         const key = session.key || '';
-        const parts = key.split(':');
-        const agentId = parts[1];
+        const agentId = session.agent || (key.split(':')[1]);
         
         if (!agentId || !KNOWN_AGENTS[agentId]) continue;
         
@@ -182,6 +202,7 @@ function pollOpenclaw() {
         
         // Detect source agent for cross-agent messages
         let sourceAgent = null;
+        const parts = key.split(':');
         if (session.systemSent && parts.length >= 4) {
           const potentialSource = parts[3];
           if (KNOWN_AGENTS[potentialSource]) {
@@ -217,6 +238,11 @@ function pollOpenclaw() {
           updated_at: now,
           updated_at_iso: new Date(now).toISOString(),
         };
+        
+        // Track LLM usage
+        const model = session.model || old.model || 'unknown';
+        const provider = llmTracker.getProviderFromModel(model);
+        llmTracker.track(agentId, provider, model);
       }
       
       // Broadcast update
@@ -228,7 +254,7 @@ function pollOpenclaw() {
       });
     })
     .catch((err) => {
-      console.error('Error polling OpenClaw:', err.message);
+      logger.error({ err: err.message }, 'Error polling OpenClaw');
     });
 }
 
@@ -332,6 +358,54 @@ app.post('/api/agent/:id/model', (req, res) => {
   res.json({ success: true, message: `Agent ${id} model switched to ${model}` });
 });
 
+// ============================================================
+// LLM Tracker API - P2-05
+// ============================================================
+
+// Get current LLM for all agents
+app.get('/api/llms/current', (req, res) => {
+  res.json({
+    timestamp: new Date().toISOString(),
+    agents: llmTracker.getCurrentLLMs(),
+  });
+});
+
+// Get LLM switch history
+app.get('/api/llms/switches', (req, res) => {
+  const { agent, limit } = req.query;
+  const history = llmTracker.getSwitchHistory(agent, parseInt(limit) || 50);
+  res.json({
+    timestamp: new Date().toISOString(),
+    count: history.length,
+    switches: history,
+  });
+});
+
+// Get LLM health metrics (error rate, latency)
+app.get('/api/llms/health', (req, res) => {
+  const { provider } = req.query;
+  if (provider) {
+    res.json({
+      timestamp: new Date().toISOString(),
+      provider,
+      metrics: llmTracker.getHealthMetrics(provider),
+    });
+  } else {
+    res.json({
+      timestamp: new Date().toISOString(),
+      providers: llmTracker.getAllHealthMetrics(),
+    });
+  }
+});
+
+// Get LLM stats summary
+app.get('/api/llms/stats', (req, res) => {
+  res.json({
+    timestamp: new Date().toISOString(),
+    stats: llmTracker.getStats(),
+  });
+});
+
 app.get('/api/agent/:id', (req, res) => {
   const id = req.params.id;
   if (agentStore[id]) {
@@ -368,6 +442,13 @@ app.post('/api/agent/register', (req, res) => {
 
 app.post('/api/agent/status', (req, res) => {
   const { agent_id, status, task, output, tokens_used } = req.body;
+  
+  // Validate request
+  const validation = validateAgentUpdate(req.body);
+  if (!validation.valid) {
+    return res.status(400).json({ success: false, errors: validation.errors });
+  }
+  
   if (agentStore[agent_id]) {
     agentStore[agent_id] = {
       ...agentStore[agent_id],
@@ -483,7 +564,7 @@ app.get('/api/logs', (req, res) => {
           }
         }
       } catch (e) {
-        console.error('Error reading log path:', logPath.path, e.message);
+        logger.error({ path: logPath.path, err: e.message }, 'Error reading log path');
       }
     }
   }
@@ -717,21 +798,36 @@ app.get('*', (req, res) => {
 
 // Express error handling middleware
 app.use((err, req, res, next) => {
-  console.error('[EXPRESS ERROR]', err.message);
-  res.status(500).json({ error: err.message });
+  logger.error({ 
+    err: err.message, 
+    stack: err.stack,
+    method: req.method,
+    path: req.path,
+    query: req.query,
+  }, '[EXPRESS ERROR]');
+  
+  // Don't expose internal errors to clients in production
+  const message = process.env.NODE_ENV === 'production' 
+    ? 'Internal server error' 
+    : err.message;
+    
+  res.status(err.status || err.statusCode || 500).json({ 
+    error: message,
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+  });
 });
 
 const HOST = process.env.HOST || '0.0.0.0';
 httpServer.listen(PORT, HOST, () => {
-  console.log(`✅ OpenClaw Dashboard running at http://localhost:${PORT}`);
-  console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
+  logger.info({ port: PORT }, `✅ OpenClaw Dashboard running at http://localhost:${PORT}`);
+  logger.info(`   WebSocket: ws://localhost:${PORT}/ws`);
   
   // Start watching latest session
   const sessions = sessionWatcher.getAllSessions();
   if (sessions.length > 0) {
     const latest = sessions[0];
     sessionWatcher.watchFile(latest.filepath, latest.agent, latest.sessionId);
-    console.log(`[SessionWatcher] watching: ${latest.agent}/${latest.sessionId}`);
+    logger.info({ agent: latest.agent, sessionId: latest.sessionId }, '[SessionWatcher] watching');
   }
 });
 
@@ -739,14 +835,14 @@ module.exports = app;
 
 // Graceful shutdown handler
 process.on('SIGTERM', async () => {
-  console.log('Received SIGTERM, shutting down gracefully...');
+  logger.info('Received SIGTERM, shutting down gracefully...');
   const { captureFileWriter } = require('./services/capture-file-writer');
   await captureFileWriter.shutdown();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  console.log('Received SIGINT, shutting down gracefully...');
+  logger.info('Received SIGINT, shutting down gracefully...');
   const { captureFileWriter } = require('./services/capture-file-writer');
   await captureFileWriter.shutdown();
   process.exit(0);

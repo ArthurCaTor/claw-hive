@@ -333,10 +333,16 @@ class OpenClawReader {
         } catch (e) {}
       }
       
+      // Calculate ageMs (time since last modification)
+      const now = Date.now();
+      const mtimeMs = new Date(stats.mtime).getTime();
+      const ageMs = now - mtimeMs;
+      
       return {
         sessionId,
         agent: agentId,
         mtime: stats.mtime.toISOString(),
+        ageMs,
         size: stats.size,
         messageCount: lines.length,
         preview,

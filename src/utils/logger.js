@@ -1,45 +1,30 @@
-// Simple logger utility for ClawHive
-// Provides structured logging with levels
+/**
+ * Structured Logger using Pino
+ * 使用 Pino 的结构化日志
+ */
+const pino = require('pino');
 
-const LOG_LEVELS = {
-  ERROR: 0,
-  WARN: 1,
-  INFO: 2,
-  DEBUG: 3
-};
+const logger = pino({
+  level: process.env.LOG_LEVEL || 'info',
+  transport: process.env.NODE_ENV !== 'production' ? {
+    target: 'pino-pretty',
+    options: { 
+      colorize: true, 
+      translateTime: 'SYS:standard',
+      ignore: 'pid,hostname'
+    },
+  } : undefined,
+  base: { service: 'claw-hive', pid: process.pid },
+});
 
-const currentLevel = parseInt(process.env.LOG_LEVEL) || LOG_LEVELS.INFO;
+/**
+ * Create a child logger with bindings
+ * 带绑定的子日志器
+ * @param {object} bindings - Key-value pairs to add to all logs
+ * @returns {pino.Logger} Child logger
+ */
+function child(bindings) {
+  return logger.child(bindings);
+}
 
-const formatMessage = (level, message, meta) => {
-  const timestamp = new Date().toISOString();
-  const metaStr = meta ? ` ${JSON.stringify(meta)}` : '';
-  return `[${timestamp}] ${level}${metaStr} ${message}`;
-};
-
-const logger = {
-  error: (message, meta) => {
-    if (currentLevel >= LOG_LEVELS.ERROR) {
-      console.error(formatMessage('ERROR', message, meta));
-    }
-  },
-  
-  warn: (message, meta) => {
-    if (currentLevel >= LOG_LEVELS.WARN) {
-      console.warn(formatMessage('WARN', message, meta));
-    }
-  },
-  
-  info: (message, meta) => {
-    if (currentLevel >= LOG_LEVELS.INFO) {
-      console.log(formatMessage('INFO', message, meta));
-    }
-  },
-  
-  debug: (message, meta) => {
-    if (currentLevel >= LOG_LEVELS.DEBUG) {
-      console.log(formatMessage('DEBUG', message, meta));
-    }
-  }
-};
-
-module.exports = { logger, LOG_LEVELS };
+module.exports = { logger, child };

@@ -13,6 +13,37 @@ class SessionWatcher {
     this.watchedFile = '';
     this.watchedAgent = '';
     this.watchedSessionId = '';
+    // Auto-switch polling
+    this.pollInterval = null;
+    this.POLL_INTERVAL_MS = 30000; // Check every 30 seconds
+  }
+
+  // Start polling for new sessions
+  startAutoSwitch() {
+    if (this.pollInterval) return; // Already running
+    
+    this.pollInterval = setInterval(() => {
+      const sessions = this.getAllSessions();
+      if (sessions.length === 0) return;
+      
+      const latest = sessions[0];
+      // Check if there's a newer session than what we're watching
+      if (latest.filepath !== this.watchedFile) {
+        console.log(`[SessionWatcher] New session detected, switching to: ${latest.agent}/${latest.sessionId}`);
+        this.watchFile(latest.filepath, latest.agent, latest.sessionId);
+      }
+    }, this.POLL_INTERVAL_MS);
+    
+    console.log('[SessionWatcher] Auto-switch enabled, checking every 30s');
+  }
+
+  // Stop polling
+  stopAutoSwitch() {
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+      console.log('[SessionWatcher] Auto-switch disabled');
+    }
   }
 
   // List all sessions across all agents
@@ -160,6 +191,7 @@ const sessionWatcher = new SessionWatcher();
 setTimeout(() => {
   console.log('[SessionWatcher] Starting...');
   sessionWatcher.watchLatest();
+  sessionWatcher.startAutoSwitch();
 }, 1000);
 
 // Cleanup on exit

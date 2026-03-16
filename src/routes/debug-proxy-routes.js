@@ -95,7 +95,7 @@ router.get('/api/debug-proxy/stream', (req, res) => {
       model: capture.request.body?.model || 'unknown',
       messageCount: capture.request.body?.messages?.length || 0,
       toolCount: capture.request.body?.tools?.length || 0,
-      hasSystem: !!c.request.body?.system,
+      hasSystem: !!capture.request.body?.system,
     };
     res.write(`data: ${JSON.stringify(summary)}\n\n`);
   };

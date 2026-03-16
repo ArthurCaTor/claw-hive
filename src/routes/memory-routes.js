@@ -58,7 +58,7 @@ module.exports = function(app) {
       }
     }
     
-    memories.sort((a, b) => new Date(b.modified) - new Date(a.mtime));
+    memories.sort((a, b) => new Date(b.modified) - new Date(a.modified));
     
     res.json({
       timestamp: new Date().toISOString(),

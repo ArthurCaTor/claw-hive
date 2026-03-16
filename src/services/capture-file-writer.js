@@ -9,10 +9,12 @@
  * 2. Per-agent file isolation (每 Agent 文件隔离)
  * 3. Daily file rotation (每日文件轮转)
  * 4. Buffer writes for performance (缓冲写入以提高性能)
+ * 5. In-memory cache per agent for fast queries (每 Agent 内存缓存快速查询)
  */
 
 const fs = require('fs');
 const path = require('path');
+const { logger } = require('../utils/logger');
 
 class CaptureFileWriter {
   constructor(options = {}) {
@@ -36,6 +38,14 @@ class CaptureFileWriter {
     
     // Initialized flag
     this.initialized = false;
+    
+    // ============================================================
+    // Per-agent memory cache for fast queries
+    // 每 Agent 内存缓存用于快速查询
+    // ============================================================
+    this.cache = new Map(); // agentId -> [{ record, timestamp }]
+    this.MAX_CACHE_PER_AGENT = options.maxCachePerAgent || 500;
+    this.cacheEnabled = options.cacheEnabled !== false; // default true
   }
 
   /**
@@ -44,7 +54,7 @@ class CaptureFileWriter {
   async initialize() {
     if (this.initialized) return;
     
-    console.log(`[CaptureFileWriter] Initializing with baseDir: ${this.baseDir}`);
+    logger.info(`[CaptureFileWriter] Initializing with baseDir: ${this.baseDir}`);
     
     // Create base directory if not exists
     await fs.promises.mkdir(this.baseDir, { recursive: true });
@@ -57,7 +67,7 @@ class CaptureFileWriter {
     this.startDateRotationChecker();
     
     this.initialized = true;
-    console.log('[CaptureFileWriter] Initialized successfully');
+    logger.info('[CaptureFileWriter] Initialized successfully');
   }
 
   /**
@@ -66,31 +76,56 @@ class CaptureFileWriter {
    * @param {object} capture - Capture record to write
    */
   write(agentId, capture) {
+    // Create record
+    const record = {
+      id: capture.id,
+      ts: capture.timestamp || new Date().toISOString(),
+      agent: agentId,
+      provider: capture.provider,
+      model: capture.model,
+      req: {
+        method: capture.request?.method || 'POST',
+        path: capture.request?.path || '/v1/chat/completions',
+        tokens: capture.tokens?.input || 0,
+        body: capture.request?.body,
+      },
+      res: capture.response ? {
+        status: capture.response.status,
+        tokens: capture.tokens?.output || 0,
+        latency: capture.latency_ms || 0,
+        body: capture.response.body,
+      } : null,
+      cost: capture.cost || 0,
+      error: capture.error,
+    };
+    
     // Add to buffer (will be flushed periodically)
     this.writeBuffer.push({
       agentId,
-      record: {
-        id: capture.id,
-        ts: capture.timestamp || new Date().toISOString(),
-        agent: agentId,
-        provider: capture.provider,
-        model: capture.model,
-        req: {
-          method: capture.request?.method || 'POST',
-          path: capture.request?.path || '/v1/chat/completions',
-          tokens: capture.tokens?.input || 0,
-          body: capture.request?.body,
-        },
-        res: capture.response ? {
-          status: capture.response.status,
-          tokens: capture.tokens?.output || 0,
-          latency: capture.latency_ms || 0,
-          body: capture.response.body,
-        } : null,
-        cost: capture.cost || 0,
-        error: capture.error,
-      },
+      record,
     });
+    
+    // Add to in-memory cache for fast queries
+    if (this.cacheEnabled) {
+      this.addToCache(agentId, record);
+    }
+  }
+  
+  /**
+   * Add record to per-agent cache
+   * @param {string} agentId - Agent ID
+   * @param {object} record - Capture record
+   */
+  addToCache(agentId, record) {
+    let agentCache = this.cache.get(agentId) || [];
+    agentCache.push({ record, timestamp: Date.now() });
+    
+    // Trim to max size (FIFO / circular buffer)
+    if (agentCache.length > this.MAX_CACHE_PER_AGENT) {
+      agentCache = agentCache.slice(-this.MAX_CACHE_PER_AGENT);
+    }
+    
+    this.cache.set(agentId, agentCache);
   }
 
   /**
@@ -116,7 +151,7 @@ class CaptureFileWriter {
       await this.writeToAgentFile(agentId, records);
     }
     
-    console.log(`[CaptureFileWriter] Flushed ${toWrite.length} records to files`);
+    logger.info(`[CaptureFileWriter] Flushed ${toWrite.length} records to files`);
   }
 
   /**
@@ -131,7 +166,7 @@ class CaptureFileWriter {
         stream.write(line);
       }
     } catch (err) {
-      console.error(`[CaptureFileWriter] Write error for ${agentId}:`, err);
+      logger.error(`[CaptureFileWriter] Write error for ${agentId}:`, err);
     }
   }
 
@@ -161,11 +196,11 @@ class CaptureFileWriter {
     stream = fs.createWriteStream(filePath, { flags: 'a' });
     
     stream.on('error', (err) => {
-      console.error(`[CaptureFileWriter] Stream error for ${agentId}:`, err);
+      logger.error(`[CaptureFileWriter] Stream error for ${agentId}:`, err);
     });
     
     this.streams.set(streamKey, stream);
-    console.log(`[CaptureFileWriter] Created stream for ${agentId} -> ${filePath}`);
+    logger.info(`[CaptureFileWriter] Created stream for ${agentId} -> ${filePath}`);
     
     return stream;
   }
@@ -185,7 +220,7 @@ class CaptureFileWriter {
       try {
         await this.flush();
       } catch (err) {
-        console.error('[CaptureFileWriter] Flush error:', err);
+        logger.error('[CaptureFileWriter] Flush error:', err);
       }
     }, this.flushInterval);
   }
@@ -198,7 +233,7 @@ class CaptureFileWriter {
     setInterval(() => {
       const newDate = this.getDateString();
       if (newDate !== this.currentDate) {
-        console.log(`[CaptureFileWriter] Date rotation: ${this.currentDate} -> ${newDate}`);
+        logger.info(`[CaptureFileWriter] Date rotation: ${this.currentDate} -> ${newDate}`);
         
         this.currentDate = newDate;
         
@@ -215,7 +250,7 @@ class CaptureFileWriter {
    * Shutdown gracefully
    */
   async shutdown() {
-    console.log('[CaptureFileWriter] Shutting down...');
+    logger.info('[CaptureFileWriter] Shutting down...');
     
     // Stop timer
     if (this.flushTimer) {
@@ -231,7 +266,154 @@ class CaptureFileWriter {
     }
     this.streams.clear();
     
-    console.log('[CaptureFileWriter] Shutdown complete');
+    logger.info('[CaptureFileWriter] Shutdown complete');
+  }
+  
+  // ============================================================
+  // Query API - Search captures
+  // 查询 API - 搜索捕获记录
+  // ============================================================
+  
+  /**
+   * Get recent captures for an agent from cache
+   * @param {string} agentId - Agent ID
+   * @param {number} limit - Max records to return
+   * @returns {Array} Array of capture records
+   */
+  getRecent(agentId, limit = 50) {
+    const agentCache = this.cache.get(agentId) || [];
+    return agentCache.slice(-limit).map(c => c.record);
+  }
+  
+  /**
+   * Query captures with filters
+   * @param {Object} options - Query options
+   * @param {string} [options.agentId] - Filter by agent
+   * @param {string} [options.model] - Filter by model
+   * @param {string} [options.provider] - Filter by provider
+   * @param {string} [options.startDate] - Start date (ISO string)
+   * @param {string} [options.endDate] - End date (ISO string)
+   * @param {number} [options.limit=100] - Max results
+   * @returns {Array} Matching records
+   */
+  query(options = {}) {
+    const {
+      agentId,
+      model,
+      provider,
+      startDate,
+      endDate,
+      limit = 100
+    } = options;
+    
+    let results = [];
+    
+    // Search in-memory cache first
+    const agentsToSearch = agentId ? [agentId] : Array.from(this.cache.keys());
+    
+    for (const agent of agentsToSearch) {
+      const agentCache = this.cache.get(agent) || [];
+      
+      for (const item of agentCache) {
+        const record = item.record;
+        
+        // Apply filters
+        if (model && record.model !== model) continue;
+        if (provider && record.provider !== provider) continue;
+        if (startDate && record.ts < startDate) continue;
+        if (endDate && record.ts > endDate) continue;
+        
+        results.push(record);
+        
+        if (results.length >= limit) break;
+      }
+      
+      if (results.length >= limit) break;
+    }
+    
+    // Sort by timestamp descending
+    results.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    
+    return results.slice(0, limit);
+  }
+  
+  /**
+   * Get daily stats for an agent
+   * @param {string} agentId - Agent ID
+   * @param {string} date - Date string (YYYY-MM-DD), defaults to today
+   * @returns {Object} Stats object
+   */
+  getDailyStats(agentId, date = null) {
+    const targetDate = date || this.getDateString();
+    const agentCache = this.cache.get(agentId) || [];
+    
+    let totalCalls = 0;
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+    let totalCost = 0;
+    let errors = 0;
+    const models = new Set();
+    const providers = new Set();
+    
+    for (const item of agentCache) {
+      const record = item.record;
+      if (!record.ts.startsWith(targetDate)) continue;
+      
+      totalCalls++;
+      totalInputTokens += record.req?.tokens || 0;
+      totalOutputTokens += record.res?.tokens || 0;
+      totalCost += record.cost || 0;
+      if (record.error) errors++;
+      if (record.model) models.add(record.model);
+      if (record.provider) providers.add(record.provider);
+    }
+    
+    return {
+      date: targetDate,
+      agentId,
+      totalCalls,
+      totalInputTokens,
+      totalOutputTokens,
+      totalTokens: totalInputTokens + totalOutputTokens,
+      totalCost: Math.round(totalCost * 100) / 100,
+      errors,
+      models: Array.from(models),
+      providers: Array.from(providers),
+    };
+  }
+  
+  /**
+   * Get all available agent IDs with captures
+   * @returns {Array} List of agent IDs
+   */
+  getAgentIds() {
+    return Array.from(this.cache.keys());
+  }
+  
+  /**
+   * Clear cache for an agent
+   * @param {string} agentId - Agent ID
+   */
+  clearCache(agentId) {
+    if (agentId) {
+      this.cache.delete(agentId);
+    }
+  }
+  
+  /**
+   * Get cache stats
+   * @returns {Object} Cache statistics
+   */
+  getCacheStats() {
+    const stats = {};
+    for (const [agentId, cache] of this.cache) {
+      stats[agentId] = cache.length;
+    }
+    return {
+      totalAgents: this.cache.size,
+      totalRecords: Object.values(stats).reduce((a, b) => a + b, 0),
+      byAgent: stats,
+    };
   }
 }
 
