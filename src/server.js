@@ -277,69 +277,8 @@ setInterval(pollOpenclaw, POLL_INTERVAL);
 pollOpenclaw(); // Initial poll
 
 // API Routes
-
-app.get('/api/agents', (req, res) => {
-  res.json(Object.values(agentStore));
-});
-
-// Get agent config from openclaw.json
-app.get('/api/agents/config', (req, res) => {
-  const configPath = findConfigPath();
-  if (configPath) {
-    try {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      const agentsList = config.agents?.list || [];
-      res.json({
-        total: agentsList.length,
-        agents: agentsList.map(a => ({
-          id: a.id,
-          name: a.identity?.name || a.id,
-          emoji: a.identity?.emoji || '🤖',
-          workspace: a.workspace,
-          model: a.model,
-          subagents: a.subagents,
-        })),
-        defaults: config.agents?.defaults,
-      });
-    } catch (e) {
-      res.json({ error: e.message });
-    }
-  } else {
-    res.json({ error: 'Config not found' });
-  }
-});
-
-// Get available models
-app.get('/api/models', (req, res) => {
-  const configPath = findConfigPath();
-  if (configPath) {
-    try {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      const models = config.agents?.defaults?.models || {};
-      const modelList = Object.entries(models).map(([id, info]) => ({
-        id,
-        name: info.alias || id,
-        params: info.params || {},
-      }));
-      
-      if (modelList.length === 0) {
-        modelList.push(
-          { id: 'minimax-portal/MiniMax-M2.5', name: 'MiniMax-M2.5' },
-          { id: 'minimax-portal/MiniMax-M2.1', name: 'MiniMax-M2.1' },
-          { id: 'minimax-portal/MiniMax-M3', name: 'MiniMax-M3' },
-          { id: 'anthropic/claude-3.5-sonnet', name: 'Claude-3.5' },
-          { id: 'openai/gpt-4o', name: 'GPT-4o' }
-        );
-      }
-      
-      res.json({ total: modelList.length, models: modelList });
-    } catch (e) {
-      res.json({ error: e.message });
-    }
-  } else {
-    res.json({ error: 'Config not found' });
-  }
-});
+// Note: Most routes moved to route files (agent-routes.js, model-routes.js, etc.)
+// Route files mounted at bottom of server.js
 
 // Switch agent model
 app.post('/api/agent/:id/model', (req, res) => {
