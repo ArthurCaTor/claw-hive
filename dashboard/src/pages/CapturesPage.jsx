@@ -218,7 +218,7 @@ ${JSON.stringify(capture.response?.body, null, 2)}
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between',
-        marginBottom: '12px',
+        marginBottom: '8px',
         padding: '8px 12px',
         background: '#1e293b',
         borderRadius: '6px',
