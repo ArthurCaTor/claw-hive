@@ -280,141 +280,10 @@ pollOpenclaw(); // Initial poll
 // Note: Most routes moved to route files (agent-routes.js, model-routes.js, etc.)
 // Route files mounted at bottom of server.js
 
-// Switch agent model
-app.post('/api/agent/:id/model', (req, res) => {
-  const { id } = req.params;
-  const { model } = req.body;
-  
-  if (!model) {
-    res.status(400).json({ error: 'model is required' });
-    return;
-  }
-  
-  if (agentStore[id]) {
-    agentStore[id].model = model;
-  }
-  
-  res.json({ success: true, message: `Agent ${id} model switched to ${model}` });
-});
 
-// ============================================================
-// LLM Tracker API - P2-05
-// ============================================================
 
-// Get LLM stats summary
-app.get('/api/llms/stats', (req, res) => {
-  res.json({
-    timestamp: new Date().toISOString(),
-    stats: llmTracker.getStats(),
-  });
-});
-
-app.get('/api/agent/:id', (req, res) => {
-  const id = req.params.id;
-  if (agentStore[id]) {
-    res.json(agentStore[id]);
-  } else {
-    const KNOWN_AGENTS = loadAgentsFromConfig();
-    if (KNOWN_AGENTS[id]) {
-      res.json({
-        agent_id: id,
-        ...KNOWN_AGENTS[id],
-        status: 'idle',
-        task: 'Waiting for task',
-      });
-    } else {
-      res.status(404).json({ error: 'Agent not found' });
-    }
-  }
-});
-
-app.post('/api/agent/register', (req, res) => {
-  const { agent_id, name, role, avatar, color } = req.body;
-  agentStore[agent_id] = {
-    agent_id,
-    name: name || agent_id,
-    role: role || 'Agent',
-    avatar: avatar || '🤖',
-    color: color || '#60a5fa',
-    status: 'idle',
-    task: 'Waiting for task',
-    registered_at: new Date().toISOString(),
-  };
-  res.json({ success: true });
-});
-
-app.post('/api/agent/status', (req, res) => {
-  const { agent_id, status, task, output, tokens_used } = req.body;
-  
-  // Validate request
-  const validation = validateAgentUpdate(req.body);
-  if (!validation.valid) {
-    return res.status(400).json({ success: false, errors: validation.errors });
-  }
-  
-  if (agentStore[agent_id]) {
-    agentStore[agent_id] = {
-      ...agentStore[agent_id],
-      ...req.body,
-      updated_at: Date.now(),
-      updated_at_iso: new Date().toISOString(),
-    };
-  } else {
-    agentStore[agent_id] = {
-      ...req.body,
-      updated_at: Date.now(),
-      updated_at_iso: new Date().toISOString(),
-    };
-  }
-  res.json({ success: true });
-});
 
 // Agent Lifecycle Controls
-app.post('/api/agent/control', (req, res) => {
-  const { agent_id, action } = req.body;
-  
-  if (!agent_id || !action) {
-    res.status(400).json({ error: 'agent_id and action are required' });
-    return;
-  }
-  
-  // Actions: pause, resume, restart, stop
-  // Note: These are simulated - actual control would require integration with the OpenClaw runtime
-  switch (action) {
-    case 'pause':
-      if (agentStore[agent_id]) {
-        agentStore[agent_id].status = 'paused';
-        agentStore[agent_id].task = 'Paused by user';
-      }
-      res.json({ success: true, message: `Agent ${agent_id} paused` });
-      break;
-    case 'resume':
-      if (agentStore[agent_id]) {
-        agentStore[agent_id].status = 'working';
-        agentStore[agent_id].task = 'Resumed';
-      }
-      res.json({ success: true, message: `Agent ${agent_id} resumed` });
-      break;
-    case 'restart':
-      // Simulate restart by clearing state
-      if (agentStore[agent_id]) {
-        agentStore[agent_id].status = 'working';
-        agentStore[agent_id].task = 'Restarting...';
-        agentStore[agent_id].output = '';
-      }
-      res.json({ success: true, message: `Agent ${agent_id} restart initiated` });
-      break;
-    case 'stop':
-      if (agentStore[agent_id]) {
-        agentStore[agent_id].status = 'stopped';
-        agentStore[agent_id].task = 'Stopped by user';
-      }
-      res.json({ success: true, message: `Agent ${agent_id} stopped` });
-      break;
-    default:
-      res.status(400).json({ error: 'Invalid action' });
-  }
-});
 
 
 app.get('/api/config', (req, res) => {
@@ -681,7 +550,7 @@ const filesRoutes = require('./routes/files-routes');
 const openclawRoutes = require('./routes/openclaw-routes');
 app.use(debugProxyRoutes);
 healthRoutes(app);
-agentRoutes(app, { agentStore, findConfigPath });
+agentRoutes(app, { agentStore, findConfigPath, validateAgentUpdate });
 modelRoutes(app, { findConfigPath });
 channelRoutes(app, { findConfigPath });
 skillsRoutes(app);
