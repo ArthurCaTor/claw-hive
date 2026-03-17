@@ -264,7 +264,7 @@ ${JSON.stringify(capture.response?.body, null, 2)}
             <div style={{ 
               display: 'flex', 
               flexDirection: 'column', 
-              gap: '4px', 
+              gap: '2px', 
               height: '100%', 
               overflow: 'auto' 
             }}>
@@ -273,14 +273,14 @@ ${JSON.stringify(capture.response?.body, null, 2)}
                   key={capture.id}
                   onClick={() => fetchCapture(capture.id)}
                   style={{
-                    padding: '8px 12px',
+                    padding: '4px 8px',
                     background: selectedCapture?.id === capture.id ? '#3b82f620' : '#1e293b',
-                    borderRadius: '6px',
+                    borderRadius: '4px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
-                    fontSize: '12px',
+                    gap: '8px',
+                    fontSize: '11px',
                     border: selectedCapture?.id === capture.id ? '1px solid #3b82f6' : '1px solid transparent',
                   }}
                 >
@@ -332,41 +332,8 @@ ${JSON.stringify(capture.response?.body, null, 2)}
               height: '100%',
               overflow: 'auto'
             }}>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                marginBottom: '16px'
-              }}>
-                <h3 style={{ margin: 0, fontSize: '14px' }}>Capture #{selectedCapture.id}</h3>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button
-                    onClick={() => exportCapture(selectedCapture)}
-                    style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      border: '1px solid #334155',
-                      background: 'transparent',
-                      color: '#94a3b8',
-                      cursor: 'pointer',
-                      fontSize: '11px',
-                    }}
-                  >
-                    📥 Export
-                  </button>
-                  <button
-                    onClick={() => setSelectedCapture(null)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#64748b',
-                      cursor: 'pointer',
-                      fontSize: '18px'
-                    }}
-                  >
-                    ×
-                  </button>
-                </div>
+              {/* Summary */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '16px' }}>
               </div>
 
               {loadingCapture ? (
