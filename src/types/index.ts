@@ -1,6 +1,14 @@
+/**
+ * @file src/types/index.ts
+ * @description Shared type definitions for claw-hive
+ *              claw-hive 共享类型定义
+ */
+
 // ============================================
-// API Types — API 类型定义
+// Agent Types — Agent 类型
 // ============================================
+
+export type AgentStatus = 'working' | 'idle' | 'paused' | 'stopped';
 
 export interface Agent {
   agent_id: string;
@@ -8,41 +16,69 @@ export interface Agent {
   role: string;
   avatar: string;
   color: string;
-  status: 'working' | 'idle' | 'paused' | 'stopped';
-  task: string;
-  output: string | null;
   model: string;
   model_source?: 'session' | 'config';
+  registered_at?: string;
+  status: AgentStatus;
+  task: string;
+  output: string | null;
   heartbeat: string;
   tokens_used: number;
-  registered_at?: string;
   updated_at: number;
   updated_at_iso: string;
+}
+
+export interface AgentDefaults {
+  name: string;
+  role: string;
+  avatar: string;
+  color: string;
+  model: string;
+}
+
+export interface AgentControlAction {
+  agent_id: string;
+  action: 'pause' | 'resume' | 'restart' | 'stop';
+}
+
+// ============================================
+// Capture Types — 捕获类型
+// ============================================
+
+export interface CaptureTokens {
+  input: number;
+  output: number;
+}
+
+export interface CaptureRequest {
+  method: string;
+  path: string;
+  headers: Record<string, string>;
+  body: any;
+}
+
+export interface CaptureResponse {
+  status: number;
+  body: any;
+  tokens: CaptureTokens;
 }
 
 export interface CaptureRecord {
   id: number;
   timestamp: string;
-  agent: string;
-  provider: string;
-  model: string;
-  request: {
-    method: string;
-    path: string;
-    headers: Record<string, string>;
-    body: any;
-    tokens: number;
-  };
-  response: {
-    status: number;
-    body: any;
-    tokens: number;
-  } | null;
+  request: CaptureRequest;
+  response: CaptureResponse | null;
   latency_ms: number;
-  tokens: { input: number; output: number };
+  tokens: CaptureTokens;
+  provider?: string;
+  model?: string;
   cost?: number;
   error?: string;
 }
+
+// ============================================
+// LLM Types — LLM 类型
+// ============================================
 
 export interface LLMSwitchEvent {
   agentId: string;
@@ -53,7 +89,6 @@ export interface LLMSwitchEvent {
 }
 
 export interface ProviderHealth {
-  provider: string;
   calls: number;
   errors: number;
   errorRate: number;
@@ -63,21 +98,9 @@ export interface ProviderHealth {
   lastCall: string | null;
 }
 
-export interface CostResult {
-  total: number;
-  byProvider: Record<string, number>;
-  byModel: Record<string, number>;
-}
-
-export interface SessionInfo {
-  sessionId: string;
-  agent: string;
-  mtime: string;
-  ageMs: number;
-  size: number;
-  messageCount: number;
-  preview: string | null;
-}
+// ============================================
+// Proxy Types — 代理类型
+// ============================================
 
 export interface ProxyStatus {
   running: boolean;
@@ -87,27 +110,64 @@ export interface ProxyStatus {
   uptimeSeconds: number;
 }
 
-export interface DebugSession {
-  id: string;
-  agentId: string;
-  startedAt: string;
-  status: 'active' | 'paused' | 'stopped';
+export interface ProxyStartResult {
+  success: boolean;
+  port: number;
+  error?: string;
 }
 
-export interface CronJob {
-  id: string;
-  name: string;
-  schedule: string;
-  enabled: boolean;
-  lastRun: string | null;
-  nextRun: string | null;
+export interface ProxyStopResult {
+  success: boolean;
+  totalCalls: number;
 }
 
-export interface Recording {
+// ============================================
+// Session Types — Session 类型
+// ============================================
+
+export interface SessionInfo {
+  sessionId: string;
+  agent: string;
+  mtime: string;
+  ageMs: number;
+  size: number;
+  messageCount: number;
+  filepath?: string;
+  preview: string | null;
+}
+
+// ============================================
+// Config Types — 配置类型
+// ============================================
+
+export interface OpenClawAgentConfig {
   id: string;
-  name: string;
-  startedAt: string;
-  stoppedAt: string | null;
-  duration: number;
-  eventCount: number;
+  identity?: { name?: string; emoji?: string };
+  model?: string;
+  workspace?: string;
+  subagents?: string[];
+}
+
+export interface OpenClawConfig {
+  agents?: {
+    list?: OpenClawAgentConfig[];
+    defaults?: Record<string, any>;
+  };
+  channels?: Record<string, any>;
+  env?: { vars?: Record<string, string> };
+  heartbeat?: { every?: string };
+  compaction?: { mode?: string };
+  pricing?: Record<string, number>;
+  rateLimits?: Record<string, any>;
+}
+
+// ============================================
+// Stats Types — 统计类型
+// ============================================
+
+export interface DashboardStats {
+  total_agents: number;
+  working: number;
+  idle: number;
+  total_tokens: number;
 }
