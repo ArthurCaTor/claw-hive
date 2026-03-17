@@ -44,7 +44,9 @@ function NewApp() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0d1117' }}>
       <nav style={{ width: '220px', background: '#0f172a', borderRight: '1px solid #1e293b', padding: '16px' }}>
-        <h2 style={{ color: '#fff', marginBottom: '20px' }}>🦷 Claw-Hive</h2>
+        <div style={{ marginBottom: '20px' }}>
+          <img src="/vite.svg" alt="🦞" width="40" height="40" />
+        </div>
         <NavLink to="/" label="Dashboard" />
         <NavLink to="/agents" label="Agents" />
         <NavLink to="/providers" label="Providers" />
