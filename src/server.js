@@ -301,42 +301,6 @@ app.post('/api/agent/:id/model', (req, res) => {
 // LLM Tracker API - P2-05
 // ============================================================
 
-// Get current LLM for all agents
-app.get('/api/llms/current', (req, res) => {
-  res.json({
-    timestamp: new Date().toISOString(),
-    agents: llmTracker.getCurrentLLMs(),
-  });
-});
-
-// Get LLM switch history
-app.get('/api/llms/switches', (req, res) => {
-  const { agent, limit } = req.query;
-  const history = llmTracker.getSwitchHistory(agent, parseInt(limit) || 50);
-  res.json({
-    timestamp: new Date().toISOString(),
-    count: history.length,
-    switches: history,
-  });
-});
-
-// Get LLM health metrics (error rate, latency)
-app.get('/api/llms/health', (req, res) => {
-  const { provider } = req.query;
-  if (provider) {
-    res.json({
-      timestamp: new Date().toISOString(),
-      provider,
-      metrics: llmTracker.getHealthMetrics(provider),
-    });
-  } else {
-    res.json({
-      timestamp: new Date().toISOString(),
-      providers: llmTracker.getAllHealthMetrics(),
-    });
-  }
-});
-
 // Get LLM stats summary
 app.get('/api/llms/stats', (req, res) => {
   res.json({
@@ -726,7 +690,7 @@ logRoutes(app);
 searchRoutes(app, { agentStore });
 recordingRoutes(app, { recordingStore });
 systemRoutes(app, { sessionWatcher, debugService, OPENCLAW_DIR, findConfigPath });
-statsRoutes(app, { agentStore, findConfigPath, getStats });
+statsRoutes(app, { agentStore, findConfigPath, getStats, llmTracker });
 filesRoutes(app);
 app.use('/api/openclaw', openclawRoutes);
 

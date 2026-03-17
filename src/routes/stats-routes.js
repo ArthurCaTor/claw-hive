@@ -2,7 +2,7 @@
 // Extracted from server.js
 const fs = require('fs');
 
-module.exports = function(app, { agentStore, findConfigPath, getStats }) {
+module.exports = function(app, { agentStore, findConfigPath, getStats, llmTracker }) {
   // Stats endpoint
   app.get('/api/stats', (req, res) => {
     res.json(getStats());
@@ -135,4 +135,34 @@ module.exports = function(app, { agentStore, findConfigPath, getStats }) {
       models: result,
     });
   });
+
+  // LLM Routes
+  if (llmTracker) {
+    // Get current LLM for all agents
+    app.get('/api/llms/current', (_req, res) => {
+      res.json(llmTracker.getCurrentLLMs());
+    });
+
+    // Get LLM switch history
+    app.get('/api/llms/switches', (req, res) => {
+      const agentId = req.query.agent_id;
+      const limit = parseInt(req.query.limit) || 50;
+      res.json(llmTracker.getSwitchHistory(agentId, limit));
+    });
+
+    // Get LLM health metrics
+    app.get('/api/llms/health', (req, res) => {
+      const provider = req.query.provider;
+      if (provider) {
+        res.json(llmTracker.getHealthMetrics(provider));
+      } else {
+        res.json(llmTracker.getAllHealthMetrics());
+      }
+    });
+
+    // Get LLM stats
+    app.get('/api/llms/stats', (_req, res) => {
+      res.json(llmTracker.getStats());
+    });
+  }
 };
