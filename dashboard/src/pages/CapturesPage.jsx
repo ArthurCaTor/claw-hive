@@ -367,26 +367,26 @@ ${JSON.stringify(capture.response?.body, null, 2)}
               height: '100%',
               overflow: 'auto'
             }}>
-              {/* Header with Export */}
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'flex-end', 
-                alignItems: 'center',
-                marginBottom: '12px'
-              }}>
+              {/* Minimal Export button - top right */}
+              <div style={{ position: 'relative' }}>
                 <button
                   onClick={() => exportCapture(selectedCapture)}
                   style={{
-                    padding: '4px 12px',
+                    position: 'absolute',
+                    top: '-8px',
+                    right: '0',
+                    padding: '4px 8px',
                     borderRadius: '4px',
-                    border: '1px solid #334155',
-                    background: 'transparent',
+                    border: 'none',
+                    background: '#334155',
                     color: '#94a3b8',
                     cursor: 'pointer',
-                    fontSize: '11px',
+                    fontSize: '10px',
+                    opacity: 0.7,
                   }}
+                  title="Export"
                 >
-                  📥 Export
+                  📥
                 </button>
               </div>
 
@@ -394,14 +394,6 @@ ${JSON.stringify(capture.response?.body, null, 2)}
                 <div style={{ color: '#64748b' }}>Loading...</div>
               ) : (
                 <>
-                  {/* Model */}
-                  <div style={{ marginBottom: '12px' }}>
-                    <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>Model</div>
-                    <div style={{ fontFamily: 'monospace', fontSize: '12px' }}>
-                      {selectedCapture.request?.body?.model || selectedCapture.model || 'unknown'}
-                    </div>
-                  </div>
-
                   <JsonViewer 
                     title="Request Body" 
                     data={selectedCapture.request?.body || selectedCapture.request} 
