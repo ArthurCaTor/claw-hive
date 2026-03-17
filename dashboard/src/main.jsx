@@ -47,7 +47,7 @@ function NewApp() {
         <div style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
             <img src="/vite.svg" alt="🦞" width="90" height="90" style={{ borderRadius: '8px' }} />
-            <span style={{ color: '#fff', fontSize: '24px', fontWeight: 'bold' }}>Claw Hive</span>
+            <span style={{ color: '#fff', fontSize: '24px', fontWeight: 'bold' }}>Claw Hive 🦞</span>
           </div>
         </div>
         <NavLink to="/" label="Dashboard" />
