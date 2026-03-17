@@ -1,14 +1,435 @@
 import React from 'react';
-// Captures Page
-import { CaptureViewer } from '../components/captures';
+// Captures Page - Full Proxy functionality
+import { useState, useEffect } from 'react';
+
+const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:8080';
+
+function JsonViewer({ data, title, maxHeight = '300px' }) {
+  const [expanded, setExpanded] = useState(false);
+  
+  if (!data) return <div style={{ color: '#64748b', fontSize: '12px' }}>No data</div>;
+  
+  const json = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  const isLong = json.length > 500;
+  
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      {title && (
+        <div style={{ 
+          fontSize: '12px', 
+          fontWeight: 600, 
+          color: '#94a3b8', 
+          marginBottom: '6px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          {title}
+          {isLong && (
+            <button 
+              onClick={() => setExpanded(!expanded)}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: '#64748b', 
+                cursor: 'pointer',
+                fontSize: '11px'
+              }}
+            >
+              {expanded ? 'Collapse' : 'Expand'}
+            </button>
+          )}
+        </div>
+      )}
+      <pre style={{
+        background: '#0d1117',
+        borderRadius: '6px',
+        padding: '12px',
+        fontSize: '11px',
+        fontFamily: 'monospace',
+        color: '#e2e8f0',
+        overflow: 'auto',
+        maxHeight: expanded ? 'none' : maxHeight,
+        margin: 0,
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-all',
+      }}>
+        {json}
+      </pre>
+    </div>
+  );
+}
 
 export function CapturesPage() {
+  const [status, setStatus] = useState(null);
+  const [captures, setCaptures] = useState([]);
+  const [selectedCapture, setSelectedCapture] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingCapture, setLoadingCapture] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchStatus();
+    fetchCaptures();
+    
+    const interval = setInterval(() => {
+      fetchStatus();
+      fetchCaptures();
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/debug-proxy/status`);
+      const data = await res.json();
+      setStatus(data);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const fetchCaptures = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/debug-proxy/captures?limit=50`);
+      const data = await res.json();
+      setCaptures(data.captures || data || []);
+    } catch (err) {
+      console.error('Fetch captures error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCapture = async (id) => {
+    setLoadingCapture(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/debug-proxy/captures/${id}`);
+      const data = await res.json();
+      setSelectedCapture(data);
+    } catch (err) {
+      console.error('Failed to fetch capture:', err);
+    } finally {
+      setLoadingCapture(false);
+    }
+  };
+
+  const startProxy = async () => {
+    try {
+      await fetch(`${API_BASE}/api/debug-proxy/start`, { method: 'POST' });
+      fetchStatus();
+    } catch (err) {
+      console.error('Start proxy error:', err);
+    }
+  };
+
+  const stopProxy = async () => {
+    try {
+      await fetch(`${API_BASE}/api/debug-proxy/stop`, { method: 'POST' });
+      fetchStatus();
+    } catch (err) {
+      console.error('Stop proxy error:', err);
+    }
+  };
+
+  const exportCapture = (capture) => {
+    if (!capture) return;
+    
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    const filename = `${capture.request?.body?.model || 'api-call'}-${timestamp}-${capture.id}.md`;
+    
+    const content = `# API Call #${capture.id}
+
+## Summary
+- **Status**: ${capture.response?.status}
+- **Latency**: ${capture.latency_ms}ms
+- **Model**: ${capture.request?.body?.model || 'unknown'}
+- **Timestamp**: ${new Date(capture.timestamp).toLocaleString()}
+
+## Request
+\`\`\`json
+${JSON.stringify(capture.request?.body, null, 2)}
+\`\`\`
+
+## Response
+\`\`\`json
+${JSON.stringify(capture.response?.body, null, 2)}
+\`\`\`
+`;
+    
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const isRunning = status?.running === true;
+
   return (
     <div>
       <h1 style={{ margin: '0 0 24px', fontSize: '24px', fontWeight: 600 }}>
         LLM Captures
       </h1>
-      <CaptureViewer />
+
+      {/* Proxy Status Bar */}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        marginBottom: '20px',
+        padding: '12px 16px',
+        background: '#1e293b',
+        borderRadius: '8px',
+        border: '1px solid #334155'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ 
+            width: '10px', 
+            height: '10px', 
+            borderRadius: '50%', 
+            background: isRunning ? '#22c55e' : '#ef4444',
+            boxShadow: isRunning ? '0 0 8px #22c55e' : 'none'
+          }} />
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '14px' }}>
+              Proxy {isRunning ? 'Running' : 'Stopped'}
+            </div>
+            <div style={{ fontSize: '12px', color: '#64748b' }}>
+              {status?.capturesCount || 0} captures recorded
+            </div>
+          </div>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {isRunning ? (
+            <button
+              onClick={stopProxy}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
+                border: 'none',
+                background: '#ef4444',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 500,
+              }}
+            >
+              ⏹ Stop
+            </button>
+          ) : (
+            <button
+              onClick={startProxy}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '6px',
+                border: 'none',
+                background: '#22c55e',
+                color: 'white',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 500,
+              }}
+            >
+              ▶ Start
+            </button>
+          )}
+          <button
+            onClick={() => { fetchStatus(); fetchCaptures(); }}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #334155',
+              background: 'transparent',
+              color: '#94a3b8',
+              cursor: 'pointer',
+              fontSize: '12px',
+            }}
+          >
+            🔄
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ 
+          padding: '12px', 
+          background: '#7f1d1d', 
+          borderRadius: '6px', 
+          color: '#fecaca',
+          marginBottom: '16px',
+          fontSize: '12px'
+        }}>
+          Error: {error}
+        </div>
+      )}
+
+      {/* Captures List */}
+      <h3 style={{ margin: '0 0 12px', fontSize: '14px', color: '#94a3b8' }}>
+        Recent Captures
+      </h3>
+      
+      {loading ? (
+        <div style={{ color: '#64748b' }}>Loading captures...</div>
+      ) : captures.length === 0 ? (
+        <div style={{ color: '#64748b', textAlign: 'center', padding: '20px' }}>
+          No captures yet. Start the proxy to capture LLM calls.
+        </div>
+      ) : (
+        <div style={{ display: 'flex', gap: '16px' }}>
+          {/* Captures list */}
+          <div style={{ flex: 1 }}>
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '4px', 
+              maxHeight: '500px', 
+              overflow: 'auto' 
+            }}>
+              {captures.map((capture) => (
+                <div
+                  key={capture.id}
+                  onClick={() => fetchCapture(capture.id)}
+                  style={{
+                    padding: '8px 12px',
+                    background: selectedCapture?.id === capture.id ? '#3b82f620' : '#1e293b',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    fontSize: '12px',
+                    border: selectedCapture?.id === capture.id ? '1px solid #3b82f6' : '1px solid transparent',
+                  }}
+                >
+                  <span style={{ color: '#64748b', minWidth: '30px' }}>#{capture.id}</span>
+                  <span style={{ 
+                    color: capture.status >= 200 && capture.status < 300 ? '#22c55e' : '#ef4444',
+                    fontWeight: 500,
+                    minWidth: '40px'
+                  }}>
+                    {capture.status}
+                  </span>
+                  <span style={{ color: '#94a3b8', flex: 1, fontFamily: 'monospace', fontSize: '11px' }}>
+                    {capture.model || 'unknown'}
+                  </span>
+                  <span style={{ color: '#64748b' }}>
+                    {capture.latency_ms}ms
+                  </span>
+                  <span style={{ color: '#64748b' }}>
+                    {capture.tokens?.input}→{capture.tokens?.output}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Capture Detail */}
+          {selectedCapture && (
+            <div style={{ 
+              width: '400px', 
+              flexShrink: 0,
+              background: '#1e293b', 
+              borderRadius: '8px', 
+              padding: '16px',
+              maxHeight: '550px',
+              overflow: 'auto'
+            }}>
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '16px'
+              }}>
+                <h3 style={{ margin: 0, fontSize: '14px' }}>Capture #{selectedCapture.id}</h3>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={() => exportCapture(selectedCapture)}
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '4px',
+                      border: '1px solid #334155',
+                      background: 'transparent',
+                      color: '#94a3b8',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                    }}
+                  >
+                    📥 Export
+                  </button>
+                  <button
+                    onClick={() => setSelectedCapture(null)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#64748b',
+                      cursor: 'pointer',
+                      fontSize: '18px'
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+
+              {loadingCapture ? (
+                <div style={{ color: '#64748b' }}>Loading...</div>
+              ) : (
+                <>
+                  {/* Summary */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '16px' }}>
+                    <div style={{ background: '#0d1117', padding: '8px', borderRadius: '6px' }}>
+                      <div style={{ fontSize: '10px', color: '#64748b' }}>Status</div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: 600,
+                        color: selectedCapture.response?.status >= 200 && selectedCapture.response?.status < 300 ? '#22c55e' : '#ef4444'
+                      }}>
+                        {selectedCapture.response?.status}
+                      </div>
+                    </div>
+                    <div style={{ background: '#0d1117', padding: '8px', borderRadius: '6px' }}>
+                      <div style={{ fontSize: '10px', color: '#64748b' }}>Latency</div>
+                      <div style={{ fontSize: '14px', fontWeight: 600 }}>{selectedCapture.latency_ms}ms</div>
+                    </div>
+                    <div style={{ background: '#0d1117', padding: '8px', borderRadius: '6px' }}>
+                      <div style={{ fontSize: '10px', color: '#64748b' }}>Input</div>
+                      <div style={{ fontSize: '14px', fontWeight: 600 }}>{selectedCapture.tokens?.input || 0}</div>
+                    </div>
+                    <div style={{ background: '#0d1117', padding: '8px', borderRadius: '6px' }}>
+                      <div style={{ fontSize: '10px', color: '#64748b' }}>Output</div>
+                      <div style={{ fontSize: '14px', fontWeight: 600 }}>{selectedCapture.tokens?.output || 0}</div>
+                    </div>
+                  </div>
+
+                  {/* Model */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>Model</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: '12px' }}>
+                      {selectedCapture.request?.body?.model || 'unknown'}
+                    </div>
+                  </div>
+
+                  <JsonViewer 
+                    title="Request Body" 
+                    data={selectedCapture.request?.body} 
+                  />
+
+                  <JsonViewer 
+                    title="Response Body" 
+                    data={selectedCapture.response?.body} 
+                  />
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
