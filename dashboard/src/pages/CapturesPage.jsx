@@ -388,9 +388,9 @@ ${JSON.stringify(capture.response?.body, null, 2)}
                       <div style={{ 
                         fontSize: '14px', 
                         fontWeight: 600,
-                        color: selectedCapture.response?.status >= 200 && selectedCapture.response?.status < 300 ? '#22c55e' : '#ef4444'
+                        color: (selectedCapture.status || selectedCapture.response?.status) >= 200 && (selectedCapture.status || selectedCapture.response?.status) < 300 ? '#22c55e' : '#ef4444'
                       }}>
-                        {selectedCapture.response?.status}
+                        {selectedCapture.status || selectedCapture.response?.status || 'N/A'}
                       </div>
                     </div>
                     <div style={{ background: '#0d1117', padding: '8px', borderRadius: '6px' }}>
@@ -411,18 +411,18 @@ ${JSON.stringify(capture.response?.body, null, 2)}
                   <div style={{ marginBottom: '12px' }}>
                     <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>Model</div>
                     <div style={{ fontFamily: 'monospace', fontSize: '12px' }}>
-                      {selectedCapture.request?.body?.model || 'unknown'}
+                      {selectedCapture.request?.body?.model || selectedCapture.model || 'unknown'}
                     </div>
                   </div>
 
                   <JsonViewer 
                     title="Request Body" 
-                    data={selectedCapture.request?.body} 
+                    data={selectedCapture.request?.body || selectedCapture.request} 
                   />
 
                   <JsonViewer 
                     title="Response Body" 
-                    data={selectedCapture.response?.body} 
+                    data={selectedCapture.response?.body || selectedCapture.response} 
                   />
                 </>
               )}
