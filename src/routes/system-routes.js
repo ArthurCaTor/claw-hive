@@ -154,4 +154,70 @@ module.exports = function(app, { sessionWatcher, debugService, OPENCLAW_DIR, fin
     
     res.json({ jobs: cronJobs });
   });
+
+  // Config endpoint
+  app.get('/api/config', (req, res) => {
+    const configPath = findConfigPath();
+    if (configPath) {
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        res.json(config);
+      } catch (e) {
+        res.json({ error: e.message });
+      }
+    } else {
+      res.json({ error: 'Config not found' });
+    }
+  });
+
+  // Cron jobs list
+  app.get('/api/cron', (req, res) => {
+    const configPath = findConfigPath();
+    let cronJobs = [];
+    
+    if (configPath) {
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        const env = config.env?.vars || {};
+        
+        cronJobs = [
+          {
+            id: 'daily-report',
+            name: 'Daily Report',
+            schedule: env.REPORT_TIME ? `${env.REPORT_TIME.replace(':', ' ')} * *` : '0 9 * * *',
+            status: env.SEND_DAILY_REPORT === 'true' ? 'active' : 'idle',
+            lastRun: null,
+            nextRun: new Date(Date.now() + 86400000).toISOString(),
+          },
+          {
+            id: 'health-check',
+            name: 'Health Check',
+            schedule: config.heartbeat?.every || '30m',
+            status: 'active',
+            lastRun: new Date(Date.now() - 1800000).toISOString(),
+            nextRun: new Date(Date.now() + 1800000).toISOString(),
+          },
+        ];
+      } catch (e) {
+        cronJobs = [];
+      }
+    }
+    
+    res.json({ total: cronJobs.length, jobs: cronJobs });
+  });
+
+  // Trigger cron job manually
+  app.post('/api/cron/:id/run', (req, res) => {
+    const { id } = req.params;
+    res.json({ success: true, message: `Cron job ${id} triggered`, timestamp: new Date().toISOString() });
+  });
+
+  // Cron run history
+  app.get('/api/cron/history', (req, res) => {
+    const history = [
+      { id: 'daily-report', name: 'Daily Report', status: 'success', duration: 45, timestamp: new Date(Date.now() - 86400000).toISOString() },
+      { id: 'health-check', name: 'Health Check', status: 'success', duration: 3, timestamp: new Date(Date.now() - 1800000).toISOString() },
+    ];
+    res.json({ total: history.length, runs: history });
+  });
 };

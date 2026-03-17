@@ -1,14 +1,44 @@
 /**
- * @file src/services/cost-calculator.js
+ * @file src/services/cost-calculator.ts
  * @description Cost Calculator — calculates LLM API costs
  * 成本计算器 — 计算 LLM API 成本
  * 
  * Pricing is configurable per provider/model
  * 每个提供商/模型的定价可配置
  */
-const { logger } = require('../utils/logger');
+
+interface PricingTier {
+  input: number;
+  output: number;
+}
+
+interface ProviderPricing {
+  [model: string]: PricingTier;
+}
+
+interface AllPricing {
+  [provider: string]: ProviderPricing;
+}
+
+interface CostParams {
+  provider: string;
+  model: string;
+  inputTokens?: number;
+  outputTokens?: number;
+}
+
+interface Usage extends CostParams {}
+
+interface CostResult {
+  total: number;
+  byProvider: Record<string, number>;
+  byModel: Record<string, number>;
+}
 
 class CostCalculator {
+  private pricing: AllPricing;
+  private currency: string;
+
   constructor() {
     // Default pricing (per 1M tokens)
     // Can be overridden via setPricing()
@@ -53,25 +83,25 @@ class CostCalculator {
     // Currency
     this.currency = 'USD';
     
-    logger.info('CostCalculator initialized with default pricing');
+    console.log('CostCalculator initialized with default pricing');
   }
 
   /**
    * Set custom pricing for a provider
-   * @param {string} provider - Provider name
-   * @param {object} pricing - { model: { input, output } }
+   * @param provider - Provider name
+   * @param pricing - { model: { input, output } }
    */
-  setPricing(provider, pricing) {
+  setPricing(provider: string, pricing: ProviderPricing): void {
     this.pricing[provider] = { ...this.pricing[provider], ...pricing };
-    logger.info({ provider, pricing }, 'CostCalculator: Updated pricing');
+    console.log('CostCalculator: Updated pricing', { provider, pricing });
   }
 
   /**
    * Calculate cost for a request
-   * @param {object} params - { provider, model, inputTokens, outputTokens }
-   * @returns {number} Cost in USD
+   * @param params - { provider, model, inputTokens, outputTokens }
+   * @returns Cost in USD
    */
-  calculate(params) {
+  calculate(params: CostParams): number {
     const { provider, model, inputTokens = 0, outputTokens = 0 } = params;
     
     if (!provider || provider === 'unknown') {
@@ -89,30 +119,30 @@ class CostCalculator {
 
   /**
    * Get pricing for a provider
-   * @param {string} provider - Provider name
-   * @returns {object} Pricing object
+   * @param provider - Provider name
+   * @returns Pricing object
    */
-  getPricing(provider) {
+  getPricing(provider: string): ProviderPricing {
     return this.pricing[provider] || this.pricing['open-source'];
   }
 
   /**
    * Get all pricing
-   * @returns {object} All pricing
+   * @returns All pricing
    */
-  getAllPricing() {
+  getAllPricing(): AllPricing {
     return this.pricing;
   }
 
   /**
    * Calculate total cost from usage
-   * @param {Array} usages - Array of { provider, model, inputTokens, outputTokens }
-   * @returns {object} { total, byProvider, byModel }
+   * @param usages - Array of { provider, model, inputTokens, outputTokens }
+   * @returns { total, byProvider, byModel }
    */
-  calculateTotal(usages = []) {
+  calculateTotal(usages: Usage[] = []): CostResult {
     let total = 0;
-    const byProvider = {};
-    const byModel = {};
+    const byProvider: Record<string, number> = {};
+    const byModel: Record<string, number> = {};
     
     for (const usage of usages) {
       const cost = this.calculate(usage);
@@ -129,4 +159,4 @@ class CostCalculator {
 
 const costCalculator = new CostCalculator();
 
-module.exports = { CostCalculator, costCalculator };
+export { CostCalculator, costCalculator };

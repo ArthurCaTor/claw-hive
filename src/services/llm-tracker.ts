@@ -1,41 +1,70 @@
 /**
- * @file src/services/llm-tracker.js
+ * @file src/services/llm-tracker.ts
  * @description LLM Tracker — observes which LLM each agent uses
  * LLM 跟踪器 — 观察每个 Agent 使用哪个 LLM
  *
  * IMPORTANT: This is TRACKING, not ROUTING.
  * 重要：这是跟踪，不是路由。OpenClaw 决定 LLM，我们只观察。
  */
-const { EventEmitter } = require('events');
-const { logger } = require('../utils/logger');
+import { EventEmitter } from 'events';
+
+interface LLMSwitchEvent {
+  agentId: string;
+  from: { provider: string; model: string };
+  to: { provider: string; model: string };
+  timestamp: string;
+  trigger: 'error' | 'manual';
+}
+
+interface AgentLLMInfo {
+  provider: string;
+  model: string;
+  lastSeen: Date;
+}
+
+interface HealthMetrics {
+  calls: number;
+  errors: number;
+  latencies: number[];
+  lastCall: string | null;
+}
+
+interface LLMTrackerStats {
+  totalAgents: number;
+  totalSwitches: number;
+  byProvider: Record<string, number>;
+}
 
 class LLMTracker extends EventEmitter {
+  private agentLLMs: Map<string, AgentLLMInfo>;
+  private switchHistory: LLMSwitchEvent[];
+  private MAX_HISTORY: number;
+  private healthMetrics: Map<string, HealthMetrics>;
+
   constructor() {
     super();
-    this.agentLLMs = new Map(); // agentId → { provider, model, lastSeen }
-    this.switchHistory = []; // { agentId, from, to, timestamp, trigger }
+    this.agentLLMs = new Map();
+    this.switchHistory = [];
     this.MAX_HISTORY = 500;
+    this.healthMetrics = new Map();
     
-    // Health metrics per provider
-    this.healthMetrics = new Map(); // provider → { calls, errors, latencies: [], lastCall }
-    
-    logger.info('LLMTracker initialized');
+    console.log('LLMTracker initialized');
   }
 
   /**
    * Track an agent's LLM usage
    * 跟踪 Agent 的 LLM 使用
-   * @param {string} agentId - Agent ID
-   * @param {string} provider - LLM provider (e.g., 'minimax', 'anthropic', 'openai')
-   * @param {string} model - Model name
-   * @param {boolean} hadError - Whether there was an error that triggered this switch
+   * @param agentId - Agent ID
+   * @param provider - LLM provider (e.g., 'minimax', 'anthropic', 'openai')
+   * @param model - Model name
+   * @param hadError - Whether there was an error that triggered this switch
    */
-  track(agentId, provider, model, hadError = false) {
+  track(agentId: string, provider: string, model: string, hadError = false): void {
     const prev = this.agentLLMs.get(agentId);
     const now = new Date();
 
     if (prev && (prev.provider !== provider || prev.model !== model)) {
-      const switchEvent = {
+      const switchEvent: LLMSwitchEvent = {
         agentId,
         from: { provider: prev.provider, model: prev.model },
         to: { provider, model },
@@ -48,12 +77,12 @@ class LLMTracker extends EventEmitter {
         this.switchHistory = this.switchHistory.slice(-this.MAX_HISTORY);
       }
       
-      logger.info({ 
+      console.log('[LLMTracker] LLM switch detected', { 
         agentId, 
         from: switchEvent.from, 
         to: switchEvent.to,
         trigger: switchEvent.trigger 
-      }, '[LLMTracker] LLM switch detected');
+      });
       
       this.emit('llm-switch', switchEvent);
     }
@@ -68,10 +97,10 @@ class LLMTracker extends EventEmitter {
   /**
    * Get current LLM for all tracked agents
    * 获取所有已跟踪 Agent 的当前 LLM
-   * @returns {Object} Map of agentId → { provider, model, lastSeen }
+   * @returns Map of agentId → { provider, model, lastSeen }
    */
-  getCurrentLLMs() {
-    const result = {};
+  getCurrentLLMs(): Record<string, { provider: string; model: string; lastSeen: string }> {
+    const result: Record<string, { provider: string; model: string; lastSeen: string }> = {};
     for (const [id, info] of this.agentLLMs) {
       result[id] = { 
         provider: info.provider, 
@@ -85,11 +114,11 @@ class LLMTracker extends EventEmitter {
   /**
    * Get LLM switch history
    * 获取 LLM 切换历史
-   * @param {string} [agentId] - Optional agent ID to filter by
-   * @param {number} [limit=50] - Maximum number of events to return
-   * @returns {Array} Switch events
+   * @param agentId - Optional agent ID to filter by
+   * @param limit - Maximum number of events to return
+   * @returns Switch events
    */
-  getSwitchHistory(agentId, limit = 50) {
+  getSwitchHistory(agentId?: string, limit = 50): LLMSwitchEvent[] {
     let history = this.switchHistory;
     if (agentId) {
       history = history.filter(e => e.agentId === agentId);
@@ -100,9 +129,9 @@ class LLMTracker extends EventEmitter {
   /**
    * Clear history for an agent
    * 清除某个 Agent 的历史
-   * @param {string} agentId - Agent ID
+   * @param agentId - Agent ID
    */
-  clearHistory(agentId) {
+  clearHistory(agentId: string): void {
     if (agentId) {
       this.switchHistory = this.switchHistory.filter(e => e.agentId !== agentId);
     }
@@ -111,11 +140,11 @@ class LLMTracker extends EventEmitter {
   /**
    * Get statistics
    * 获取统计信息
-   * @returns {Object} Stats
+   * @returns Stats
    */
-  getStats() {
-    const providers = {};
-    for (const [agentId, info] of this.agentLLMs) {
+  getStats(): LLMTrackerStats {
+    const providers: Record<string, number> = {};
+    for (const [, info] of this.agentLLMs) {
       providers[info.provider] = (providers[info.provider] || 0) + 1;
     }
     
@@ -129,10 +158,10 @@ class LLMTracker extends EventEmitter {
   /**
    * Extract provider from model name
    * 从模型名称推断提供商
-   * @param {string} model - Model name
-   * @returns {string} Provider
+   * @param model - Model name
+   * @returns Provider
    */
-  getProviderFromModel(model) {
+  getProviderFromModel(model: string): string {
     if (!model || model === 'unknown') return 'unknown';
     const lower = model.toLowerCase();
     if (lower.includes('claude')) return 'anthropic';
@@ -150,11 +179,11 @@ class LLMTracker extends EventEmitter {
 
   /**
    * Record a call for health tracking
-   * @param {string} provider - Provider name
-   * @param {number} latencyMs - Response latency in ms
-   * @param {boolean} success - Whether the call succeeded
+   * @param provider - Provider name
+   * @param latencyMs - Response latency in ms
+   * @param success - Whether the call succeeded
    */
-  recordCall(provider, latencyMs, success = true) {
+  recordCall(provider: string, latencyMs: number, success = true): void {
     if (!provider || provider === 'unknown') return;
     
     let metrics = this.healthMetrics.get(provider);
@@ -176,13 +205,22 @@ class LLMTracker extends EventEmitter {
 
   /**
    * Get health metrics for a provider
-   * @param {string} provider - Provider name
-   * @returns {object} Health metrics
+   * @param provider - Provider name
+   * @returns Health metrics
    */
-  getHealthMetrics(provider) {
+  getHealthMetrics(provider: string): {
+    calls: number;
+    errors: number;
+    errorRate: number;
+    latencies: number[];
+    p50: number;
+    p95: number;
+    p99: number;
+    lastCall: string | null;
+  } {
     const metrics = this.healthMetrics.get(provider);
     if (!metrics) {
-      return { calls: 0, errors: 0, errorRate: 0, latencies: [], p50: 0, p95: 0, p99: 0 };
+      return { calls: 0, errors: 0, errorRate: 0, latencies: [], p50: 0, p95: 0, p99: 0, lastCall: null };
     }
     
     const latencies = metrics.latencies.sort((a, b) => a - b);
@@ -204,10 +242,10 @@ class LLMTracker extends EventEmitter {
 
   /**
    * Get health metrics for all providers
-   * @returns {object} All health metrics
+   * @returns All health metrics
    */
-  getAllHealthMetrics() {
-    const result = {};
+  getAllHealthMetrics(): Record<string, ReturnType<LLMTracker['getHealthMetrics']>> {
+    const result: Record<string, ReturnType<LLMTracker['getHealthMetrics']>> = {};
     for (const provider of this.healthMetrics.keys()) {
       result[provider] = this.getHealthMetrics(provider);
     }
@@ -216,4 +254,4 @@ class LLMTracker extends EventEmitter {
 }
 
 const llmTracker = new LLMTracker();
-module.exports = { LLMTracker, llmTracker };
+export { LLMTracker, llmTracker };

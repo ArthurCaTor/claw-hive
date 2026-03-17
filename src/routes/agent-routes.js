@@ -2,7 +2,7 @@
 // Extracted from server.js
 const fs = require('fs');
 
-module.exports = function(app, { agentStore, findConfigPath }) {
+module.exports = function(app, { agentStore, findConfigPath, validateAgentUpdate }) {
   // Get all agents
   app.get('/api/agents', (req, res) => {
     res.json(Object.values(agentStore));
@@ -33,5 +33,133 @@ module.exports = function(app, { agentStore, findConfigPath }) {
     } else {
       res.json({ error: 'Config not found' });
     }
+  });
+
+  // Get single agent
+  app.get('/api/agent/:id', (req, res) => {
+    const id = req.params.id;
+    if (agentStore[id]) {
+      res.json(agentStore[id]);
+    } else {
+      const configPath = findConfigPath();
+      let KNOWN_AGENTS = {};
+      if (configPath) {
+        try {
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          KNOWN_AGENTS = (config.agents?.list || []).reduce((acc, a) => {
+            acc[a.id] = a.identity || {};
+            return acc;
+          }, {});
+        } catch (e) {}
+      }
+      if (KNOWN_AGENTS[id]) {
+        res.json({
+          agent_id: id,
+          ...KNOWN_AGENTS[id],
+          status: 'idle',
+          task: 'Waiting for task',
+        });
+      } else {
+        res.status(404).json({ error: 'Agent not found' });
+      }
+    }
+  });
+
+  // Register agent
+  app.post('/api/agent/register', (req, res) => {
+    const { agent_id, name, role, avatar, color } = req.body;
+    agentStore[agent_id] = {
+      agent_id,
+      name: name || agent_id,
+      role: role || 'Agent',
+      avatar: avatar || '🤖',
+      color: color || '#60a5fa',
+      status: 'idle',
+      task: 'Waiting for task',
+      registered_at: new Date().toISOString(),
+    };
+    res.json({ success: true });
+  });
+
+  // Update agent status
+  app.post('/api/agent/status', (req, res) => {
+    const { agent_id, status, task, output, tokens_used } = req.body;
+    
+    const validation = validateAgentUpdate(req.body);
+    if (!validation.valid) {
+      return res.status(400).json({ success: false, errors: validation.errors });
+    }
+    
+    if (agentStore[agent_id]) {
+      agentStore[agent_id] = {
+        ...agentStore[agent_id],
+        ...req.body,
+        updated_at: Date.now(),
+      };
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Agent not found' });
+    }
+  });
+
+  // Control agent (pause, resume, restart, stop)
+  app.post('/api/agent/control', (req, res) => {
+    const { agent_id, action } = req.body;
+    
+    if (!agent_id || !action) {
+      res.status(400).json({ error: 'agent_id and action are required' });
+      return;
+    }
+    
+    switch (action) {
+      case 'pause':
+        if (agentStore[agent_id]) {
+          agentStore[agent_id].status = 'paused';
+          agentStore[agent_id].task = 'Paused by user';
+        }
+        res.json({ success: true, message: `Agent ${agent_id} paused` });
+        break;
+      case 'resume':
+        if (agentStore[agent_id]) {
+          agentStore[agent_id].status = 'working';
+          agentStore[agent_id].task = 'Resumed';
+        }
+        res.json({ success: true, message: `Agent ${agent_id} resumed` });
+        break;
+      case 'restart':
+        if (agentStore[agent_id]) {
+          agentStore[agent_id].status = 'working';
+          agentStore[agent_id].task = 'Restarting...';
+          agentStore[agent_id].output = '';
+        }
+        res.json({ success: true, message: `Agent ${agent_id} restart initiated` });
+        break;
+      case 'stop':
+        if (agentStore[agent_id]) {
+          agentStore[agent_id].status = 'stopped';
+          agentStore[agent_id].task = 'Stopped by user';
+        }
+        res.json({ success: true, message: `Agent ${agent_id} stopped` });
+        break;
+      default:
+        res.status(400).json({ error: 'Invalid action' });
+    }
+  });
+
+  // Switch agent model
+  app.post('/api/agent/:id/model', (req, res) => {
+    const { id } = req.params;
+    const { model } = req.body;
+    
+    if (!model) {
+      res.status(400).json({ error: 'model is required' });
+      return;
+    }
+    
+    if (agentStore[id]) {
+      agentStore[id].model = model;
+    }
+    
+    res.json({ success: true, message: `Agent ${id} model switched to ${model}` });
   });
 };

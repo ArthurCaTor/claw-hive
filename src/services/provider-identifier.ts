@@ -1,5 +1,5 @@
 /**
- * @file src/services/provider-identifier.js
+ * @file src/services/provider-identifier.ts
  * @description Provider Identifier — detects LLM provider from request
  * 提供商识别器 — 从请求中识别 LLM 提供商
  * 
@@ -8,9 +8,27 @@
  * 2. Check model field in request body
  * 3. Check URL path patterns
  */
-const { logger } = require('../utils/logger');
+
+interface ProviderResult {
+  provider: string;
+  model: string;
+  source: 'header' | 'body' | 'url' | 'none';
+}
+
+interface RequestWithBody {
+  headers: Record<string, string | string[] | undefined>;
+  body?: {
+    model?: string;
+    [key: string]: unknown;
+  };
+  path: string;
+  url: string;
+}
 
 class ProviderIdentifier {
+  private modelPatterns: Record<string, string[]>;
+  private urlPatterns: Record<string, string[]>;
+
   constructor() {
     // Known model patterns
     this.modelPatterns = {
@@ -32,15 +50,15 @@ class ProviderIdentifier {
 
   /**
    * Identify provider from request
-   * @param {object} req - Express request object
-   * @returns {object} { provider, model, source }
+   * @param req - Express request object
+   * @returns Provider result with source
    */
-  identify(req) {
+  identify(req: RequestWithBody): ProviderResult {
     // 1. Check explicit header
     const headerProvider = req.headers['x-llm-provider'];
     if (headerProvider) {
       return { 
-        provider: headerProvider.toLowerCase(), 
+        provider: String(headerProvider).toLowerCase(), 
         model: req.body?.model || 'unknown',
         source: 'header'
       };
@@ -66,10 +84,10 @@ class ProviderIdentifier {
 
   /**
    * Detect provider from model name
-   * @param {string} model - Model name
-   * @returns {string} Provider name
+   * @param model - Model name
+   * @returns Provider name
    */
-  detectFromModel(model) {
+  detectFromModel(model: string): string {
     if (!model) return 'unknown';
     
     const lower = model.toLowerCase();
@@ -86,11 +104,11 @@ class ProviderIdentifier {
 
   /**
    * Detect provider from URL path
-   * @param {string} path - Request path
-   * @param {string} url - Full URL
-   * @returns {string} Provider name
+   * @param path - Request path
+   * @param url - Full URL
+   * @returns Provider name
    */
-  detectFromUrl(path, url) {
+  detectFromUrl(path: string, url: string): string {
     const fullUrl = path + url;
     
     for (const [provider, patterns] of Object.entries(this.urlPatterns)) {
@@ -106,13 +124,13 @@ class ProviderIdentifier {
 
   /**
    * Get all supported providers
-   * @returns {Array} List of provider names
+   * @returns List of provider names
    */
-  getSupportedProviders() {
+  getSupportedProviders(): string[] {
     return Object.keys(this.modelPatterns);
   }
 }
 
 const providerIdentifier = new ProviderIdentifier();
 
-module.exports = { ProviderIdentifier, providerIdentifier };
+export { ProviderIdentifier, providerIdentifier };
