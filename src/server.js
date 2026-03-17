@@ -286,103 +286,12 @@ pollOpenclaw(); // Initial poll
 // Agent Lifecycle Controls
 
 
-app.get('/api/config', (req, res) => {
-  const configPath = findConfigPath();
-  if (configPath) {
-    try {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      res.json(config);
-    } catch (e) {
-      res.json({ error: e.message });
-    }
-  } else {
-    res.json({ error: 'Config not found' });
-  }
-});
 
 // Memory Viewer Endpoint - List memory files
 
 // Log Viewer - List available log files
-app.get('/api/logs', (req, res) => {
-  const logPaths = [
-    { path: path.join(os.homedir(), '.openclaw'), name: 'OpenClaw' },
-    { path: '/var/log', name: 'System' },
-  ];
-  
-  const logs = [];
-  
-  for (const logPath of logPaths) {
-    if (fs.existsSync(logPath.path)) {
-      try {
-        const files = fs.readdirSync(logPath.path);
-        for (const file of files) {
-          if (file.endsWith('.log') || file === 'syslog' || file === 'auth.log') {
-            const filePath = path.join(logPath.path, file);
-            try {
-              const stats = fs.statSync(filePath);
-              if (stats.isFile()) {
-                logs.push({
-                  id: `${logPath.name}/${file}`,
-                  name: file,
-                  category: logPath.name,
-                  path: filePath,
-                  size: stats.size,
-                  modified: stats.mtime.toISOString(),
-                });
-              }
-            } catch (e) {
-              // Skip files we can't access
-            }
-          }
-        }
-      } catch (e) {
-        logger.error({ path: logPath.path, err: e.message }, 'Error reading log path');
-      }
-    }
-  }
-  
-  // Sort by modified date
-  logs.sort((a, b) => new Date(b.modified) - new Date(a.modified));
-  
-  res.json({
-    timestamp: new Date().toISOString(),
-    logs: logs.slice(0, 30),
-  });
-});
 
 // Get specific log file content - handle paths with slashes
-app.get('/api/logs/*', (req, res) => {
-  const id = req.params[0];
-  const [category, ...nameParts] = id.split('/');
-  const name = nameParts.join('/');
-  
-  let logPath;
-  if (category === 'OpenClaw') {
-    logPath = path.join(os.homedir(), '.openclaw', name);
-  } else if (category === 'System') {
-    logPath = path.join('/var/log', name);
-  }
-  
-  if (logPath && fs.existsSync(logPath)) {
-    try {
-      // Read last 500 lines max
-      const content = fs.readFileSync(logPath, 'utf8');
-      const lines = content.split('\n');
-      const lastLines = lines.slice(-500).join('\n');
-      
-      res.json({
-        id,
-        content: lastLines,
-        totalLines: lines.length,
-        showingLines: Math.min(500, lines.length),
-      });
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
-  } else {
-    res.status(404).json({ error: 'Log file not found' });
-  }
-});
 
 // ============================================
 // Context Stream Inspector (H-10)
@@ -413,125 +322,12 @@ app.get('/api/context-stream', (req, res) => {
 });
 
 // Cron Jobs Table - List scheduled jobs
-app.get('/api/cron', (req, res) => {
-  // Read cron jobs from OpenClaw config
-  const configPath = findConfigPath();
-  let cronJobs = [];
-  
-  if (configPath) {
-    try {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      const env = config.env?.vars || {};
-      
-      // Dynamically generate cron jobs from config
-      cronJobs = [
-        {
-          id: 'daily-report',
-          name: 'Daily Report',
-          schedule: env.REPORT_TIME ? `${env.REPORT_TIME.replace(':', ' ')} * *` : '0 9 * * *',
-          status: env.SEND_DAILY_REPORT === 'true' ? 'active' : 'idle',
-          lastRun: null,
-          nextRun: new Date(Date.now() + 86400000).toISOString(),
-        },
-        {
-          id: 'health-check',
-          name: 'Health Check',
-          schedule: config.heartbeat?.every || '30m',
-          status: 'active',
-          lastRun: new Date(Date.now() - 1800000).toISOString(),
-          nextRun: new Date(Date.now() + 1800000).toISOString(),
-        },
-        {
-          id: 'memory-compaction',
-          name: 'Memory Compaction',
-          schedule: config.compaction?.mode === 'safeguard' ? '0 2 * * *' : 'idle',
-          status: config.compaction?.mode ? 'active' : 'idle',
-          lastRun: new Date(Date.now() - 172800000).toISOString(),
-          nextRun: new Date(Date.now() + 61200000).toISOString(),
-        },
-      ];
-    } catch (e) {
-      // Fallback if config read fails
-      cronJobs = [];
-    }
-  }
-  
-  res.json({
-    total: cronJobs.length,
-    jobs: cronJobs,
-  });
-});
 
 // Trigger cron job manually
-app.post('/api/cron/:id/run', (req, res) => {
-  const { id } = req.params;
-  
-  res.json({
-    success: true,
-    message: `Cron job ${id} triggered manually`,
-    timestamp: new Date().toISOString(),
-  });
-});
 
 // Cron Run History
-app.get('/api/cron/history', (req, res) => {
-  // Simulated cron run history
-  const history = [
-    { id: 'daily-report', name: 'Daily Report', status: 'success', duration: 45, timestamp: new Date(Date.now() - 86400000).toISOString() },
-    { id: 'daily-report', name: 'Daily Report', status: 'success', duration: 52, timestamp: new Date(Date.now() - 172800000).toISOString() },
-    { id: 'daily-report', name: 'Daily Report', status: 'error', duration: 12, timestamp: new Date(Date.now() - 259200000).toISOString() },
-    { id: 'health-check', name: 'Health Check', status: 'success', duration: 3, timestamp: new Date(Date.now() - 1800000).toISOString() },
-    { id: 'health-check', name: 'Health Check', status: 'success', duration: 4, timestamp: new Date(Date.now() - 3600000).toISOString() },
-    { id: 'health-check', name: 'Health Check', status: 'success', duration: 3, timestamp: new Date(Date.now() - 5400000).toISOString() },
-    { id: 'memory-cleanup', name: 'Memory Cleanup', status: 'success', duration: 128, timestamp: new Date(Date.now() - 172800000).toISOString() },
-    { id: 'memory-cleanup', name: 'Memory Cleanup', status: 'success', duration: 115, timestamp: new Date(Date.now() - 345600000).toISOString() },
-  ];
-  
-  res.json({
-    total: history.length,
-    runs: history,
-  });
-});
 
 // File Browser - List workspace files
-app.get('/api/sessions/search', (req, res) => {
-  const { q } = req.query;
-  const query = (q || '').toLowerCase();
-  
-  // Get all sessions from agentStore
-  const sessions = Object.values(agentStore).map(agent => ({
-    agent_id: agent.agent_id,
-    name: agent.name,
-    role: agent.role,
-    avatar: agent.avatar,
-    color: agent.color,
-    status: agent.status,
-    task: agent.task,
-    output: agent.output,
-    model: agent.model,
-    heartbeat: agent.heartbeat,
-    tokens_used: agent.tokens_used,
-    updated_at: agent.updated_at,
-  }));
-  
-  // Filter by query if provided
-  let results = sessions;
-  if (query) {
-    results = sessions.filter(s => 
-      (s.name && s.name.toLowerCase().includes(query)) ||
-      (s.task && s.task.toLowerCase().includes(query)) ||
-      (s.output && s.output.toLowerCase().includes(query)) ||
-      (s.agent_id && s.agent_id.toLowerCase().includes(query)) ||
-      (s.role && s.role.toLowerCase().includes(query))
-    );
-  }
-  
-  res.json({
-    query,
-    total: results.length,
-    sessions: results,
-  });
-});
 
 // Debug Proxy Routes (must be BEFORE SPA fallback)
 const debugProxyRoutes = require('./routes/debug-proxy-routes');
@@ -548,6 +344,7 @@ const systemRoutes = require('./routes/system-routes');
 const statsRoutes = require('./routes/stats-routes');
 const filesRoutes = require('./routes/files-routes');
 const openclawRoutes = require('./routes/openclaw-routes');
+const sessionSearchRoutes = require('./routes/session-search-routes');
 app.use(debugProxyRoutes);
 healthRoutes(app);
 agentRoutes(app, { agentStore, findConfigPath, validateAgentUpdate });
@@ -561,6 +358,7 @@ recordingRoutes(app, { recordingStore });
 systemRoutes(app, { sessionWatcher, debugService, OPENCLAW_DIR, findConfigPath });
 statsRoutes(app, { agentStore, findConfigPath, getStats, llmTracker });
 filesRoutes(app);
+sessionSearchRoutes(app, { agentStore });
 app.use('/api/openclaw', openclawRoutes);
 
 // Serve index.html for all other routes
