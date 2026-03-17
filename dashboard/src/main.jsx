@@ -45,7 +45,7 @@ function NewApp() {
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0d1117' }}>
       <nav style={{ width: '220px', background: '#0f172a', borderRight: '1px solid #1e293b', padding: '16px' }}>
         <div style={{ marginBottom: '20px' }}>
-          <img src="/vite.svg" alt="🦞" width="40" height="40" />
+          <img src="/vite.svg" alt="🦞" width="50" height="50" style={{ borderRadius: '8px' }} />
         </div>
         <NavLink to="/" label="Dashboard" />
         <NavLink to="/agents" label="Agents" />
