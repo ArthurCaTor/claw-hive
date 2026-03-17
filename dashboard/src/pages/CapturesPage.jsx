@@ -332,40 +332,33 @@ ${JSON.stringify(capture.response?.body, null, 2)}
               height: '100%',
               overflow: 'auto'
             }}>
-              {/* Summary */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '16px' }}>
+              {/* Header with Export */}
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'flex-end', 
+                alignItems: 'center',
+                marginBottom: '12px'
+              }}>
+                <button
+                  onClick={() => exportCapture(selectedCapture)}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '4px',
+                    border: '1px solid #334155',
+                    background: 'transparent',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                  }}
+                >
+                  📥 Export
+                </button>
               </div>
 
               {loadingCapture ? (
                 <div style={{ color: '#64748b' }}>Loading...</div>
               ) : (
                 <>
-                  {/* Summary */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '16px' }}>
-                    <div style={{ background: '#0d1117', padding: '8px', borderRadius: '6px' }}>
-                      <div style={{ fontSize: '10px', color: '#64748b' }}>Status</div>
-                      <div style={{ 
-                        fontSize: '14px', 
-                        fontWeight: 600,
-                        color: (selectedCapture.status || selectedCapture.response?.status) >= 200 && (selectedCapture.status || selectedCapture.response?.status) < 300 ? '#22c55e' : '#ef4444'
-                      }}>
-                        {selectedCapture.status || selectedCapture.response?.status || 'N/A'}
-                      </div>
-                    </div>
-                    <div style={{ background: '#0d1117', padding: '8px', borderRadius: '6px' }}>
-                      <div style={{ fontSize: '10px', color: '#64748b' }}>Latency</div>
-                      <div style={{ fontSize: '14px', fontWeight: 600 }}>{selectedCapture.latency_ms}ms</div>
-                    </div>
-                    <div style={{ background: '#0d1117', padding: '8px', borderRadius: '6px' }}>
-                      <div style={{ fontSize: '10px', color: '#64748b' }}>Input</div>
-                      <div style={{ fontSize: '14px', fontWeight: 600 }}>{selectedCapture.tokens?.input || 0}</div>
-                    </div>
-                    <div style={{ background: '#0d1117', padding: '8px', borderRadius: '6px' }}>
-                      <div style={{ fontSize: '10px', color: '#64748b' }}>Output</div>
-                      <div style={{ fontSize: '14px', fontWeight: 600 }}>{selectedCapture.tokens?.output || 0}</div>
-                    </div>
-                  </div>
-
                   {/* Model */}
                   <div style={{ marginBottom: '12px' }}>
                     <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>Model</div>
