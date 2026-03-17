@@ -11,6 +11,24 @@ import CostPage from './pages/CostPage';
 import StreamPage from './pages/StreamPage';
 import SettingsPage from './pages/SettingsPage';
 
+function NavLink({ to, label }) {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+  return (
+    <Link to={to} style={{
+      display: 'block',
+      padding: '10px 12px',
+      color: isActive ? '#fff' : '#94a3b8',
+      background: isActive ? '#1e293b' : 'transparent',
+      textDecoration: 'none',
+      borderRadius: '6px',
+      marginBottom: '4px',
+    }}>
+      {label}
+    </Link>
+  );
+}
+
 function NewApp() {
   const location = useLocation();
   
@@ -39,24 +57,6 @@ function NewApp() {
         <PageComponent />
       </main>
     </div>
-  );
-}
-
-function NavLink({ to, label }) {
-  const location = useLocation();
-  const isActive = location.pathname === to;
-  return (
-    <Link to={to} style={{
-      display: 'block',
-      padding: '10px 12px',
-      color: isActive ? '#fff' : '#94a3b8',
-      background: isActive ? '#1e293b' : 'transparent',
-      textDecoration: 'none',
-      borderRadius: '6px',
-      marginBottom: '4px',
-    }}>
-      {label}
-    </Link>
   );
 }
 
