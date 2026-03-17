@@ -1,21 +1,36 @@
 // Module Discoverer - Dynamic module discovery for OpenClaw
-const fs = require('fs');
-const path = require('path');
+import * as fs from 'fs';
+import * as path from 'path';
+
+interface AppendMessageResult {
+  found: boolean;
+  modulePath: string | null;
+  exportName: string | null;
+  isWritable: boolean;
+  method: string;
+}
+
+interface LLMClientResult {
+  found: boolean;
+  supportsBaseUrl: boolean;
+  envVarName: string | null;
+  configPath: string | null;
+}
 
 class ModuleDiscoverer {
   // Find appendMessage module in OpenClaw dist directory
-  static async findAppendMessageModule(openclawRoot) {
+  static async findAppendMessageModule(openclawRoot: string): Promise<AppendMessageResult> {
     const distDir = path.join(openclawRoot, 'dist');
     
     if (!fs.existsSync(distDir)) {
-      return { found: false, modulePath: null, isWritable: false };
+      return { found: false, modulePath: null, exportName: null, isWritable: false, method: 'not_found' };
     }
 
     const files = fs.readdirSync(distDir).filter(f => f.endsWith('.js'));
 
     for (const file of files) {
       const fullPath = path.join(distDir, file);
-      let content;
+      let content: string;
       
       try {
         content = fs.readFileSync(fullPath, 'utf-8');
@@ -52,7 +67,7 @@ class ModuleDiscoverer {
           };
         }
       } catch (err) {
-        console.warn(`[Discovery] Failed to load ${file}: ${err.message}`);
+        console.warn(`[Discovery] Failed to load ${file}: ${(err as Error).message}`);
       }
     }
 
@@ -66,18 +81,18 @@ class ModuleDiscoverer {
   }
 
   // Find LLM client module for proxy fallback
-  static async findLLMClientModule(openclawRoot) {
+  static async findLLMClientModule(openclawRoot: string): Promise<LLMClientResult> {
     const distDir = path.join(openclawRoot, 'dist');
     
     if (!fs.existsSync(distDir)) {
-      return { found: false };
+      return { found: false, supportsBaseUrl: false, envVarName: null, configPath: null };
     }
 
     const files = fs.readdirSync(distDir).filter(f => f.endsWith('.js'));
 
     for (const file of files) {
       const fullPath = path.join(distDir, file);
-      let content;
+      let content: string;
       
       try {
         content = fs.readFileSync(fullPath, 'utf-8');
@@ -105,12 +120,12 @@ class ModuleDiscoverer {
       }
     }
 
-    return { found: false, supportsBaseUrl: false };
+    return { found: false, supportsBaseUrl: false, envVarName: null, configPath: null };
   }
 
   // Resolve OpenClaw root directory
-  static resolveOpenClawRoot() {
-    const home = process.env.HOME || process.env.USERPROFILE;
+  static resolveOpenClawRoot(): string {
+    const home = process.env.HOME || process.env.USERPROFILE || '';
     
     // Try nvm global node_modules
     const nvmPath = path.join(home, '.nvm', 'versions', 'node', process.version, 'lib', 'node_modules', 'openclaw');
@@ -140,4 +155,4 @@ class ModuleDiscoverer {
   }
 }
 
-module.exports = { ModuleDiscoverer };
+export { ModuleDiscoverer };
