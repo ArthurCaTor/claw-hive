@@ -140,11 +140,13 @@ export function ContextStreamInspector() {
 
   // Filter events
   const filteredEvents = events.filter(event => {
-    const type = event.type || event.data?.type || 'unknown';
+    const type = event.type || 'unknown';
+    const role = event.message?.role;
+    const dataType = event.data?.type;
+    
     if (type === 'message') {
-      const subType = event.data?.type || 'message';
-      if (subType === 'thinking') return filters.thinking;
-      if (subType === 'tool_use') return filters.tool_use;
+      if (dataType === 'thinking') return filters.thinking;
+      if (dataType === 'tool_use') return filters.tool_use;
       return filters.message;
     }
     if (type === 'thinking_level_change') return filters.thinking_level_change;
@@ -158,18 +160,32 @@ export function ContextStreamInspector() {
 
   // Render event item
   const renderEvent = (event, idx) => {
-    const type = event.type || event.data?.type || 'unknown';
+    const type = event.type || 'unknown';
     const timestamp = new Date(event.timestamp || event.received_at).toLocaleTimeString();
+    const role = event.message?.role || event.data?.role;
     
     let borderColor = '#64748b';
     if (type === 'error') borderColor = '#ef4444';
     else if (event.data?.type === 'thinking') borderColor = '#f59e0b';
     else if (event.data?.type === 'tool_use') borderColor = '#eab308';
-    else if (event.data?.role === 'user') borderColor = '#3b82f6';
-    else if (event.data?.role === 'assistant') borderColor = '#22c55e';
+    else if (role === 'user') borderColor = '#3b82f6';
+    else if (role === 'assistant') borderColor = '#22c55e';
     else if (type === 'session') borderColor = '#64748b';
     else if (type === 'compaction') borderColor = '#d4a574';
     else if (type === 'custom') borderColor = '#93c5fd';
+
+    // Get message content
+    const getContent = () => {
+      const content = event.message?.content || event.data?.message?.content || [];
+      if (Array.isArray(content)) {
+        // Extract text content
+        const textParts = content.filter(c => c.type === 'text').map(c => c.text).join('\n');
+        // Extract thinking content
+        const thinkingParts = content.filter(c => c.type === 'thinking').map(c => c.thinking).join('\n');
+        return thinkingParts ? `💭 ${thinkingParts}` : textParts;
+      }
+      return typeof content === 'string' ? content : '';
+    };
 
     // Session divider
     if (type === 'session') {
@@ -181,20 +197,20 @@ export function ContextStreamInspector() {
     }
 
     // User message
-    if (event.data?.role === 'user') {
+    if (role === 'user') {
       return (
         <div key={idx} onClick={() => setSelectedEvent(event)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', marginBottom: 8 }}>
           <div style={{ maxWidth: '80%', padding: '10px 14px', borderRadius: 12, background: '#2d4a7a', color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', fontSize: 12 }}>
             <div style={{ fontSize: 12, opacity: 0.7, marginBottom: 4 }}>👤 user {timestamp}</div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{event.message?.content?.[0]?.text || event.data?.message?.content?.[0]?.text || ''}</div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{getContent()}</div>
           </div>
         </div>
       );
     }
 
     // Assistant message
-    if (event.data?.role === 'assistant') {
-      const usage = event.message?.usage || event.data?.usage;
+    if (role === 'assistant') {
+      const usage = event.message?.usage;
       return (
         <div key={idx} onClick={() => setSelectedEvent(event)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: 8 }}>
           <div style={{ maxWidth: '85%', padding: '10px 14px', borderRadius: 12, background: '#1e2a3a', color: '#e2e8f0', fontSize: 12 }}>
@@ -203,7 +219,7 @@ export function ContextStreamInspector() {
               <span>{timestamp}</span>
               {usage && <span style={{ color: '#22c55e' }}>${usage.cost?.total || 0}</span>}
             </div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{event.message?.content?.[0]?.text || event.data?.message?.content?.[0]?.text || ''}</div>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace" }}>{getContent()}</div>
           </div>
         </div>
       );
