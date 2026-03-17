@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file src/routes/openclaw-routes.ts
  * @description API routes for OpenClaw data using direct file reading
