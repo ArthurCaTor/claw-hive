@@ -140,24 +140,6 @@ export function CapturesPage() {
     }
   };
 
-  const startProxy = async () => {
-    try {
-      await fetch(`${API_BASE}/api/debug-proxy/start`, { method: 'POST' });
-      fetchStatus();
-    } catch (err) {
-      console.error('Start proxy error:', err);
-    }
-  };
-
-  const stopProxy = async () => {
-    try {
-      await fetch(`${API_BASE}/api/debug-proxy/stop`, { method: 'POST' });
-      fetchStatus();
-    } catch (err) {
-      console.error('Stop proxy error:', err);
-    }
-  };
-
   const exportCapture = (capture) => {
     if (!capture) return;
     
@@ -200,7 +182,7 @@ ${JSON.stringify(capture.response?.body, null, 2)}
         LLM Captures
       </h1>
 
-      {/* Proxy Status Bar */}
+      {/* Proxy Status Bar - Read only */}
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
@@ -229,55 +211,20 @@ ${JSON.stringify(capture.response?.body, null, 2)}
           </div>
         </div>
         
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {isRunning ? (
-            <button
-              onClick={stopProxy}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '6px',
-                border: 'none',
-                background: '#ef4444',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: 500,
-              }}
-            >
-              ⏹ Stop
-            </button>
-          ) : (
-            <button
-              onClick={startProxy}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '6px',
-                border: 'none',
-                background: '#22c55e',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: 500,
-              }}
-            >
-              ▶ Start
-            </button>
-          )}
-          <button
-            onClick={() => { fetchStatus(); fetchCaptures(); }}
-            style={{
-              padding: '8px 12px',
-              borderRadius: '6px',
-              border: '1px solid #334155',
-              background: 'transparent',
-              color: '#94a3b8',
-              cursor: 'pointer',
-              fontSize: '12px',
-            }}
-          >
-            🔄
-          </button>
-        </div>
+        <button
+          onClick={() => { fetchStatus(); fetchCaptures(); }}
+          style={{
+            padding: '8px 12px',
+            borderRadius: '6px',
+            border: '1px solid #334155',
+            background: 'transparent',
+            color: '#94a3b8',
+            cursor: 'pointer',
+            fontSize: '12px',
+          }}
+        >
+          🔄
+        </button>
       </div>
 
       {error && (
@@ -302,7 +249,7 @@ ${JSON.stringify(capture.response?.body, null, 2)}
         <div style={{ color: '#64748b' }}>Loading captures...</div>
       ) : captures.length === 0 ? (
         <div style={{ color: '#64748b', textAlign: 'center', padding: '20px' }}>
-          No captures yet. Start the proxy to capture LLM calls.
+          No captures recorded yet.
         </div>
       ) : (
         <div ref={containerRef} style={{ display: 'flex', gap: '0px', height: 'calc(100vh - 280px)' }}>
