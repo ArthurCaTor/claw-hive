@@ -3,7 +3,6 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import './index.css';
-import App from './App.jsx';
 import DashboardPage from './pages/DashboardPage';
 import AgentsPage from './pages/AgentsPage';
 import ProvidersPage from './pages/ProvidersPage';
@@ -24,9 +23,6 @@ function NewApp() {
         <NavLink to="/new/cost" label="Cost" />
         <NavLink to="/new/stream" label="Context Stream" />
         <NavLink to="/new/settings" label="Settings" />
-        <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #1e293b' }}>
-          <Link to="/legacy" style={{ color: '#64748b', fontSize: '12px', textDecoration: 'none' }}>← Legacy Dashboard</Link>
-        </div>
       </nav>
       <main style={{ flex: 1, padding: '24px', overflow: 'auto' }}>
         <Routes>
@@ -65,8 +61,6 @@ function AppWithRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/new/*" element={<NewApp />} />
-        <Route path="/legacy" element={<App />} />
         <Route path="/*" element={<NewApp />} />
       </Routes>
     </BrowserRouter>
