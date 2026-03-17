@@ -12,6 +12,17 @@ import StreamPage from './pages/StreamPage';
 import SettingsPage from './pages/SettingsPage';
 
 function NewApp() {
+  const location = useLocation();
+  
+  // Render the page based on current path
+  let PageComponent = DashboardPage;
+  if (location.pathname === '/agents') PageComponent = AgentsPage;
+  else if (location.pathname === '/providers') PageComponent = ProvidersPage;
+  else if (location.pathname === '/captures') PageComponent = CapturesPage;
+  else if (location.pathname === '/cost') PageComponent = CostPage;
+  else if (location.pathname === '/stream') PageComponent = StreamPage;
+  else if (location.pathname === '/settings') PageComponent = SettingsPage;
+  
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0d1117' }}>
       <nav style={{ width: '220px', background: '#0f172a', borderRight: '1px solid #1e293b', padding: '16px' }}>
@@ -25,15 +36,7 @@ function NewApp() {
         <NavLink to="/settings" label="Settings" />
       </nav>
       <main style={{ flex: 1, padding: '24px', overflow: 'auto' }}>
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/agents" element={<AgentsPage />} />
-          <Route path="/providers" element={<ProvidersPage />} />
-          <Route path="/captures" element={<CapturesPage />} />
-          <Route path="/cost" element={<CostPage />} />
-          <Route path="/stream" element={<StreamPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Routes>
+        <PageComponent />
       </main>
     </div>
   );
@@ -60,9 +63,7 @@ function NavLink({ to, label }) {
 function AppWithRouter() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/*" element={<NewApp />} />
-      </Routes>
+      <NewApp />
     </BrowserRouter>
   );
 }
