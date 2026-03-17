@@ -1,9 +1,24 @@
 // Gateway, Debug, Session, and Cron routes
 // Extracted from server.js
-const fs = require('fs');
-const path = require('path');
+import * as fs from 'fs';
+import * as path from 'path';
+import { Application } from 'express';
 
-module.exports = function(app, { sessionWatcher, debugService, OPENCLAW_DIR, findConfigPath }) {
+interface SessionWatcher {
+  getWatchedInfo?: () => unknown;
+}
+
+interface DebugService {
+  getStatus?: () => unknown;
+  start?: () => Promise<unknown>;
+  stop?: () => Promise<unknown>;
+}
+
+interface FindConfigPath {
+  (): string | null;
+}
+
+export default function systemRoutes(app: Application, { sessionWatcher, debugService, OPENCLAW_DIR, findConfigPath }: { sessionWatcher?: SessionWatcher; debugService?: DebugService; OPENCLAW_DIR: string; findConfigPath: FindConfigPath }): void {
   // Gateway status
   app.get('/api/gateway/status', (req, res) => {
     const info = sessionWatcher.getWatchedInfo();

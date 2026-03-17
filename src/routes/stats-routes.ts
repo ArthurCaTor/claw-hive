@@ -1,8 +1,36 @@
 // Stats routes
 // Extracted from server.js
-const fs = require('fs');
+import * as fs from 'fs';
+import { Application } from 'express';
 
-module.exports = function(app, { agentStore, findConfigPath, getStats, llmTracker }) {
+interface Agent {
+  tokens_used?: number;
+  updated_at?: string;
+  model?: string;
+  status?: string;
+}
+
+interface AgentStore {
+  [key: string]: Agent;
+}
+
+interface FindConfigPath {
+  (): string | null;
+}
+
+interface GetStats {
+  (): unknown;
+}
+
+interface LLMTracker {
+  getCurrentLLMs?: () => unknown;
+  getSwitchHistory?: (agentId?: string, limit?: number) => unknown;
+  getHealthMetrics?: (provider: string) => unknown;
+  getAllHealthMetrics?: () => unknown;
+  getStats?: () => unknown;
+}
+
+export default function statsRoutes(app: Application, { agentStore, findConfigPath, getStats, llmTracker }: { agentStore: AgentStore; findConfigPath: FindConfigPath; getStats: GetStats; llmTracker?: LLMTracker }): void {
   // Stats endpoint
   app.get('/api/stats', (req, res) => {
     res.json(getStats());

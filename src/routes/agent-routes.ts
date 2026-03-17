@@ -1,8 +1,29 @@
 // Agent routes
 // Extracted from server.js
-const fs = require('fs');
+import * as fs from 'fs';
+import { Application } from 'express';
 
-module.exports = function(app, { agentStore, findConfigPath, validateAgentUpdate }) {
+interface Agent {
+  id?: string;
+  identity?: { name?: string; emoji?: string };
+  workspace?: string;
+  model?: string;
+  subagents?: string[];
+}
+
+interface AgentStore {
+  [key: string]: unknown;
+}
+
+interface FindConfigPath {
+  (): string | null;
+}
+
+interface ValidateAgentUpdate {
+  (data: unknown): { valid: boolean; errors: string[] };
+}
+
+export default function agentRoutes(app: Application, { agentStore, findConfigPath, validateAgentUpdate }: { agentStore: AgentStore; findConfigPath: FindConfigPath; validateAgentUpdate: ValidateAgentUpdate }): void {
   // Get all agents
   app.get('/api/agents', (req, res) => {
     res.json(Object.values(agentStore));

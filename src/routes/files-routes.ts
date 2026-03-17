@@ -1,8 +1,11 @@
 // Files routes
 // Extracted from server.js
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { Application } from 'express';
+
+import { Application } from 'express';
 
 // Helper function to get workspace paths
 function getWorkspacePaths() {
@@ -28,7 +31,7 @@ function resolveWorkspacePath(workspace, reqPath) {
   return { basePath, targetPath };
 }
 
-module.exports = function(app) {
+export default function filesRoutes(app: Application): void {
   // List files in workspace
   app.get('/api/files', (req, res) => {
     const { path: reqPath, workspace } = req.query;

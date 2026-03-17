@@ -1,13 +1,13 @@
 // Debug Proxy Routes - Fixed version
 // 修复：/api/debug-proxy/start 直接调用 llmProxy.start()
 
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
+import express, { Router } from 'express';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const { llmProxy } = require('../services/llm-proxy');
 
-const router = express.Router();
+const router: Router = express.Router();
 const CAPTURES_DIR = path.join(process.cwd(), 'captures');
 
 // ============================================================
