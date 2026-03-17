@@ -281,7 +281,7 @@ ${JSON.stringify(capture.response?.body, null, 2)}
           No captures recorded yet.
         </div>
       ) : (
-        <div ref={containerRef} style={{ display: 'flex', gap: '0px', height: 'calc(100vh - 280px)' }}>
+        <div ref={containerRef} style={{ display: 'flex', gap: '0px', height: 'calc(100vh - 100px)' }}>
           {/* Left: Captures list */}
           <div style={{ 
             width: leftWidth, 
