@@ -5,7 +5,21 @@ export default defineConfig({
   root: 'dashboard',
   plugins: [react()],
   server: {
-    port: 8080,
-    host: '0.0.0.0'
-  }
+    port: 3000,
+    host: '0.0.0.0',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/ws': {
+        target: 'ws://localhost:8080',
+        ws: true,
+      },
+    },
+  },
+  build: {
+    outDir: '../public',
+    emptyOutDir: true,
+  },
 })
