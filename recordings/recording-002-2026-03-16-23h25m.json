@@ -1,0 +1,12 @@
+{
+  "id": "002",
+  "name": "Recording #2",
+  "started_at": "2026-03-17T03:25:34.600Z",
+  "stopped_at": "2026-03-17T03:25:35.400Z",
+  "duration_seconds": 1,
+  "event_count": 0,
+  "token_total": 0,
+  "session_ids": [],
+  "notes": "",
+  "events": []
+}
