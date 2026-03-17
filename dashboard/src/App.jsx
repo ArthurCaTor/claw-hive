@@ -1388,7 +1388,6 @@ function ContextPage({ contextEvents, setContextEvents, recordingStatus, setReco
     thinking: true,
     tool_use: true,
     thinking_level_change: true,
-    tool_use: true,
     custom: true,
     compaction: true,
     error: true,
