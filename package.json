@@ -15,7 +15,7 @@
     "prepublishOnly": "npm run build",
     "test": "node tests/smoke.test.js",
     "evolve": "node evolution/runner.js",
-    "test:watch": "vitest",
+    "test:watch": "node tests/smoke.test.js",
     "test:unit": "vitest run"
   },
   "keywords": [
