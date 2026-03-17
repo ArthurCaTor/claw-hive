@@ -359,7 +359,9 @@ ${JSON.stringify(capture.response?.body, null, 2)}
               borderRadius: '8px', 
               padding: '12px',
               height: '100%',
-              overflow: 'auto'
+              overflow: 'auto',
+              display: 'flex',
+              flexDirection: 'column'
             }}>
               {loadingCapture ? (
                 <div style={{ color: '#64748b' }}>Loading...</div>
