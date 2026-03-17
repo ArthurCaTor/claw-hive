@@ -7,7 +7,6 @@ const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:8080';
 
 export function ContextStreamInspector() {
   const [events, setEvents] = useState([]);
-  const [agents, setAgents] = useState([]);
   const [sessions, setSessions] = useState({});
   const [selectedAgent, setSelectedAgent] = useState('');
   const [selectedSession, setSelectedSession] = useState('');
@@ -31,7 +30,7 @@ export function ContextStreamInspector() {
 
   // Initial data fetch
   useEffect(() => {
-    fetchAgentsAndSessions();
+    fetchSessions();
     fetchRecordingStatus();
     fetchRecordingsList();
     
@@ -42,19 +41,18 @@ export function ContextStreamInspector() {
     };
   }, []);
 
-  // Auto-select agent and session
+  // Build agents list from sessions and auto-select
   useEffect(() => {
-    if (agents.length > 0 && !selectedAgent) {
-      const defaultAgent = agents.find(a => a.agent_id === 'coder')?.agent_id || agents[0]?.agent_id;
-      if (defaultAgent) {
-        setSelectedAgent(defaultAgent);
-        const agentSessions = sessions[defaultAgent] || [];
-        if (agentSessions.length > 0) {
-          setSelectedSession(agentSessions[0].sessionId);
-        }
+    const availableAgents = Object.keys(sessions);
+    if (availableAgents.length > 0 && !selectedAgent) {
+      const defaultAgent = availableAgents.includes('coder') ? 'coder' : availableAgents[0];
+      setSelectedAgent(defaultAgent);
+      const agentSessions = sessions[defaultAgent] || [];
+      if (agentSessions.length > 0) {
+        setSelectedSession(agentSessions[0].sessionId);
       }
     }
-  }, [agents, sessions]);
+  }, [sessions]);
 
   // Connect to SSE based on mode
   useEffect(() => {
@@ -78,45 +76,14 @@ export function ContextStreamInspector() {
     }
   }, [events, autoScroll]);
 
-  const fetchAgentsAndSessions = async () => {
+  const fetchSessions = async () => {
     try {
-      const [agentsRes, sessionsRes, dashboardRes] = await Promise.all([
-        fetch(`${API_BASE}/api/agents`),
-        fetch(`${API_BASE}/api/sessions`),
-        fetch(`${API_BASE}/api/openclaw/dashboard`)
-      ]);
-      
-      const agentsData = await agentsRes.json();
-      const sessionsData = await sessionsRes.json();
-      const dashboardData = await dashboardRes.json();
-      
-      setAgents(Array.isArray(agentsData) ? agentsData : []);
-      
-      // Build sessions by agent from /api/sessions response
-      const sessionsByAgent = {};
-      if (Array.isArray(sessionsData)) {
-        sessionsData.forEach(s => {
-          const agent = s.agent || 'unknown';
-          if (!sessionsByAgent[agent]) sessionsByAgent[agent] = [];
-          sessionsByAgent[agent].push(s);
-        });
-      }
-      // Also get from dashboard response
-      if (dashboardData.sessions) {
-        dashboardData.sessions.forEach(s => {
-          const agent = s.agent || 'unknown';
-          if (!sessionsByAgent[agent]) sessionsByAgent[agent] = [];
-          const exists = sessionsByAgent[agent].find(x => x.sessionId === s.sessionId);
-          if (!exists) sessionsByAgent[agent].push(s);
-        });
-      }
-      // Sort by mtime descending
-      Object.keys(sessionsByAgent).forEach(agent => {
-        sessionsByAgent[agent].sort((a, b) => new Date(b.mtime) - new Date(a.mtime));
-      });
-      setSessions(sessionsByAgent);
+      const res = await fetch(`${API_BASE}/api/sessions`);
+      const data = await res.json();
+      // sessions is already keyed by agent from the API
+      setSessions(data);
     } catch (err) {
-      console.error('Fetch error:', err);
+      console.error('Fetch sessions error:', err);
     }
   };
 
