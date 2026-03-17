@@ -1,120 +1,161 @@
 import React from 'react';
-// ContextStreamInspector component
-// Real-time event stream from SSE
+// ContextStreamInspector component - Original style with Agent/Session selectors
 
 import { useState, useEffect, useRef } from 'react';
-import { Button } from '../common/Button';
 
 const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:8080';
 
 export function ContextStreamInspector() {
   const [events, setEvents] = useState([]);
-  const [connected, setConnected] = useState(false);
-  const [paused, setPaused] = useState(false);
-  const eventSourceRef = useRef(null);
+  const [agents, setAgents] = useState([]);
+  const [sessions, setSessions] = useState({});
+  const [selectedAgent, setSelectedAgent] = useState('');
+  const [selectedSession, setSelectedSession] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [filters, setFilters] = useState({
+    message: true,
+    thinking: true,
+    tool_use: true,
+    thinking_level_change: true,
+    custom: true,
+    compaction: true,
+    error: true,
+  });
   const containerRef = useRef(null);
 
+  // Fetch agents and sessions on mount
   useEffect(() => {
-    connect();
-    return () => disconnect();
+    fetchAgents();
+    fetchSessions();
   }, []);
 
-  const connect = () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
+  const fetchAgents = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/agents`);
+      const data = await res.json();
+      const agentList = Array.isArray(data) ? data : [];
+      setAgents(agentList);
+      if (agentList.length > 0 && !selectedAgent) {
+        setSelectedAgent(agentList[0].agent_id || agentList[0].name);
+      }
+    } catch (err) {
+      console.error('Fetch agents error:', err);
     }
+  };
 
-    const eventSource = new EventSource(`${API_BASE}/api/context-stream`);
-    eventSourceRef.current = eventSource;
+  const fetchSessions = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/sessions`);
+      const data = await res.json();
+      setSessions(data);
+    } catch (err) {
+      console.error('Fetch sessions error:', err);
+    }
+  };
 
-    eventSource.onopen = () => {
-      setConnected(true);
-    };
+  // Connect to SSE for current agent/session
+  useEffect(() => {
+    if (!selectedAgent || !selectedSession) return;
+
+    const eventSource = new EventSource(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}/watch`);
 
     eventSource.onmessage = (event) => {
-      if (paused) return;
-      
       try {
         const data = JSON.parse(event.data);
-        setEvents((prev) => {
-          const newEvents = [...prev, data].slice(-100); // Keep last 100
-          return newEvents;
-        });
-        
-        // Auto-scroll to bottom
-        if (containerRef.current && !paused) {
+        setEvents((prev) => [...prev, data].slice(-500));
+        if (containerRef.current && autoScroll) {
           containerRef.current.scrollTop = containerRef.current.scrollHeight;
         }
-      } catch (err) {
-        console.error('SSE parse error:', err);
-      }
+      } catch (err) {}
     };
 
     eventSource.onerror = () => {
-      setConnected(false);
       eventSource.close();
-      // Reconnect after 3s
-      setTimeout(connect, 3000);
     };
-  };
 
-  const disconnect = () => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
+    return () => eventSource.close();
+  }, [selectedAgent, selectedSession, autoScroll]);
+
+  // Filter events
+  const filteredEvents = events.filter(e => {
+    const type = e.type || e.data?.type || 'unknown';
+    if (type === 'message') {
+      const subtype = e.data?.type || 'message';
+      if (subtype === 'thinking') return filters.thinking;
+      if (subtype === 'tool_use') return filters.tool_use;
+      return filters.message;
     }
-    setConnected(false);
-  };
+    if (type === 'thinking_level_change') return filters.thinking_level_change;
+    if (type === 'custom') return filters.custom;
+    if (type === 'compaction') return filters.compaction;
+    if (type === 'error') return filters.error;
+    return true;
+  });
 
-  const clearEvents = () => setEvents([]);
-
-  const getEventColor = (event) => {
-    const type = event.type || '';
-    if (type.includes('error')) return '#ef4444';
-    if (type.includes('warning')) return '#f59e0b';
-    if (type.includes('agent')) return '#3b82f6';
-    return '#22c55e';
-  };
+  const agentSessions = sessions[selectedAgent] || [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{
-            width: '10px',
-            height: '10px',
-            borderRadius: '50%',
-            background: connected ? '#22c55e' : '#ef4444',
-          }} />
-          <span style={{ fontSize: '13px', color: connected ? '#22c55e' : '#ef4444' }}>
-            {connected ? 'Connected' : 'Disconnected'}
-          </span>
+    <div style={{ display: 'flex', height: '100%', gap: '16px' }}>
+      {/* Left sidebar - Agent/Session selectors + Filters */}
+      <div style={{ width: '200px', flexShrink: 0 }}>
+        {/* Agent selector */}
+        <div style={{ marginBottom: '12px' }}>
+          <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>AGENT</div>
+          <select
+            value={selectedAgent}
+            onChange={(e) => { setSelectedAgent(e.target.value); setSelectedSession(''); setEvents([]); }}
+            style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid #334155', background: '#1e293b', color: '#e2e8f0', fontSize: '12px' }}
+          >
+            {agents.map(a => (
+              <option key={a.agent_id} value={a.agent_id}>{a.name || a.agent_id}</option>
+            ))}
+          </select>
         </div>
-        
-        <Button 
-          size="sm" 
-          variant={paused ? 'danger' : 'ghost'} 
-          onClick={() => setPaused(!paused)}
-        >
-          {paused ? '▶ Resume' : '⏸ Pause'}
-        </Button>
-        
-        <Button size="sm" variant="ghost" onClick={clearEvents}>
-          🗑 Clear
-        </Button>
-        
-        <Button size="sm" variant="ghost" onClick={disconnect}>
-          Disconnect
-        </Button>
-        
-        <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#64748b' }}>
-          {events.length} events
-        </span>
+
+        {/* Session selector */}
+        {selectedAgent && (
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>SESSION</div>
+            <select
+              value={selectedSession}
+              onChange={(e) => { setSelectedSession(e.target.value); setEvents([]); }}
+              style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid #334155', background: '#1e293b', color: '#e2e8f0', fontSize: '12px' }}
+            >
+              <option value="">Select session...</option>
+              {agentSessions.map(s => (
+                <option key={s.sessionId} value={s.sessionId}>
+                  {s.sessionId?.slice(0, 12)}... ({new Date(s.mtime).toLocaleTimeString()})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Filters */}
+        <div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px' }}>FILTERS</div>
+          {Object.entries(filters).map(([key, enabled]) => (
+            <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', color: '#94a3b8', fontSize: '12px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={(e) => setFilters(f => ({ ...f, [key]: e.target.checked }))}
+              />
+              {key.replace('_', ' ')}
+            </label>
+          ))}
+        </div>
+
+        {/* Auto-scroll toggle */}
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px', color: '#94a3b8', fontSize: '12px', cursor: 'pointer' }}>
+          <input type="checkbox" checked={autoScroll} onChange={(e) => setAutoScroll(e.target.checked)} />
+          Auto-scroll
+        </label>
       </div>
 
-      {/* Events List */}
-      <div 
+      {/* Main events list */}
+      <div
         ref={containerRef}
         style={{
           flex: 1,
@@ -123,38 +164,56 @@ export function ContextStreamInspector() {
           border: '1px solid #334155',
           overflow: 'auto',
           padding: '12px',
-          fontFamily: 'monospace',
-          fontSize: '12px',
         }}
       >
-        {events.length === 0 ? (
+        {filteredEvents.length === 0 ? (
           <div style={{ color: '#64748b', textAlign: 'center', padding: '40px' }}>
-            {connected ? 'Waiting for events...' : 'Not connected'}
+            {selectedAgent && selectedSession ? 'Waiting for events...' : 'Select agent and session'}
           </div>
         ) : (
-          events.map((event, idx) => (
+          filteredEvents.map((event, idx) => (
             <div
               key={idx}
+              onClick={() => setSelectedEvent(event)}
               style={{
                 padding: '8px',
                 marginBottom: '4px',
                 borderRadius: '4px',
-                background: '#1e293b',
-                borderLeft: `3px solid ${getEventColor(event)}`,
+                cursor: 'pointer',
+                borderLeft: `3px solid ${
+                  event.type === 'error' ? '#ef4444' :
+                  event.data?.type === 'thinking' ? '#f59e0b' :
+                  event.data?.type === 'tool_use' ? '#eab308' :
+                  event.data?.role === 'user' ? '#3b82f6' :
+                  event.data?.role === 'assistant' ? '#22c55e' : '#64748b'
+                }`,
+                background: selectedEvent === event ? '#1e293b' : 'transparent',
               }}
             >
-              <div style={{ display: 'flex', gap: '8px', color: '#64748b', fontSize: '11px', marginBottom: '4px' }}>
-                <span>{new Date(event.timestamp || Date.now()).toLocaleTimeString()}</span>
-                <span style={{ color: getEventColor(event) }}>{event.type || 'event'}</span>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>
+                {new Date(event.timestamp || event.received_at).toLocaleTimeString()}
+                {' '}(event.type || event.data?.type || 'event')
               </div>
-              <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#e2e8f0' }}>
-                {JSON.stringify(event, null, 2).slice(0, 500)}
-                {JSON.stringify(event).length > 500 ? '...' : ''}
+              <pre style={{ margin: '4px 0 0', fontSize: '11px', fontFamily: 'monospace', color: '#e2e8f0', whiteSpace: 'pre-wrap', maxHeight: '60px', overflow: 'hidden' }}>
+                {JSON.stringify(event.data || event, null, 2).slice(0, 200)}
               </pre>
             </div>
           ))
         )}
       </div>
+
+      {/* Details panel */}
+      {selectedEvent && (
+        <div style={{ width: '400px', flexShrink: 0, background: '#1e293b', borderRadius: '8px', padding: '12px', overflow: 'auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ fontWeight: 600 }}>Details</div>
+            <button onClick={() => setSelectedEvent(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '18px' }}>×</button>
+          </div>
+          <pre style={{ fontSize: '11px', fontFamily: 'monospace', color: '#e2e8f0', whiteSpace: 'pre-wrap' }}>
+            {JSON.stringify(selectedEvent, null, 2)}
+          </pre>
+        </div>
+      )}
     </div>
   );
 }
