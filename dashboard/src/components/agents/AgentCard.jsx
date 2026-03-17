@@ -1,3 +1,4 @@
+import React from 'react';
 // AgentCard component
 // Individual agent display card
 

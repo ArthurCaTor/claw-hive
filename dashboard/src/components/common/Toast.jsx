@@ -1,3 +1,4 @@
+import React from 'react';
 // Toast component
 // Notification popup
 

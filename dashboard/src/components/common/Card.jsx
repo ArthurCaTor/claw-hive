@@ -1,3 +1,4 @@
+import React from 'react';
 // Card component
 // Container with border and padding
 

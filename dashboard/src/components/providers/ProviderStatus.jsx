@@ -1,3 +1,4 @@
+import React from 'react';
 // ProviderStatus component
 // Shows which LLM each agent is using + switch events
 

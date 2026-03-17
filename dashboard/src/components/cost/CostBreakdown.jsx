@@ -1,3 +1,4 @@
+import React from 'react';
 // CostBreakdown component
 // Shows cost by model, today vs all-time
 

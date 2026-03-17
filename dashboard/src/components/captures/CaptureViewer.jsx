@@ -1,3 +1,4 @@
+import React from 'react';
 // CaptureDetail component
 // View LLM call captures with collapsible JSON
 

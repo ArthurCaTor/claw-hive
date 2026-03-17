@@ -1,3 +1,4 @@
+import React from 'react';
 // Button component
 // Reusable button with variants
 

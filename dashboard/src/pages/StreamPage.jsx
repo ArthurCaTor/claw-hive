@@ -1,3 +1,4 @@
+import React from 'react';
 // Stream Page
 import { ContextStreamInspector } from '../components/stream';
 

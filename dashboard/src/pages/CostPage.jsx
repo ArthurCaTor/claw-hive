@@ -1,3 +1,4 @@
+import React from 'react';
 // Cost Page
 import { CostBreakdown } from '../components/cost';
 

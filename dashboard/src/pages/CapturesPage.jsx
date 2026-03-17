@@ -1,3 +1,4 @@
+import React from 'react';
 // Captures Page
 import { CaptureViewer } from '../components/captures';
 

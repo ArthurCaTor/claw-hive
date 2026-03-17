@@ -1,3 +1,4 @@
+import React from 'react';
 // Agents Page
 import { AgentGrid, useAgents } from '../components/agents';
 import { useEffect } from 'react';

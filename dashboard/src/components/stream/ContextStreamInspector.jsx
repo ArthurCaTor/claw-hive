@@ -1,3 +1,4 @@
+import React from 'react';
 // ContextStreamInspector component
 // Real-time event stream from SSE
 

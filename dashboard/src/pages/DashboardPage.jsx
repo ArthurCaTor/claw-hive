@@ -1,3 +1,4 @@
+import React from 'react';
 // Dashboard Page
 import { useAgentStore } from '../stores';
 import { AgentGrid, AgentCard } from '../components/agents';

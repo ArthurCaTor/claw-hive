@@ -1,3 +1,4 @@
+import React from 'react';
 // Tabs component
 // Tab navigation
 

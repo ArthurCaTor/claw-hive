@@ -1,3 +1,4 @@
+import React from 'react';
 // Settings Page
 export function SettingsPage() {
   return (

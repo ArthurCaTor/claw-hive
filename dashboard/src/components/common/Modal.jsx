@@ -1,3 +1,4 @@
+import React from 'react';
 // Modal component
 // Overlay dialog
 

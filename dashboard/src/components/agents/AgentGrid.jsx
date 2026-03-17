@@ -1,3 +1,4 @@
+import React from 'react';
 // AgentGrid component
 // Grid of agent cards with fetch
 

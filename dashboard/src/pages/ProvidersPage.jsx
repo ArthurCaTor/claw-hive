@@ -1,3 +1,4 @@
+import React from 'react';
 // Providers Page
 import { ProviderStatus } from '../components/providers';
 
