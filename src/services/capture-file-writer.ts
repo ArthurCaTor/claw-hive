@@ -421,3 +421,4 @@ class CaptureFileWriter {
 const captureFileWriter = new CaptureFileWriter();
 
 module.exports = { CaptureFileWriter, captureFileWriter };
+export {};
