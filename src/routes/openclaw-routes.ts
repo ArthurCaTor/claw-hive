@@ -4,11 +4,11 @@
  * 使用直接文件读取的 OpenClaw 数据 API 路由
  */
 
-import express, { Router } from 'express';
+const express = require('express'); const { Router } = express;
 
 const router: Router = express.Router();
 
-import { openclawReader } from '../services/openclaw-reader';
+const { openclawReader } = require('../services/openclaw-reader');
 
 /**
  * GET /api/openclaw/agents

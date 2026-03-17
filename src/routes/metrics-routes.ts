@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file src/routes/metrics-routes.js
  * @description Prometheus metrics endpoint

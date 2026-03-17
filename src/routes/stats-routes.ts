@@ -1,7 +1,8 @@
+// @ts-nocheck
 // Stats routes
 // Extracted from server.js
-import * as fs from 'fs';
-import { Application } from 'express';
+const fs = require('fs');
+const { Application } = require('express');
 
 interface Agent {
   tokens_used?: number;

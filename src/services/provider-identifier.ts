@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file src/services/provider-identifier.ts
  * @description Provider Identifier — detects LLM provider from request

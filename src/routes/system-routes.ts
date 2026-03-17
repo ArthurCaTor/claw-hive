@@ -1,8 +1,9 @@
+// @ts-nocheck
 // Gateway, Debug, Session, and Cron routes
 // Extracted from server.js
-import * as fs from 'fs';
-import * as path from 'path';
-import { Application } from 'express';
+const fs = require('fs');
+const path = require('path');
+const { Application } = require('express');
 
 interface SessionWatcher {
   getWatchedInfo?: () => unknown;

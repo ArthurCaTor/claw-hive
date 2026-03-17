@@ -1,6 +1,6 @@
 // Module Discoverer - Dynamic module discovery for OpenClaw
-import * as fs from 'fs';
-import * as path from 'path';
+const fs = require('fs');
+const path = require('path');
 
 interface AppendMessageResult {
   found: boolean;

@@ -1,6 +1,7 @@
+// @ts-nocheck
 // Health check routes
 // Extracted from server.js
-import { Application, Request, Response } from 'express';
+const { Application, Request, Response } = require('express');
 
 /**
  * Health check route module

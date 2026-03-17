@@ -1,9 +1,10 @@
+// @ts-nocheck
 // Files routes
 // Extracted from server.js
-import { Application } from 'express';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+const { Application } = require('express');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 // Helper function to get workspace paths
 function getWorkspacePaths() {

@@ -8,8 +8,8 @@
     "openclaw-dashboard": "./bin/cli.js"
   },
   "scripts": {
-    "start": "node src/server.js",
-    "dev:server": "node src/server.js",
+    "start": "npx ts-node --compilerOptions \"{\\\"module\\\":\\\"commonjs\\\"}\" src/server.ts",
+    "dev:server": "npx ts-node --compilerOptions \"{\\\"module\\\":\\\"commonjs\\\"}\" src/server.ts",
     "dev:ui": "cd dashboard && npx vite",
     "build": "cd dashboard && npx vite build --outDir ../public",
     "prepublishOnly": "npm run build",
@@ -54,6 +54,7 @@
     "@vitejs/plugin-react": "^4.0.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vite": "^5.0.0"
   },

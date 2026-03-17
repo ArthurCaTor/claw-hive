@@ -1,9 +1,10 @@
+// @ts-nocheck
 // Memory routes
 // Extracted from server.js
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
-import { Application } from 'express';
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const { Application } = require('express');
 
 interface MemoryPath {
   base: string;

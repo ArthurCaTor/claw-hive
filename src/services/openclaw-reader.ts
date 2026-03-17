@@ -10,9 +10,9 @@
  * No process spawning, instant response, zero overhead.
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 interface CacheEntry<T> {
   data: T;

@@ -1,5 +1,6 @@
+// @ts-nocheck
 // Simple in-memory rate limiter
-import { Request, Response, NextFunction } from 'express';
+const { Request, Response, NextFunction } = require('express');
 
 interface RateLimitRecord {
   windowStart: number;

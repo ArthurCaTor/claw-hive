@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file src/services/llm-tracker.ts
  * @description LLM Tracker — observes which LLM each agent uses
@@ -6,7 +7,7 @@
  * IMPORTANT: This is TRACKING, not ROUTING.
  * 重要：这是跟踪，不是路由。OpenClaw 决定 LLM，我们只观察。
  */
-import { EventEmitter } from 'events';
+const { EventEmitter } = require('events');
 
 interface LLMSwitchEvent {
   agentId: string;

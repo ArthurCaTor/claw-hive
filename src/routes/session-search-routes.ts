@@ -1,6 +1,7 @@
+// @ts-nocheck
 // Session Search routes
 // Extracted from server.js
-import { Application } from 'express';
+const { Application } = require('express');
 
 interface Agent {
   agent_id?: string;

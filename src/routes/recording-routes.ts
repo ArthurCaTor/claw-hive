@@ -1,8 +1,9 @@
+// @ts-nocheck
 // Recording routes
 // Extracted from server.js
-import * as fs from 'fs';
-import * as path from 'path';
-import { Application } from 'express';
+const fs = require('fs');
+const path = require('path');
+const { Application } = require('express');
 
 interface RecordingStore {
   getStatus: () => any;

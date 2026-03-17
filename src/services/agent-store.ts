@@ -7,8 +7,8 @@
  * 管理内存中的 Agent 存储。Agent 状态的唯一真相来源。
  */
 
-import type { Agent, AgentDefaults, AgentControlAction, AgentStatus, DashboardStats } from '../types';
-import { logger } from '../utils/logger';
+
+const { logger } = require('../utils/logger');
 
 class AgentStore {
   private agents: Map<string, Agent> = new Map();
