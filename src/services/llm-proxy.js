@@ -6,7 +6,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { EventEmitter } = require('events');
-const { captureFileWriter } = require('./capture-file-writer');
+// captureFileWriter - lazy loaded or injected
 const { logger } = require('../utils/logger');
 
 const CAPTURES_DIR = path.join(process.cwd(), 'captures');
@@ -80,8 +80,19 @@ function extractTextFromSSE(sseText) {
 }
 
 class LLMProxy extends EventEmitter {
-  constructor(port = 8999) {
+  constructor(port = 8999, options = {}) {
     super();
+    
+    // Dependency injection for captureFileWriter
+    this.captureFileWriter = options.captureFileWriter || null;
+    
+    // Lazy load if not injected
+    if (!this.captureFileWriter) {
+      try {
+        const mod = require("./capture-file-writer");
+        this.captureFileWriter = mod.captureFileWriter;
+      } catch (e) {}
+    }
     this.port = port;
     this.app = null;
     this.server = null;
@@ -94,7 +105,7 @@ class LLMProxy extends EventEmitter {
     this.MAX_BODY_SIZE = 100 * 1024 * 1024; // 100MB - store full body
     
     // ✅ Initialize file writer
-    captureFileWriter.initialize().catch(err => {
+    this.captureFileWriter?.initialize() || Promise.resolve().catch(err => {
       logger.error({ err }, '[LLMProxy] Failed to initialize file writer');
     });
     
@@ -248,7 +259,7 @@ class LLMProxy extends EventEmitter {
             this.emit('capture', capture);
             
             // ✅ Write to file (non-blocking)
-            captureFileWriter.write('default', capture);
+            this.captureFileWriter.write('default', capture);
 
             logger.info({ 
               callId, 
@@ -301,7 +312,7 @@ class LLMProxy extends EventEmitter {
             this.emit('capture', capture);
 
             // ✅ Write to file (non-blocking)
-            captureFileWriter.write('default', capture);
+            this.captureFileWriter.write('default', capture);
 
             logger.info({ 
               callId, 
@@ -340,7 +351,7 @@ class LLMProxy extends EventEmitter {
         this.emit('capture', errorCapture);
 
         // ✅ Write to file (non-blocking)
-        captureFileWriter.write('default', errorCapture);
+        this.captureFileWriter.write('default', errorCapture);
 
         res.status(502).json({
           error: 'Proxy forward failed',
@@ -409,7 +420,7 @@ class LLMProxy extends EventEmitter {
           this.memoryCheckInterval = null;
         }
         // ✅ Shutdown file writer
-        await captureFileWriter.shutdown();
+        await this.captureFileWriter.shutdown();
         logger.info({ totalCalls }, '[LLMProxy] [Proxy] Stopped. Total calls captured');
         resolve({ success: true, totalCalls });
       });
