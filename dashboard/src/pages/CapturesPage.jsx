@@ -269,10 +269,7 @@ ${JSON.stringify(capture.response?.body, null, 2)}
         </div>
       )}
 
-      {/* Captures List */}
-      <h3 style={{ margin: '0 0 12px', fontSize: '14px', color: '#94a3b8' }}>
-        Recent Captures
-      </h3>
+      {/* Captures List - no title */}
       
       {loading ? (
         <div style={{ color: '#64748b' }}>Loading captures...</div>
