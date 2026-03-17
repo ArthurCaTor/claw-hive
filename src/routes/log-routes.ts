@@ -1,10 +1,20 @@
 // Log routes
 // Extracted from server.js
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { Application } from 'express';
 
-module.exports = function(app) {
+interface LogFile {
+  id: string;
+  name: string;
+  category: string;
+  path: string;
+  size: number;
+  modified: string;
+}
+
+export default function logRoutes(app: Application): void {
   // Get list of log files
   app.get('/api/logs', (req, res) => {
     const logPaths = [

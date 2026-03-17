@@ -1,10 +1,15 @@
 // Search routes
 // Extracted from server.js
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { Application } from 'express';
 
-module.exports = function(app, { agentStore }) {
+interface AgentStore {
+  [key: string]: unknown;
+}
+
+export default function searchRoutes(app: Application, { agentStore }: { agentStore: AgentStore }): void {
   // Cross-agent search
   app.get('/api/search', (req, res) => {
     const { q } = req.query;

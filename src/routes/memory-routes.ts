@@ -1,11 +1,17 @@
 // Memory routes
 // Extracted from server.js
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { Application } from 'express';
+
+interface MemoryPath {
+  base: string;
+  workspace: string;
+}
 
 // Helper function to get memory paths
-function getMemoryPaths() {
+function getMemoryPaths(): MemoryPath[] {
   return [
     { base: path.join(os.homedir(), '.openclaw', 'workspace-memory'), workspace: 'memory' },
     { base: path.join(os.homedir(), '.openclaw', 'workspace-coder', 'memory'), workspace: 'coder' },
@@ -15,7 +21,7 @@ function getMemoryPaths() {
 }
 
 // Helper to find memory file
-function findMemoryFile(id) {
+function findMemoryFile(id: string): { filePath: string; workspace: string } | null {
   const memoryPaths = getMemoryPaths();
   
   for (const mp of memoryPaths) {
@@ -27,7 +33,7 @@ function findMemoryFile(id) {
   return null;
 }
 
-module.exports = function(app) {
+export default function memoryRoutes(app: Application): void {
   // Get list of memory files
   app.get('/api/memory', (req, res) => {
     const memoryPaths = getMemoryPaths();
