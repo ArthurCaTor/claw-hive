@@ -26,7 +26,7 @@ interface ValidateAgentUpdate {
 export default function agentRoutes(app: Application, { agentStore, findConfigPath, validateAgentUpdate }: { agentStore: AgentStore; findConfigPath: FindConfigPath; validateAgentUpdate: ValidateAgentUpdate }): void {
   // Get all agents
   app.get('/api/agents', (req, res) => {
-    res.json(Object.values(agentStore));
+    res.json(Object.values(agentStore as Record<string, any>));
   });
 
   // Get agent config
@@ -113,7 +113,7 @@ export default function agentRoutes(app: Application, { agentStore, findConfigPa
     
     if (agentStore[agent_id]) {
       agentStore[agent_id] = {
-        ...agentStore[agent_id],
+        ...(agentStore[agent_id] as Record<string, any>)[agent_id],
         ...req.body,
         updated_at: Date.now(),
       };
@@ -135,30 +135,30 @@ export default function agentRoutes(app: Application, { agentStore, findConfigPa
     switch (action) {
       case 'pause':
         if (agentStore[agent_id]) {
-          agentStore[agent_id].status = 'paused';
-          agentStore[agent_id].task = 'Paused by user';
+          (agentStore[agent_id] as Record<string, any>).status = 'paused';
+          (agentStore[agent_id] as Record<string, any>).task = 'Paused by user';
         }
         res.json({ success: true, message: `Agent ${agent_id} paused` });
         break;
       case 'resume':
         if (agentStore[agent_id]) {
-          agentStore[agent_id].status = 'working';
-          agentStore[agent_id].task = 'Resumed';
+          (agentStore[agent_id] as Record<string, any>).status = 'working';
+          (agentStore[agent_id] as Record<string, any>).task = 'Resumed';
         }
         res.json({ success: true, message: `Agent ${agent_id} resumed` });
         break;
       case 'restart':
         if (agentStore[agent_id]) {
-          agentStore[agent_id].status = 'working';
-          agentStore[agent_id].task = 'Restarting...';
-          agentStore[agent_id].output = '';
+          (agentStore[agent_id] as Record<string, any>).status = 'working';
+          (agentStore[agent_id] as Record<string, any>).task = 'Restarting...';
+          (agentStore[agent_id] as Record<string, any>).output = '';
         }
         res.json({ success: true, message: `Agent ${agent_id} restart initiated` });
         break;
       case 'stop':
         if (agentStore[agent_id]) {
-          agentStore[agent_id].status = 'stopped';
-          agentStore[agent_id].task = 'Stopped by user';
+          (agentStore[agent_id] as Record<string, any>).status = 'stopped';
+          (agentStore[agent_id] as Record<string, any>).task = 'Stopped by user';
         }
         res.json({ success: true, message: `Agent ${agent_id} stopped` });
         break;
