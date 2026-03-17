@@ -1,13 +1,14 @@
 /**
- * @file src/routes/openclaw-routes.js
+ * @file src/routes/openclaw-routes.ts
  * @description API routes for OpenClaw data using direct file reading
  * 使用直接文件读取的 OpenClaw 数据 API 路由
  */
 
-const express = require('express');
-const router = express.Router();
+import express, { Router } from 'express';
 
-const { openclawReader } = require('../services/openclaw-reader');
+const router: Router = express.Router();
+
+import { openclawReader } from '../services/openclaw-reader';
 
 /**
  * GET /api/openclaw/agents

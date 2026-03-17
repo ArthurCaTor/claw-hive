@@ -1,15 +1,30 @@
 // Recording routes
 // Extracted from server.js
-const fs = require('fs');
-const path = require('path');
+import * as fs from 'fs';
+import * as path from 'path';
+import { Application } from 'express';
+
+interface RecordingStore {
+  getStatus: () => unknown;
+  start: () => Promise<unknown>;
+  stop: () => Promise<unknown>;
+  getRecordings: () => unknown[];
+  getRecording: (id: string) => unknown;
+}
+
+interface ResolveResult {
+  filepath?: string;
+  recordingsDir?: string;
+  error?: string;
+}
 
 // Helper function to get recordings directory
-function getRecordingsDir() {
+function getRecordingsDir(): string {
   return path.join(__dirname, '..', 'recordings');
 }
 
 // Helper to validate and resolve recording filepath
-function resolveRecordingPath(filename) {
+function resolveRecordingPath(filename: string): ResolveResult {
   if (!filename || filename.includes('..') || filename.includes('~') || filename.includes('/')) {
     return { error: 'Invalid filename' };
   }
@@ -24,7 +39,7 @@ function resolveRecordingPath(filename) {
   return { filepath, recordingsDir };
 }
 
-module.exports = function(app, { recordingStore }) {
+export default function recordingRoutes(app: Application, { recordingStore }: { recordingStore: RecordingStore }): void {
   // Recording status
   app.get('/api/recording/status', (req, res) => {
     const status = recordingStore.getStatus();

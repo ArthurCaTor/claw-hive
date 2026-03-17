@@ -1,7 +1,27 @@
 // Session Search routes
 // Extracted from server.js
+import { Application } from 'express';
 
-module.exports = function(app, { agentStore }) {
+interface Agent {
+  agent_id?: string;
+  name?: string;
+  role?: string;
+  avatar?: string;
+  color?: string;
+  status?: string;
+  task?: string;
+  output?: string;
+  model?: string;
+  heartbeat?: string | null;
+  tokens_used?: number;
+  updated_at?: number | null;
+}
+
+interface AgentStore {
+  [key: string]: Agent;
+}
+
+export default function sessionSearchRoutes(app: Application, { agentStore }: { agentStore: AgentStore }): void {
   // Session Search Endpoint
   app.get('/api/sessions/search', (req, res) => {
     const { q } = req.query;
