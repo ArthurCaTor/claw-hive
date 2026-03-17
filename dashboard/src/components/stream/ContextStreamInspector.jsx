@@ -1,5 +1,5 @@
 import React from 'react';
-// ContextStreamInspector component - Original style with Agent/Session selectors
+// ContextStreamInspector - Original style with agent/session auto-selection
 
 import { useState, useEffect, useRef } from 'react';
 
@@ -22,13 +22,58 @@ export function ContextStreamInspector() {
     compaction: true,
     error: true,
   });
+  
   const containerRef = useRef(null);
+  const eventSourceRef = useRef(null);
 
   // Fetch agents and sessions on mount
   useEffect(() => {
     fetchAgents();
     fetchSessions();
+    return () => eventSourceRef.current?.close();
   }, []);
+
+  // Auto-select first agent
+  useEffect(() => {
+    if (agents.length > 0 && !selectedAgent) {
+      const defaultAgent = agents.find(a => a.agent_id === 'coder')?.agent_id || agents[0]?.agent_id;
+      if (defaultAgent) {
+        setSelectedAgent(defaultAgent);
+        // Auto-select session
+        const agentSessions = sessions[defaultAgent] || [];
+        if (agentSessions.length > 0) {
+          setSelectedSession(agentSessions[0].sessionId);
+        }
+      }
+    }
+  }, [agents, sessions, selectedAgent]);
+
+  // Connect to SSE when agent+sessian selected
+  useEffect(() => {
+    if (!selectedAgent || !selectedSession) return;
+
+    eventSourceRef.current?.close();
+    const eventSource = new EventSource(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}/watch`);
+    eventSourceRef.current = eventSource;
+
+    eventSource.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setEvents(prev => [...prev, data].slice(-500));
+        if (containerRef.current && autoScroll) {
+          containerRef.current.scrollTop = containerRef.current.scrollHeight;
+        }
+      } catch (err) {
+        console.error('SSE parse error:', err);
+      }
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    return () => eventSource.close();
+  }, [selectedAgent, selectedSession, autoScroll]);
 
   const fetchAgents = async () => {
     try {
@@ -36,9 +81,6 @@ export function ContextStreamInspector() {
       const data = await res.json();
       const agentList = Array.isArray(data) ? data : [];
       setAgents(agentList);
-      if (agentList.length > 0 && !selectedAgent) {
-        setSelectedAgent(agentList[0].agent_id || agentList[0].name);
-      }
     } catch (err) {
       console.error('Fetch agents error:', err);
     }
@@ -54,36 +96,13 @@ export function ContextStreamInspector() {
     }
   };
 
-  // Connect to SSE for current agent/session
-  useEffect(() => {
-    if (!selectedAgent || !selectedSession) return;
-
-    const eventSource = new EventSource(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}/watch`);
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        setEvents((prev) => [...prev, data].slice(-500));
-        if (containerRef.current && autoScroll) {
-          containerRef.current.scrollTop = containerRef.current.scrollHeight;
-        }
-      } catch (err) {}
-    };
-
-    eventSource.onerror = () => {
-      eventSource.close();
-    };
-
-    return () => eventSource.close();
-  }, [selectedAgent, selectedSession, autoScroll]);
-
   // Filter events
-  const filteredEvents = events.filter(e => {
-    const type = e.type || e.data?.type || 'unknown';
+  const filteredEvents = events.filter(event => {
+    const type = event.type || event.data?.type || 'unknown';
     if (type === 'message') {
-      const subtype = e.data?.type || 'message';
-      if (subtype === 'thinking') return filters.thinking;
-      if (subtype === 'tool_use') return filters.tool_use;
+      const subType = event.data?.type || 'message';
+      if (subType === 'thinking') return filters.thinking;
+      if (subType === 'tool_use') return filters.tool_use;
       return filters.message;
     }
     if (type === 'thinking_level_change') return filters.thinking_level_change;
@@ -97,29 +116,30 @@ export function ContextStreamInspector() {
 
   return (
     <div style={{ display: 'flex', height: '100%', gap: '16px' }}>
-      {/* Left sidebar - Agent/Session selectors + Filters */}
+      {/* Left sidebar - Agent/Session/Filters */}
       <div style={{ width: '200px', flexShrink: 0 }}>
         {/* Agent selector */}
         <div style={{ marginBottom: '12px' }}>
           <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>AGENT</div>
           <select
             value={selectedAgent}
-            onChange={(e) => { setSelectedAgent(e.target.value); setSelectedSession(''); setEvents([]); }}
+            onChange={e => { setSelectedAgent(e.target.value); setSelectedSession(''); setEvents([]); }}
             style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid #334155', background: '#1e293b', color: '#e2e8f0', fontSize: '12px' }}
           >
+            <option value="">Select agent...</option>
             {agents.map(a => (
               <option key={a.agent_id} value={a.agent_id}>{a.name || a.agent_id}</option>
             ))}
           </select>
         </div>
 
-        {/* Session selector */}
+        {/* Session selector - auto-selects first session of agent */}
         {selectedAgent && (
           <div style={{ marginBottom: '12px' }}>
             <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>SESSION</div>
             <select
               value={selectedSession}
-              onChange={(e) => { setSelectedSession(e.target.value); setEvents([]); }}
+              onChange={e => { setSelectedSession(e.target.value); setEvents([]); }}
               style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid #334155', background: '#1e293b', color: '#e2e8f0', fontSize: '12px' }}
             >
               <option value="">Select session...</option>
@@ -140,7 +160,7 @@ export function ContextStreamInspector() {
               <input
                 type="checkbox"
                 checked={enabled}
-                onChange={(e) => setFilters(f => ({ ...f, [key]: e.target.checked }))}
+                onChange={e => setFilters(f => ({ ...f, [key]: e.target.checked }))}
               />
               {key.replace('_', ' ')}
             </label>
@@ -149,7 +169,7 @@ export function ContextStreamInspector() {
 
         {/* Auto-scroll toggle */}
         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '16px', color: '#94a3b8', fontSize: '12px', cursor: 'pointer' }}>
-          <input type="checkbox" checked={autoScroll} onChange={(e) => setAutoScroll(e.target.checked)} />
+          <input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)} />
           Auto-scroll
         </label>
       </div>
