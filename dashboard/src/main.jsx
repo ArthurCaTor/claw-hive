@@ -45,7 +45,10 @@ function NewApp() {
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0d1117' }}>
       <nav style={{ width: '220px', background: '#0f172a', borderRight: '1px solid #1e293b', padding: '16px' }}>
         <div style={{ marginBottom: '20px' }}>
-          <img src="/vite.svg" alt="🦞" width="100" height="100" style={{ borderRadius: '12px' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <img src="/vite.svg" alt="🦞" width="60" height="60" style={{ borderRadius: '8px' }} />
+            <span style={{ color: '#fff', fontSize: '20px', fontWeight: 'bold' }}>Claw Hive</span>
+          </div>
         </div>
         <NavLink to="/" label="Dashboard" />
         <NavLink to="/agents" label="Agents" />
