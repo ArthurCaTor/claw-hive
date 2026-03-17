@@ -1,8 +1,12 @@
 import React from 'react';
 // Captures Page - Full Proxy functionality
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:8080';
+
+function ResizablePane({ children, ...props }) {
+  return <div {...props}>{children}</div>;
+}
 
 function JsonViewer({ data, title, maxHeight = '300px' }) {
   const [expanded, setExpanded] = useState(false);
@@ -67,18 +71,38 @@ export function CapturesPage() {
   const [loading, setLoading] = useState(true);
   const [loadingCapture, setLoadingCapture] = useState(false);
   const [error, setError] = useState(null);
+  const [leftWidth, setLeftWidth] = useState(350);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef(null);
+
+  // Mouse drag handlers for resizable pane
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
 
   useEffect(() => {
-    fetchStatus();
-    fetchCaptures();
-    
-    const interval = setInterval(() => {
-      fetchStatus();
-      fetchCaptures();
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, []);
+    const handleMouseMove = (e) => {
+      if (!isDragging || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const newWidth = Math.max(250, Math.min(600, e.clientX - rect.left));
+      setLeftWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   const fetchStatus = async () => {
     try {
@@ -281,9 +305,15 @@ ${JSON.stringify(capture.response?.body, null, 2)}
           No captures yet. Start the proxy to capture LLM calls.
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: '16px', height: 'calc(100vh - 280px)' }}>
-          {/* Captures list */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+        <div ref={containerRef} style={{ display: 'flex', gap: '0px', height: 'calc(100vh - 280px)' }}>
+          {/* Left: Captures list */}
+          <div style={{ 
+            width: leftWidth, 
+            flexShrink: 0,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
             <div style={{ 
               display: 'flex', 
               flexDirection: 'column', 
@@ -329,12 +359,26 @@ ${JSON.stringify(capture.response?.body, null, 2)}
             </div>
           </div>
 
+          {/* Resize handle */}
+          <div 
+            onMouseDown={handleMouseDown}
+            style={{ 
+              width: '6px', 
+              cursor: 'col-resize',
+              background: isDragging ? '#3b82f6' : '#334155',
+              transition: 'background 0.2s',
+              flexShrink: 0,
+              borderRadius: '3px',
+              margin: '0 2px'
+            }}
+            title="Drag to resize"
+          />
+
           {/* Capture Detail */}
           {selectedCapture && (
             <div style={{ 
               flex: 1, 
-              minWidth: '400px',
-              maxWidth: '60%',
+              minWidth: '300px',
               background: '#1e293b', 
               borderRadius: '8px', 
               padding: '16px',
