@@ -16,13 +16,13 @@ function NewApp() {
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0d1117' }}>
       <nav style={{ width: '220px', background: '#0f172a', borderRight: '1px solid #1e293b', padding: '16px' }}>
         <h2 style={{ color: '#fff', marginBottom: '20px' }}>🦷 Claw-Hive</h2>
-        <NavLink to="/new/" label="Dashboard" />
-        <NavLink to="/new/agents" label="Agents" />
-        <NavLink to="/new/providers" label="Providers" />
-        <NavLink to="/new/captures" label="Captures" />
-        <NavLink to="/new/cost" label="Cost" />
-        <NavLink to="/new/stream" label="Context Stream" />
-        <NavLink to="/new/settings" label="Settings" />
+        <NavLink to="/" label="Dashboard" />
+        <NavLink to="/agents" label="Agents" />
+        <NavLink to="/providers" label="Providers" />
+        <NavLink to="/captures" label="Captures" />
+        <NavLink to="/cost" label="Cost" />
+        <NavLink to="/stream" label="Context Stream" />
+        <NavLink to="/settings" label="Settings" />
       </nav>
       <main style={{ flex: 1, padding: '24px', overflow: 'auto' }}>
         <Routes>
