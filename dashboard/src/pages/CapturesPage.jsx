@@ -281,14 +281,14 @@ ${JSON.stringify(capture.response?.body, null, 2)}
           No captures yet. Start the proxy to capture LLM calls.
         </div>
       ) : (
-        <div style={{ display: 'flex', gap: '16px' }}>
+        <div style={{ display: 'flex', gap: '16px', height: 'calc(100vh - 280px)' }}>
           {/* Captures list */}
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ 
               display: 'flex', 
               flexDirection: 'column', 
               gap: '4px', 
-              maxHeight: '500px', 
+              height: '100%', 
               overflow: 'auto' 
             }}>
               {captures.map((capture) => (
@@ -332,12 +332,13 @@ ${JSON.stringify(capture.response?.body, null, 2)}
           {/* Capture Detail */}
           {selectedCapture && (
             <div style={{ 
-              width: '400px', 
-              flexShrink: 0,
+              flex: 1, 
+              minWidth: '400px',
+              maxWidth: '60%',
               background: '#1e293b', 
               borderRadius: '8px', 
               padding: '16px',
-              maxHeight: '550px',
+              height: '100%',
               overflow: 'auto'
             }}>
               <div style={{ 
