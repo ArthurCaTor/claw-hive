@@ -21,7 +21,7 @@ interface FindConfigPath {
 export default function systemRoutes(app: Application, { sessionWatcher, debugService, OPENCLAW_DIR, findConfigPath }: { sessionWatcher?: SessionWatcher; debugService?: DebugService; OPENCLAW_DIR: string; findConfigPath: FindConfigPath }): void {
   // Gateway status
   app.get('/api/gateway/status', (req, res) => {
-    const info = sessionWatcher.getWatchedInfo();
+    const info = (sessionWatcher as any).getWatchedInfo();
     res.json({ 
       connected: !!info.filepath,
       agent: info.agent,
@@ -31,7 +31,7 @@ export default function systemRoutes(app: Application, { sessionWatcher, debugSe
 
   // Debug status
   app.get('/api/debug/status', (req, res) => {
-    res.json(debugService.getStatus());
+    res.json((debugService as any).getStatus()());
   });
 
   // Start debug mode
@@ -57,7 +57,7 @@ export default function systemRoutes(app: Application, { sessionWatcher, debugSe
   // Emergency rollback
   app.post('/api/debug/rollback', async (req, res) => {
     try {
-      const result = await debugService.emergencyRollback();
+      const result = await (debugService as any).emergencyRollback();
       res.json(result);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -67,7 +67,7 @@ export default function systemRoutes(app: Application, { sessionWatcher, debugSe
   // Get debug recordings
   app.get('/api/debug/recordings', async (req, res) => {
     try {
-      const data = await debugService.getRecordings();
+      const data = await (debugService as any).getRecordings();
       res.json(data);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -76,7 +76,7 @@ export default function systemRoutes(app: Application, { sessionWatcher, debugSe
 
   // Get all sessions
   app.get('/api/sessions', (req, res) => {
-    const sessions = sessionWatcher.getAllSessions();
+    const sessions = (sessionWatcher as any).getAllSessions();
     const grouped = {};
     for (const s of sessions) {
       if (!grouped[s.agent]) grouped[s.agent] = [];
@@ -109,7 +109,7 @@ export default function systemRoutes(app: Application, { sessionWatcher, debugSe
       return res.status(404).json({ error: 'Session not found' });
     }
     
-    const events = sessionWatcher.readSession(filepath);
+    const events = (sessionWatcher as any).readSession(filepath);
     res.json({ agent, sessionId, events });
   });
 
@@ -134,7 +134,7 @@ export default function systemRoutes(app: Application, { sessionWatcher, debugSe
       return res.status(404).json({ error: 'Session not found' });
     }
     
-    sessionWatcher.watchFile(filepath, agent, sessionId);
+    (sessionWatcher as any).watchFile(filepath, agent, sessionId);
     res.json({ ok: true, watching: `${agent}/${sessionId}` });
   });
 

@@ -13,7 +13,7 @@ export default function searchRoutes(app: Application, { agentStore }: { agentSt
   // Cross-agent search
   app.get('/api/search', (req, res) => {
     const { q } = req.query;
-    const query = (q || '').toLowerCase();
+    const query = String(q || '').toLowerCase();
     
     // Input validation: limit query length
     if (query.length > 200) {
@@ -33,12 +33,12 @@ export default function searchRoutes(app: Application, { agentStore }: { agentSt
     
     // Search in agents
     const agents = Object.values(agentStore);
-    results.agents = agents.filter(a => 
+    results.agents = agents.filter((a: any) => 
       a.name?.toLowerCase().includes(query) ||
       a.agent_id?.toLowerCase().includes(query) ||
       a.task?.toLowerCase().includes(query) ||
       a.output?.toLowerCase().includes(query)
-    ).map(a => ({
+    ).map((a: any) => ({
       type: 'agent',
       id: a.agent_id,
       name: a.name,

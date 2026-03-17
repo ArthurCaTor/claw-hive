@@ -25,7 +25,7 @@ export default function sessionSearchRoutes(app: Application, { agentStore }: { 
   // Session Search Endpoint
   app.get('/api/sessions/search', (req, res) => {
     const { q } = req.query;
-    const query = (q || '').toLowerCase();
+    const query = String(q || '').toLowerCase();
     
     // Get all sessions from agentStore with defensive coding
     if (!agentStore) {

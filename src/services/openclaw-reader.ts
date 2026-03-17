@@ -96,7 +96,7 @@ class OpenClawReader {
   /**
    * Get all sessions (from all agents)
    */
-  async getSessions(options = {}) {
+  async getSessions(options: any = {}) {
     try {
       const sessions = [];
       
@@ -126,7 +126,7 @@ class OpenClawReader {
           const sessionData = await this._readSessionFromAgent(agentId, sessionId);
           
           if (sessionData) {
-            if (options.agentId && sessionData.agent !== options.agentId) {
+            if (options.agentId && (sessionData as any).agent !== options.agentId) {
               continue;
             }
             sessions.push(sessionData);

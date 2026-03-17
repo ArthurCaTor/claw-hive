@@ -64,7 +64,7 @@ export default function memoryRoutes(app: Application): void {
       }
     }
     
-    memories.sort((a, b) => new Date(b.modified) - new Date(a.modified));
+    memories.sort((a, b) => (new Date(b.modified).getTime() - new Date(a.modified).getTime()));
     
     res.json({
       timestamp: new Date().toISOString(),
@@ -74,7 +74,7 @@ export default function memoryRoutes(app: Application): void {
 
   // Get specific memory file content
   app.get('/api/memory/*', (req, res) => {
-    let id = req.params[0];
+    let id = String(req.params[0]);
     
     // Security: prevent path traversal
     if (id && (id.includes('..') || id.includes('~'))) {

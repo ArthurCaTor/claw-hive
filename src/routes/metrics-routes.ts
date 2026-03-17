@@ -3,7 +3,6 @@
  * @description Prometheus metrics endpoint
  * Prometheus 指标端点
  */
-const express = require('express');
 const promClient = require('prom-client');
 
 // Create a Registry

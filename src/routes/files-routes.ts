@@ -1,11 +1,9 @@
 // Files routes
 // Extracted from server.js
+import { Application } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { Application } from 'express';
-
-import { Application } from 'express';
 
 // Helper function to get workspace paths
 function getWorkspacePaths() {
@@ -34,10 +32,11 @@ function resolveWorkspacePath(workspace, reqPath) {
 export default function filesRoutes(app: Application): void {
   // List files in workspace
   app.get('/api/files', (req, res) => {
-    const { path: reqPath, workspace } = req.query;
+    const reqPath = req.query.path;
+    const workspace = req.query.workspace;
     
     // Security: prevent path traversal
-    if (reqPath && (reqPath.includes('..') || reqPath.includes('~'))) {
+    if (reqPath && (String(reqPath).includes('..') || String(reqPath).includes('~'))) {
       return res.status(400).json({ error: 'Invalid path' });
     }
     
@@ -78,7 +77,7 @@ export default function filesRoutes(app: Application): void {
     const { workspace, path: filePath } = req.query;
     
     // Security: prevent path traversal
-    if (filePath && (filePath.includes('..') || filePath.includes('~'))) {
+    if (filePath && (String(filePath).includes('..') || String(filePath).includes('~'))) {
       return res.status(400).json({ error: 'Invalid path' });
     }
     

@@ -74,7 +74,7 @@ export default function statsRoutes(app: Application, { agentStore, findConfigPa
     let estimatedCost = 0;
     for (const [model, data] of Object.entries(byModel)) {
       const rate = pricing[model] || 0.00025;
-      estimatedCost += (data.tokens / 1000000) * rate * 2;
+      estimatedCost += ((data as any).tokens / 1000000) * rate * 2;
     }
     
     const todayTokens = agents.reduce((sum, a) => {
@@ -148,13 +148,10 @@ export default function statsRoutes(app: Application, { agentStore, findConfigPa
     }
     
     const result = Object.values(byModel).map(item => {
-      const limits = rateLimits[item.model] || { rpm: 500, tpm: 150000, daily: 10000000 };
-      return {
-        ...item,
-        limits,
-        rpm_used: item.active_sessions,
-        rpm_percent: Math.round((item.active_sessions / limits.rpm) * 100),
-        tpm_percent: Math.round((item.total_tokens / limits.tpm) * 100),
+      const limits = rateLimits[(item as any).model] || { rpm: 500, tpm: 150000, daily: 10000000 };
+      return { ...(item as any),
+        rpm_percent: Math.round(((item as any).active_sessions / limits.rpm) * 100),
+        tpm_percent: Math.round(((item as any).total_tokens / limits.tpm) * 100),
       };
     });
     
@@ -173,14 +170,14 @@ export default function statsRoutes(app: Application, { agentStore, findConfigPa
 
     // Get LLM switch history
     app.get('/api/llms/switches', (req, res) => {
-      const agentId = req.query.agent_id;
-      const limit = parseInt(req.query.limit) || 50;
+      const agentId = String(req.query.agent_id);
+      const limit = parseInt(String(req.query.limit)) || 50;
       res.json(llmTracker.getSwitchHistory(agentId, limit));
     });
 
     // Get LLM health metrics
     app.get('/api/llms/health', (req, res) => {
-      const provider = req.query.provider;
+      const provider = String(req.query.provider);
       if (provider) {
         res.json(llmTracker.getHealthMetrics(provider));
       } else {

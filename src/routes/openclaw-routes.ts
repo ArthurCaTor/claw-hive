@@ -28,7 +28,7 @@ router.get('/agents', async (req, res) => {
  */
 router.get('/agents/:id', async (req, res) => {
   try {
-    const agent = await openclawReader.getAgent(req.params.id);
+    const agent = await openclawReader.getAgent(String(req.params.id));
     if (!agent) {
       return res.status(404).json({ success: false, error: 'Agent not found' });
     }
@@ -58,7 +58,7 @@ router.get('/sessions', async (req, res) => {
  */
 router.get('/sessions/:id', async (req, res) => {
   try {
-    const session = await openclawReader.getSession(req.params.id);
+    const session = await openclawReader.getSession(String(req.params.id));
     if (!session) {
       return res.status(404).json({ success: false, error: 'Session not found' });
     }
@@ -74,8 +74,8 @@ router.get('/sessions/:id', async (req, res) => {
  */
 router.get('/sessions/:id/messages', async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 100;
-    const messages = await openclawReader.getSessionMessages(req.params.id, limit);
+    const limit = parseInt(String(req.query.limit)) || 100;
+    const messages = await openclawReader.getSessionMessages(String(req.params.id), limit);
     res.json({ success: true, messages, count: messages.length });
   } catch (error) {
     console.error('[API] Error getting messages:', error);

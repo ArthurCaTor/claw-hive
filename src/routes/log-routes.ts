@@ -54,7 +54,7 @@ export default function logRoutes(app: Application): void {
       }
     }
     
-    logs.sort((a, b) => new Date(b.modified) - new Date(a.modified));
+    logs.sort((a, b) => (new Date(b.modified).getTime() - new Date(a.modified).getTime()));
     
     res.json({
       timestamp: new Date().toISOString(),
@@ -64,7 +64,7 @@ export default function logRoutes(app: Application): void {
 
   // Get specific log file content
   app.get('/api/logs/*', (req, res) => {
-    const id = req.params[0];
+    const id = String(req.params[0]);
     
     // Security: prevent path traversal
     if (id.includes('..') || id.includes('~')) {

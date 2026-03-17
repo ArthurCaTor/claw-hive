@@ -5,7 +5,9 @@ import * as path from 'path';
 import { Application } from 'express';
 
 interface RecordingStore {
-  getStatus: () => unknown;
+  getStatus: () => any;
+  startRecording: (name: string) => any;
+  stopRecording: () => any;
   start: () => Promise<unknown>;
   stop: () => Promise<unknown>;
   getRecordings: () => unknown[];

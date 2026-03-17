@@ -178,9 +178,7 @@ export default function agentRoutes(app: Application, { agentStore, findConfigPa
     }
     
     if (agentStore[id]) {
-      agentStore[id].model = model;
+      (agentStore[id] as any).model = model;
     }
-    
-    res.json({ success: true, message: `Agent ${id} model switched to ${model}` });
   });
 };

@@ -7,10 +7,10 @@
     "allowJs": true,
     "checkJs": false,
     "noEmit": true,
-    "esModuleInterop": true,
     "skipLibCheck": true,
+    "esModuleInterop": true,
     "resolveJsonModule": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "dashboard", "public", "src/**/*.js"]
+  "exclude": ["node_modules", "dist"]
 }
