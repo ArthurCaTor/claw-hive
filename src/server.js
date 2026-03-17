@@ -715,6 +715,7 @@ const systemRoutes = require('./routes/system-routes');
 const statsRoutes = require('./routes/stats-routes');
 const filesRoutes = require('./routes/files-routes');
 const openclawRoutes = require('./routes/openclaw-routes');
+const metricsRoutes = require('./routes/metrics-routes');
 app.use(debugProxyRoutes);
 healthRoutes(app);
 agentRoutes(app, { agentStore, findConfigPath });
@@ -729,6 +730,7 @@ systemRoutes(app, { sessionWatcher, debugService, OPENCLAW_DIR, findConfigPath }
 statsRoutes(app, { agentStore, findConfigPath, getStats });
 filesRoutes(app);
 app.use('/api/openclaw', openclawRoutes);
+app.use('/api/metrics', metricsRoutes.getMetrics);
 
 // Serve index.html for all other routes
 app.get('*', (req, res) => {
