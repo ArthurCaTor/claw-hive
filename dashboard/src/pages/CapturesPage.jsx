@@ -213,49 +213,43 @@ ${JSON.stringify(capture.response?.body, null, 2)}
 
   return (
     <div>
-      <h1 style={{ margin: '0 0 24px', fontSize: '24px', fontWeight: 600 }}>
-        LLM Captures
-      </h1>
-
-      {/* Proxy Status Bar - Read only */}
+      {/* Compact Status Bar */}
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between',
-        marginBottom: '20px',
-        padding: '12px 16px',
+        marginBottom: '12px',
+        padding: '8px 12px',
         background: '#1e293b',
-        borderRadius: '8px',
+        borderRadius: '6px',
         border: '1px solid #334155'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ 
-            width: '10px', 
-            height: '10px', 
+            width: '8px', 
+            height: '8px', 
             borderRadius: '50%', 
             background: isRunning ? '#22c55e' : '#ef4444',
-            boxShadow: isRunning ? '0 0 8px #22c55e' : 'none'
+            boxShadow: isRunning ? '0 0 6px #22c55e' : 'none'
           }} />
-          <div>
-            <div style={{ fontWeight: 600, fontSize: '14px' }}>
-              Proxy {isRunning ? 'Running' : 'Stopped'}
-            </div>
-            <div style={{ fontSize: '12px', color: '#64748b' }}>
-              {status?.capturesCount || 0} captures recorded
-            </div>
-          </div>
+          <span style={{ fontWeight: 600, fontSize: '13px' }}>
+            Proxy {isRunning ? 'Running' : 'Stopped'}
+          </span>
+          <span style={{ color: '#64748b', fontSize: '12px' }}>
+            {status?.capturesCount || 0} captures
+          </span>
         </div>
         
         <button
           onClick={() => { fetchStatus(); fetchCaptures(); }}
           style={{
-            padding: '8px 12px',
-            borderRadius: '6px',
+            padding: '4px 8px',
+            borderRadius: '4px',
             border: '1px solid #334155',
             background: 'transparent',
             color: '#94a3b8',
             cursor: 'pointer',
-            fontSize: '12px',
+            fontSize: '11px',
           }}
         >
           🔄
@@ -363,46 +357,84 @@ ${JSON.stringify(capture.response?.body, null, 2)}
               minWidth: '300px',
               background: '#1e293b', 
               borderRadius: '8px', 
-              padding: '16px',
+              padding: '12px',
               height: '100%',
               overflow: 'auto'
             }}>
-              {/* Minimal Export button - top right */}
-              <div style={{ position: 'relative' }}>
-                <button
-                  onClick={() => exportCapture(selectedCapture)}
-                  style={{
-                    position: 'absolute',
-                    top: '-8px',
-                    right: '0',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                    border: 'none',
-                    background: '#334155',
-                    color: '#94a3b8',
-                    cursor: 'pointer',
-                    fontSize: '10px',
-                    opacity: 0.7,
-                  }}
-                  title="Export"
-                >
-                  📥
-                </button>
-              </div>
-
               {loadingCapture ? (
                 <div style={{ color: '#64748b' }}>Loading...</div>
               ) : (
                 <>
-                  <JsonViewer 
-                    title="Request Body" 
-                    data={selectedCapture.request?.body || selectedCapture.request} 
-                  />
+                  {/* Request Body with inline export */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ 
+                      fontSize: '12px', 
+                      fontWeight: 600, 
+                      color: '#94a3b8', 
+                      marginBottom: '6px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span>Request Body</span>
+                      <button
+                        onClick={() => exportCapture(selectedCapture)}
+                        style={{
+                          padding: '2px 6px',
+                          borderRadius: '3px',
+                          border: 'none',
+                          background: '#334155',
+                          color: '#94a3b8',
+                          cursor: 'pointer',
+                          fontSize: '10px',
+                        }}
+                      >
+                        📥 Export
+                      </button>
+                    </div>
+                    <pre style={{
+                      background: '#0d1117',
+                      borderRadius: '6px',
+                      padding: '12px',
+                      fontSize: '11px',
+                      fontFamily: 'monospace',
+                      color: '#e2e8f0',
+                      overflow: 'auto',
+                      maxHeight: '300px',
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-all',
+                    }}>
+                      {JSON.stringify(selectedCapture.request?.body || selectedCapture.request, null, 2)}
+                    </pre>
+                  </div>
 
-                  <JsonViewer 
-                    title="Response Body" 
-                    data={selectedCapture.response?.body || selectedCapture.response} 
-                  />
+                  {/* Response Body */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ 
+                      fontSize: '12px', 
+                      fontWeight: 600, 
+                      color: '#94a3b8', 
+                      marginBottom: '6px'
+                    }}>
+                      Response Body
+                    </div>
+                    <pre style={{
+                      background: '#0d1117',
+                      borderRadius: '6px',
+                      padding: '12px',
+                      fontSize: '11px',
+                      fontFamily: 'monospace',
+                      color: '#e2e8f0',
+                      overflow: 'auto',
+                      maxHeight: '300px',
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-all',
+                    }}>
+                      {JSON.stringify(selectedCapture.response?.body || selectedCapture.response, null, 2)}
+                    </pre>
+                  </div>
                 </>
               )}
             </div>
