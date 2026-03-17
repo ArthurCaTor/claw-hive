@@ -1,0 +1,46 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Build outputs
+dashboard/node_modules
+dist
+
+# Development
+.git
+.gitignore
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs
+*.md
+!README.md
+docs/
+AUDIT-REPORT.md
+HANDOVER.md
+PROXY-INVESTIGATION_REPORT.md
+
+# Tests
+tests/
+coverage/
+*.test.js
+
+# CI/CD
+.github
+.eslintrc.json
+
+# Misc
+*.log
+temp/
+tmp/
