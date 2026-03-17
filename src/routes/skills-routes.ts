@@ -1,10 +1,18 @@
 // Skills routes
 // Extracted from server.js
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+import * as fs from 'fs';
+import * as path from 'path';
+import { execSync } from 'child_process';
+import { Application } from 'express';
 
-module.exports = function(app) {
+interface Skill {
+  id: string;
+  name: string;
+  description: string;
+  emoji: string;
+}
+
+export default function skillsRoutes(app: Application): void {
   // Get available skills
   app.get('/api/skills', (req, res) => {
     const nodePath = execSync('npm root -g', { encoding: 'utf8' }).trim();
@@ -21,10 +29,10 @@ module.exports = function(app) {
         return stat.isDirectory();
       });
       
-      const skills = skillDirs.map(skillId => {
+      const skills: Skill[] = skillDirs.map(skillId => {
         const skillPath = path.join(skillsDir, skillId, 'SKILL.md');
         if (!fs.existsSync(skillPath)) {
-          return { id: skillId, name: skillId, description: '' };
+          return { id: skillId, name: skillId, description: '', emoji: '🛠️' };
         }
         
         try {
@@ -50,7 +58,7 @@ module.exports = function(app) {
       
       res.json({ total: skills.length, skills });
     } catch (e) {
-      res.json({ total: 0, skills: [], error: e.message });
+      res.json({ total: 0, skills: [], error: String(e) });
     }
   });
 };

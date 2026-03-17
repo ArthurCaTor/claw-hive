@@ -1,8 +1,19 @@
 // Model routes
 // Extracted from server.js
-const fs = require('fs');
+import * as fs from 'fs';
+import { Application } from 'express';
 
-module.exports = function(app, { findConfigPath }) {
+interface ModelInfo {
+  id: string;
+  name: string;
+  params?: Record<string, unknown>;
+}
+
+interface FindConfigPath {
+  (): string | null;
+}
+
+export default function modelRoutes(app: Application, { findConfigPath }: { findConfigPath: FindConfigPath }): void {
   // Get available models
   app.get('/api/models', (req, res) => {
     const configPath = findConfigPath();
@@ -10,10 +21,10 @@ module.exports = function(app, { findConfigPath }) {
       try {
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
         const models = config.agents?.defaults?.models || {};
-        const modelList = Object.entries(models).map(([id, info]) => ({
+        const modelList: ModelInfo[] = Object.entries(models).map(([id, info]) => ({
           id,
-          name: info.alias || id,
-          params: info.params || {},
+          name: (info as Record<string, unknown>).alias as string || id,
+          params: (info as Record<string, unknown>).params as Record<string, unknown> || {},
         }));
         
         if (modelList.length === 0) {
