@@ -262,15 +262,14 @@ ${JSON.stringify(capture.response?.body, null, 2)}
           background: '#7f1d1d', 
           borderRadius: '6px', 
           color: '#fecaca',
-          marginBottom: '16px',
+          marginBottom: '8px',
           fontSize: '12px'
         }}>
           Error: {error}
         </div>
       )}
 
-      {/* Captures List - no title */}
-      
+      {/* Captures List */}
       {loading ? (
         <div style={{ color: '#64748b' }}>Loading captures...</div>
       ) : captures.length === 0 ? (
