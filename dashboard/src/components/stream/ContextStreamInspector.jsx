@@ -54,18 +54,55 @@ export function ContextStreamInspector() {
     }
   }, [sessions]);
 
-  // Poll for events based on mode
+  // Connect to SSE for real-time events + polling fallback
   useEffect(() => {
     if (mode !== 'live') return;
 
-    // If agent+session selected, poll that session
-    if (selectedAgent && selectedSession) {
-      fetchSessionEvents();
-      const interval = setInterval(fetchSessionEvents, 2000);
-      return () => clearInterval(interval);
-    } else {
-      setEvents([]);
-    }
+    // First, tell backend to watch the session
+    const setupWatch = async () => {
+      if (selectedAgent && selectedSession) {
+        try {
+          await fetch(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}/watch`, { 
+            method: 'POST' 
+          });
+        } catch (err) {
+          console.error('Watch error:', err);
+        }
+      }
+    };
+    
+    setupWatch();
+
+    // Also do initial fetch
+    fetchSessionEvents();
+
+    // Connect to SSE for real-time push
+    const eventSource = new EventSource(`${API_BASE}/api/context-stream`);
+    eventSource.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        setEvents(prev => {
+          // Avoid duplicates
+          const exists = prev.find(ev => ev.id === data.id && ev.timestamp === data.timestamp);
+          if (exists) return prev;
+          return [...prev, data].slice(-500);
+        });
+      } catch (err) {
+        // Ignore parse errors
+      }
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    // Polling fallback - also poll every 3 seconds to catch any missed events
+    const pollInterval = setInterval(fetchSessionEvents, 3000);
+
+    return () => {
+      eventSource.close();
+      clearInterval(pollInterval);
+    };
   }, [selectedAgent, selectedSession, mode]);
 
   // Auto-scroll
