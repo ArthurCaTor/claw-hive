@@ -273,11 +273,11 @@ ${JSON.stringify(capture.response?.body, null, 2)}
       {loading ? (
         <div style={{ color: '#64748b' }}>Loading captures...</div>
       ) : captures.length === 0 ? (
-        <div style={{ color: '#64748b', textAlign: 'center', padding: '20px' }}>
+        <div style={{ color: '#64748b', textAlign: 'center', padding: '8px' }}>
           No captures recorded yet.
         </div>
       ) : (
-        <div ref={containerRef} style={{ display: 'flex', gap: '0px', height: 'calc(100vh - 100px)' }}>
+        <div ref={containerRef} style={{ display: 'flex', gap: '0px', height: 'calc(100vh - 80px)' }}>
           {/* Left: Captures list */}
           <div style={{ 
             width: leftWidth, 
