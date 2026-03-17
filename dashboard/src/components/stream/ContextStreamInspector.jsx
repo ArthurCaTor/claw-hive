@@ -54,19 +54,18 @@ export function ContextStreamInspector() {
     }
   }, [sessions]);
 
-  // Connect to SSE based on mode
+  // Poll for events based on mode
   useEffect(() => {
     if (mode !== 'live') return;
 
-    // If agent+session selected, watch specific session
+    // If agent+session selected, poll that session
     if (selectedAgent && selectedSession) {
-      watchSession();
+      fetchSessionEvents();
+      const interval = setInterval(fetchSessionEvents, 2000);
+      return () => clearInterval(interval);
     } else {
-      // Otherwise watch global context stream
-      watchGlobalStream();
+      setEvents([]);
     }
-
-    return () => eventSourceRef.current?.close();
   }, [selectedAgent, selectedSession, mode]);
 
   // Auto-scroll
@@ -84,6 +83,19 @@ export function ContextStreamInspector() {
       setSessions(data);
     } catch (err) {
       console.error('Fetch sessions error:', err);
+    }
+  };
+
+  const fetchSessionEvents = async () => {
+    if (!selectedAgent || !selectedSession) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}`);
+      const data = await res.json();
+      if (data.events) {
+        setEvents(data.events.slice(-500));
+      }
+    } catch (err) {
+      console.error('Fetch session events error:', err);
     }
   };
 
@@ -105,40 +117,6 @@ export function ContextStreamInspector() {
     } catch (err) {
       console.error('Recordings fetch error:', err);
     }
-  };
-
-  const watchSession = () => {
-    eventSourceRef.current?.close();
-    const eventSource = new EventSource(`${API_BASE}/api/sessions/${selectedAgent}/${selectedSession}/watch`);
-    eventSourceRef.current = eventSource;
-
-    eventSource.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        setEvents(prev => [...prev, data].slice(-500));
-      } catch (err) {
-        console.error('SSE parse error:', err);
-      }
-    };
-
-    eventSource.onerror = () => eventSource.close();
-  };
-
-  const watchGlobalStream = () => {
-    eventSourceRef.current?.close();
-    const eventSource = new EventSource(`${API_BASE}/api/context-stream`);
-    eventSourceRef.current = eventSource;
-
-    eventSource.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        setEvents(prev => [...prev, data].slice(-500));
-      } catch (err) {
-        console.error('SSE parse error:', err);
-      }
-    };
-
-    eventSource.onerror = () => eventSource.close();
   };
 
   const startRecording = async () => {
