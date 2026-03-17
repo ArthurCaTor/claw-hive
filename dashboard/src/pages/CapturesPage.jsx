@@ -140,6 +140,41 @@ export function CapturesPage() {
     }
   };
 
+  // Initial data fetch + SSE for real-time updates
+  useEffect(() => {
+    fetchStatus();
+    fetchCaptures();
+    
+    // SSE for real-time captures
+    const eventSource = new EventSource(`${API_BASE}/api/debug-proxy/stream`);
+    eventSource.onmessage = (e) => {
+      try {
+        const newCapture = JSON.parse(e.data);
+        setCaptures(prev => {
+          // Avoid duplicates
+          const exists = prev.find(c => c.id === newCapture.id);
+          if (exists) return prev;
+          return [newCapture, ...prev].slice(0, 50);
+        });
+      } catch (err) {
+        // Ignore parse errors
+      }
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    const interval = setInterval(() => {
+      fetchStatus();
+    }, 5000);
+    
+    return () => {
+      clearInterval(interval);
+      eventSource.close();
+    };
+  }, []);
+
   const exportCapture = (capture) => {
     if (!capture) return;
     
