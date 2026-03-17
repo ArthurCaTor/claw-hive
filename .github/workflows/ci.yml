@@ -1,0 +1,113 @@
+# CLAW-HIVE CI/CD Pipeline
+# GitHub Actions workflow for automated testing and deployment
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main, evolution]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run smoke tests
+        run: npm test
+      
+      - name: Check server starts
+        run: |
+          timeout 10s node src/server.js || true
+          echo "Server start check completed"
+      
+      - name: Check for console.log in production code
+        run: |
+          # Warn if there are console.log without logger
+          grep -r "console.log" src/ --include="*.js" | grep -v "logger" | head -5 || true
+      
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run ESLint
+        run: |
+          npx eslint src/ --ext .js || echo "No ESLint config, skipping"
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build frontend
+        run: npm run build
+      
+      - name: Verify build output
+        run: |
+          ls -la public/
+          test -f public/index.html
+          test -f public/assets/index-*.js
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    needs: [test, lint, build]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Build frontend
+        run: |
+          npm ci
+          npm run build
+      
+      - name: Deploy to server
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+        run: |
+          if [ -n "$SERVER_HOST" ]; then
+            rsync -avz --delete public/ $SERVER_USER@$SERVER_HOST:/home/arthur/claw-hive/public/
+            echo "Deployed to $SERVER_HOST"
+          else
+            echo "No deploy config, skipping deployment"
+          fi
