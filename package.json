@@ -16,7 +16,8 @@
     "test": "node tests/smoke.test.js",
     "evolve": "node evolution/runner.js",
     "test:watch": "node tests/smoke.test.js",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "test:integration": "node tests/integration.test.js"
   },
   "keywords": [
     "openclaw",
