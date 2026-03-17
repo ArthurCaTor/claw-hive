@@ -1,5 +1,5 @@
 /**
- * @file src/services/openclaw-reader.js
+ * @file src/services/openclaw-reader.ts
  * @description Read OpenClaw data directly from files - NO CLI calls!
  * 直接从文件读取 OpenClaw 数据 - 不调用 CLI！
  * 
@@ -10,11 +10,31 @@
  * No process spawning, instant response, zero overhead.
  */
 
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+
+interface CacheEntry<T> {
+  data: T;
+  time: number;
+}
+
+interface OpenClawPaths {
+  config: string;
+  agents: string;
+  sessions: string;
+  logs: string;
+}
 
 class OpenClawReader {
+  private openclawHome: string;
+  private paths: OpenClawPaths;
+  private cache: {
+    config: unknown | null;
+    configTime: number;
+  };
+  private cacheTTL: number;
+
   constructor() {
     this.openclawHome = process.env.OPENCLAW_HOME || path.join(os.homedir(), '.openclaw');
     
@@ -30,7 +50,7 @@ class OpenClawReader {
       configTime: 0,
     };
     
-    this.cacheTTL = 5000; // 5 seconds
+    this.cacheTTL = 5000;
     
     console.log(`[OpenClawReader] Initialized at ${this.openclawHome}`);
   }
@@ -356,3 +376,5 @@ class OpenClawReader {
 const openclawReader = new OpenClawReader();
 
 module.exports = { OpenClawReader, openclawReader };
+
+export { OpenClawReader, openclawReader };

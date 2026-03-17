@@ -1,18 +1,30 @@
 // Simple in-memory rate limiter
-const rateLimits = new Map();
+import { Request, Response, NextFunction } from 'express';
+
+interface RateLimitRecord {
+  windowStart: number;
+  count: number;
+}
+
+interface RateLimiterOptions {
+  windowMs?: number;
+  maxRequests?: number;
+}
+
+const rateLimits = new Map<string, RateLimitRecord>();
 
 const DEFAULT_WINDOW_MS = 60000; // 1 minute
 const DEFAULT_MAX_REQUESTS = 100;
 const CLEANUP_INTERVAL_MS = 60000;
 
 // Store references to cleanup intervals
-const cleanupIntervals = new Map();
+const cleanupIntervals = new Map<number, NodeJS.Timeout>();
 
-const createRateLimiter = (options = {}) => {
+const createRateLimiter = (options: RateLimiterOptions = {}) => {
   const windowMs = options.windowMs || DEFAULT_WINDOW_MS;
   const maxRequests = options.maxRequests || DEFAULT_MAX_REQUESTS;
   
-  return (req, res, next) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     // Validate IP to prevent memory issues
     const ip = req.ip || req.connection?.remoteAddress || 'unknown';
     if (!ip || ip.length > 45) {
@@ -47,7 +59,7 @@ const createRateLimiter = (options = {}) => {
 };
 
 // Cleanup old entries periodically
-const startCleanup = (windowMs) => {
+const startCleanup = (windowMs: number) => {
   const interval = Math.max(windowMs * 2, CLEANUP_INTERVAL_MS);
   
   if (!cleanupIntervals.has(windowMs)) {
@@ -67,4 +79,4 @@ const startCleanup = (windowMs) => {
 // Start default cleanup
 startCleanup(DEFAULT_WINDOW_MS);
 
-module.exports = { createRateLimiter };
+export { createRateLimiter };
