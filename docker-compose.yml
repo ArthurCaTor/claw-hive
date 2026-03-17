@@ -1,0 +1,62 @@
+# CLAW-HIVE Docker Compose
+# Local development and production orchestration
+
+services:
+  # Main application
+  claw-hive:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: claw-hive
+    ports:
+      - "8080:8080"
+    volumes:
+      # Persist captures and recordings
+      - claw-hive-data:/app/captures
+      - claw-hive-recordings:/app/recordings
+      # Mount OpenClaw for live development (optional)
+      # - ~/.openclaw:/home/arthur/.openclaw:ro
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      # Add OpenClaw service when needed
+      # openclaw:
+      #   condition: service_healthy
+
+  # Optional: Development service with hot reload
+  # claw-hive-dev:
+  #   build:
+  #     context: .
+  #     target: builder
+  #   container_name: claw-hive-dev
+  #   ports:
+  #     - "8080:8080"
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./src:/app/src
+  #     - ./dashboard:/app/dashboard
+  #     - ./public:/app/public
+  #   command: npm run dev:all
+  #   environment:
+  #     - NODE_ENV=development
+  #   profiles:
+  #     - dev
+
+volumes:
+  claw-hive-data:
+    driver: local
+  claw-hive-recordings:
+    driver: local
+
+# Networks for service communication
+networks:
+  default:
+    name: claw-hive-network

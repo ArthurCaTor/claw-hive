@@ -1,0 +1,31 @@
+# CLAW-HIVE Docker Compose - Development
+# Run with: docker-compose -f docker-compose.dev.yml up
+
+services:
+  claw-hive:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: claw-hive-dev
+    ports:
+      - "8080:8080"
+      - "3000:3000"
+    volumes:
+      # Live code reload
+      - ./src:/app/src
+      - ./dashboard:/app/dashboard
+      - ./public:/app/public
+      - ./bin:/app/bin
+      # Persist data
+      - claw-hive-data:/app/captures
+      - claw-hive-recordings:/app/recordations
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+    command: sh -c "npm run dev:server & npm run dev:ui"
+    profiles:
+      - dev
+
+volumes:
+  claw-hive-data:
+  claw-hive-recordings:
