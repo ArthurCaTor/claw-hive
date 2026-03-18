@@ -26,8 +26,8 @@ function assert(condition, message) {
 console.log('\n🧪 ClawHive Smoke Tests (TypeScript)\n');
 
 console.log('📁 文件存在性测试:');
-test('src/server.ts 存在', () => {
-  assert(fs.existsSync(path.join(PROJECT_ROOT, 'src/server.ts')));
+test('src/server.js 存在', () => {
+  assert(fs.existsSync(path.join(PROJECT_ROOT, 'src/server.js')));
 });
 test('src/services/session-watcher.ts 存在', () => {
   assert(fs.existsSync(path.join(PROJECT_ROOT, 'src/services/session-watcher.ts')));
@@ -37,8 +37,8 @@ test('package.json 存在', () => {
 });
 
 console.log('\n🔍 TypeScript 编译测试:');
-test('src/server.ts 可以编译', () => {
-  execSync(`npx tsc --noEmit src/server.ts`, { encoding: 'utf-8', cwd: PROJECT_ROOT });
+test('src/server.js 可以编译', () => {
+  execSync(`node --check src/server.js`, { encoding: 'utf-8', cwd: PROJECT_ROOT });
 });
 test('src/services/session-watcher.ts 可以编译', () => {
   execSync(`npx tsc --noEmit src/services/session-watcher.ts`, { encoding: 'utf-8', cwd: PROJECT_ROOT });
