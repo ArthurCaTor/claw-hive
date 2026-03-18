@@ -15,7 +15,7 @@ interface RateLimiterOptions {
 const rateLimits = new Map<string, RateLimitRecord>();
 
 const DEFAULT_WINDOW_MS = 60000; // 1 minute
-const DEFAULT_MAX_REQUESTS = 100;
+const DEFAULT_MAX_REQUESTS = 1000; // Increased for scale testing
 const CLEANUP_INTERVAL_MS = 60000;
 
 // Store references to cleanup intervals
