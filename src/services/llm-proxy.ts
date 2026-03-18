@@ -111,6 +111,11 @@ class LLMProxy extends EventEmitter {
           res.status(forwardRes.status).send(body);
         }
         this.emit('call', capturedRequest);
+        // Store in memory
+        this.captures.push(capturedRequest);
+        if (this.captures.length > this.MAX_CAPTURES) {
+          this.captures = this.captures.slice(-this.MAX_CAPTURES);
+        }
       } catch (err) {
         console.error(`[LLMProxy] Error: ${err.message}`);
         res.status(500).json({ error: err.message });

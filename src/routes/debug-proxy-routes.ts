@@ -53,15 +53,15 @@ router.post('/api/debug-proxy/stop', async (req, res) => {
 // Get all captures (summary)
 router.get('/api/debug-proxy/captures', (req, res) => {
   const captures = llmProxy.getCaptures().map(c => ({
-    id: c.id,
+    id: c.callId,
     timestamp: c.timestamp,
-    status: c.response.status,
-    latency_ms: c.latency_ms,
-    tokens: c.tokens,
-    model: c.request.body?.model || 'unknown',
-    messageCount: c.request.body?.messages?.length || 0,
-    toolCount: c.request.body?.tools?.length || 0,
-    hasSystem: !!c.request.body?.system,
+    status: c.response?.status,
+    latency_ms: c.latency_ms || 0,
+    tokens: c.usage?.total_tokens || 0,
+    model: c.body?.model || 'unknown',
+    messageCount: c.body?.messages?.length || 0,
+    toolCount: c.body?.tools?.length || 0,
+    hasSystem: !!c.body?.system,
   }));
   res.json(captures);
 });
