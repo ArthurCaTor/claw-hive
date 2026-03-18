@@ -31,6 +31,7 @@
     "README.md"
   ],
   "dependencies": {
+    "@mermaid-js/mermaid-cli": "^11.12.0",
     "commander": "^11.0.0",
     "compression": "^1.8.1",
     "cors": "^2.8.5",

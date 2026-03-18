@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg">
+<rect width="100%" height="100%" fill="white"/>
+<defs><marker id="a" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#94A3B8"/></marker></defs>
+<text x="500" y="25" font-family="Arial" font-size="18" font-weight="bold" fill="#1E293B" text-anchor="middle">Data Flow: One Request-Response Cycle</text>
+
+<!-- Step 1 -->
+<rect x="50" y="50" width="200" height="50" rx="6" fill="#4F46E5"/>
+<text x="150" y="80" font-family="Arial" font-size="12" fill="white" text-anchor="middle">1. User sends message</text>
+<line x1="150" y1="100" x2="150" y2="130" stroke="#94A3B8" stroke-width="2" marker-end="url(#a)"/>
+
+<!-- Step 2 -->
+<rect x="50" y="130" width="200" height="50" rx="6" fill="#7C3AED"/>
+<text x="150" y="160" font-family="Arial" font-size="12" fill="white" text-anchor="middle">2. Gateway routes to Agent</text>
+<line x1="150" y1="180" x2="150" y2="210" stroke="#94A3B8" stroke-width="2" marker-end="url(#a)"/>
+
+<!-- Step 3 -->
+<rect x="50" y="210" width="200" height="50" rx="6" fill="#059669"/>
+<text x="150" y="240" font-family="Arial" font-size="12" fill="white" text-anchor="middle">3. Load session from memory</text>
+<line x1="150" y1="260" x2="150" y2="290" stroke="#94A3B8" stroke-width="2" marker-end="url(#a)"/>
+
+<!-- Step 4 -->
+<rect x="50" y="290" width="200" height="50" rx="6" fill="#059669"/>
+<text x="150" y="320" font-family="Arial" font-size="12" fill="white" text-anchor="middle">4. Call LLM via Proxy</text>
+<line x1="200" y1="315" x2="400" y2="315" stroke="#94A3B8" stroke-width="2" marker-end="url(#a)"/>
+
+<!-- Proxy -->
+<rect x="400" y="290" width="180" height="50" rx="6" fill="#DC2626"/>
+<text x="490" y="320" font-family="Arial" font-size="11" fill="white" text-anchor="middle">LLM Proxy</text>
+<line x1="490" y1="340" x2="490" y2="370" stroke="#94A3B8" stroke-width="2" marker-end="url(#a)"/>
+
+<!-- Capture -->
+<rect x="400" y="370" width="180" height="40" rx="4" fill="#FEF3C7"/>
+<text x="490" y="395" font-family="Arial" font-size="10" fill="#92400E" text-anchor="middle">captures.push(request)</text>
+<line x1="580" y1="315" x2="780" y2="315" stroke="#94A3B8" stroke-width="2" marker-end="url(#a)"/>
+
+<!-- Provider -->
+<rect x="780" y="290" width="150" height="50" rx="6" fill="#EA580C"/>
+<text x="855" y="320" font-family="Arial" font-size="11" fill="white" text-anchor="middle">LLM Provider</text>
+<line x1="855" y1="340" x2="855" y2="370" stroke="#94A3B8" stroke-width="2"/>
+<line x1="855" y1="370" x2="855" y2="390" stroke="#94A3B8" stroke-width="2" stroke-dasharray="4"/>
+
+<!-- Step 5 -->
+<rect x="50" y="450" width="200" height="50" rx="6" fill="#059669"/>
+<text x="150" y="480" font-family="Arial" font-size="12" fill="white" text-anchor="middle">5. Stream response to user</text>
+<line x1="250" y="475" x2="400" y2="475" stroke="#94A3B8" stroke-width="2" marker-end="url(#a)"/>
+<line x1="490" y="390" x2="490" y2="450" stroke="#94A3B8" stroke-width="2" stroke-dasharray="4"/>
+
+<!-- Step 6 -->
+<rect x="50" y="540" width="200" height="40" rx="6" fill="#059669"/>
+<text x="150" y="565" font-family="Arial" font-size="12" fill="white" text-anchor="middle">6. Save to storage</text>
+<line x1="150" y1="540" x2="350" y2="540" stroke="#94A3B8" stroke-width="2"/>
+<line x1="350" y1="540" x2="350" y2="520" stroke="#94A3B8" stroke-width="2" marker-end="url(#a)"/>
+
+<!-- Storage -->
+<rect x="350" y="480" width="150" height="40" rx="4" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+<text x="425" y="505" font-family="Arial" font-size="10" fill="#64748B" text-anchor="middle">events.jsonl</text>
+
+<text x="425" y="540" font-family="Arial" font-size="10" fill="#64748B" text-anchor="middle">long-term.json</text>
+
+<!-- Memory Box -->
+<rect x="650" y="50" width="300" height="200" rx="6" fill="#F0FDF4" stroke="#166534" stroke-width="2"/>
+<text x="800" y="75" font-family="Arial" font-size="14" font-weight="bold" fill="#166534" text-anchor="middle">Agent Memory (RAM)</text>
+<line x1="670" y1="90" x2="930" y2="90" stroke="#166534" stroke-width="1"/>
+<text x="680" y="110" font-family="Arial" font-size="11" fill="#166534">conversation: [msg1, msg2, ...]</text>
+<text x="680" y="130" font-family="Arial" font-size="11" fill="#166534">context_window: [msg5, msg6, msg7]</text>
+<text x="680" y="150" font-family="Arial" font-size="11" fill="#166534">variables: {model, role, ...}</text>
+<text x="680" y="170" font-family="Arial" font-size="11" fill="#166534">memory.short: [...working记忆...]</text>
+<text x="680" y="190" font-family="Arial" font-size="11" fill="#166534">memory.long: [...持久记忆...]</text>
+<text x="680" y="220" font-family="Arial" font-size="10" fill="#166534" font-style="italic">Compaction 触发条件: memory > threshold</text>
+</svg>
+EOF
+
+ls -la *.svg
