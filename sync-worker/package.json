@@ -1,0 +1,14 @@
+{
+  "name": "claw-hive-sync-worker",
+  "version": "1.0.0",
+  "description": "Sync JSONL files to PostgreSQL",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "pg": "^8.11.0"
+  }
+}
