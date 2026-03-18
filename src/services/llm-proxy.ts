@@ -126,6 +126,26 @@ class LLMProxy extends EventEmitter {
     });
   }
 
+  getStatus() {
+    return {
+      running: this.server !== null,
+      port: this.port,
+      startedAt: this.startedAt?.toISOString() || null,
+      totalCalls: this.callCounter,
+      uptimeSeconds: this.startedAt
+        ? Math.round((Date.now() - this.startedAt.getTime()) / 1000)
+        : 0
+    };
+  }
+
+  getCaptures() {
+    return [...this.captures].reverse();
+  }
+
+  getCapture(id: string) {
+    return this.captures.find(c => c.id === id);
+  }
+
   stop() {
     if (this.memoryCheckInterval) clearInterval(this.memoryCheckInterval);
     if (this.server) { this.server.close(); this.server = null; }
