@@ -32,7 +32,7 @@ module.exports = function systemRoutes(app: Application, { sessionWatcher, debug
 
   // Debug status
   app.get('/api/debug/status', (req, res) => {
-    res.json((debugService as any).getStatus()());
+    res.json((debugService as any).getStatus());
   });
 
   // Start debug mode
