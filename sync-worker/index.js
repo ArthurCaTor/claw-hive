@@ -141,54 +141,61 @@ async function createTables() {
   info('Database tables ready');
 }
 
-// Flush buffer to database
+// Flush buffer to database (one at a time for reliability)
 async function flushBuffer() {
   if (buffer.length === 0) return;
   
   const batch = buffer.splice(0);
+  let success = 0;
   
   try {
-    // Build bulk insert
-    const values = [];
-    const params = [];
-    let paramIndex = 1;
-    
     for (const item of batch) {
-      values.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
-      params.push(
-        item.agent_id || null,
-        item.model || null,
-        item.provider || null,
-        item.tokens_in || 0,
-        item.tokens_out || 0,
-        item.latency_ms || null,
-        item.status_code || null,
-        item.request ? JSON.stringify(item.request) : null,
-        item.response ? JSON.stringify(item.response) : null,
-        item.cost || 0,
-        item.raw || null,
-        item.source || null
-      );
+      try {
+        await dbClient.query(`
+          INSERT INTO claw_hive.captures 
+          (agent_id, model, provider, tokens_in, tokens_out, latency_ms, status_code, cost_usd, source_file, created_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+        `, [
+          item.agent_id || null,
+          item.model || null,
+          item.provider || null,
+          item.tokens_in || 0,
+          item.tokens_out || 0,
+          item.latency_ms || null,
+          item.status_code || null,
+          item.cost || 0,
+          item.source || null
+        ]);
+        success++;
+      } catch (e) {
+        // Skip this record, continue with next
+        warn('Failed to insert record:', e.message);
+      }
     }
     
-    await dbClient.query(`
-      INSERT INTO captures 
-      (agent_id, model, provider, tokens_in, tokens_out, latency_ms, status_code, request_json, response_json, cost_usd, raw_json, source_file)
-      VALUES ${values.join(', ')}
-    `, params);
-    
-    info(`Synced ${batch.length} records to PostgreSQL`);
+    info(`Synced ${success}/${batch.length} records to PostgreSQL`);
   } catch (e) {
-    error('Failed to insert batch:', e.message);
-    // Put items back in buffer
+    error('Fatal batch error:', e.message);
     buffer.unshift(...batch);
   }
 }
 
 // Queue item for database insert
 function queueCapture(capture, sourceFile) {
-  capture.source = sourceFile;
-  buffer.push(capture);
+  // Map from capture file format to database schema
+  const mapped = {
+    agent_id: capture.agent || capture.agent_id || null,
+    model: capture.req?.body?.model || capture.model || null,
+    provider: capture.provider || null,
+    tokens_in: capture.req?.tokens || capture.tokens_in || 0,
+    tokens_out: capture.res?.tokens || capture.tokens_out || 0,
+    latency_ms: capture.latency_ms || null,
+    status_code: capture.res?.status || capture.status_code || null,
+    cost: capture.cost || 0,
+    source: sourceFile,
+  };
+  
+  buffer.push(mapped);
   
   if (buffer.length >= CONFIG.batchSize) {
     flushBuffer();
@@ -197,8 +204,8 @@ function queueCapture(capture, sourceFile) {
   }
 }
 
-// Read new lines from file
-async function readNewLines(filePath, lastOffset = 0) {
+// Read new lines from file (with size limit)
+async function readNewLines(filePath, lastOffset = 0, maxLines = 1000) {
   try {
     const stats = fs.statSync(filePath);
     const fileSize = stats.size;
@@ -207,16 +214,26 @@ async function readNewLines(filePath, lastOffset = 0) {
       return { offset: lastOffset, lines: [] };
     }
     
+    // Limit read size for very large files (10MB max)
+    const maxBytes = 10 * 1024 * 1024;
+    const bytesToRead = Math.min(fileSize - lastOffset, maxBytes);
+    
     const fd = fs.openSync(filePath, 'r');
-    const bytesToRead = fileSize - lastOffset;
     const buffer = Buffer.alloc(bytesToRead);
     fs.readSync(fd, buffer, 0, bytesToRead, lastOffset);
     fs.closeSync(fd);
     
     const content = buffer.toString('utf-8');
-    const lines = content.split('\n').filter(line => line.trim());
+    let lines = content.split('\n').filter(line => line.trim());
     
-    return { offset: fileSize, lines };
+    // If file is still larger than what we read, don't update offset
+    let newOffset = lastOffset + bytesToRead;
+    if (lines.length >= maxLines && fileSize > newOffset) {
+      info(`File ${filePath}: ${lines.length} new lines, will continue next scan`);
+      newOffset = lastOffset; // Don't advance, will retry
+    }
+    
+    return { offset: newOffset, lines };
   } catch (e) {
     error('Error reading file:', filePath, e.message);
     return { offset: lastOffset, lines: [] };
