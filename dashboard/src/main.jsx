@@ -9,6 +9,7 @@ import ProvidersPage from './pages/ProvidersPage';
 import CapturesPage from './pages/CapturesPage';
 import CostPage from './pages/CostPage';
 import StreamPage from './pages/StreamPage';
+import MetricsPage from './pages/MetricsPage';
 import SettingsPage from './pages/SettingsPage';
 
 function NavLink({ to, label }) {
@@ -39,6 +40,7 @@ function NewApp() {
   else if (location.pathname === '/captures') PageComponent = CapturesPage;
   else if (location.pathname === '/cost') PageComponent = CostPage;
   else if (location.pathname === '/stream') PageComponent = StreamPage;
+  else if (location.pathname === '/metrics') PageComponent = MetricsPage;
   else if (location.pathname === '/settings') PageComponent = SettingsPage;
   
   return (
@@ -56,6 +58,7 @@ function NewApp() {
         <NavLink to="/captures" label="Captures" />
         <NavLink to="/cost" label="Cost" />
         <NavLink to="/stream" label="Context Stream" />
+        <NavLink to="/metrics" label="📊 Metrics" />
         <NavLink to="/settings" label="Settings" />
       </nav>
       <main style={{ flex: 1, padding: '24px', overflow: 'auto' }}>
