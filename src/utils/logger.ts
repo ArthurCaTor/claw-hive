@@ -1,11 +1,10 @@
 // @ts-nocheck
 /**
  * Structured Logger using Pino
- * 使用 Pino 的结构化日志
  */
 const pino = require('pino');
 
-const _logger = pino({
+const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
   transport: process.env.NODE_ENV !== 'production' ? {
     target: 'pino-pretty',
@@ -18,8 +17,12 @@ const _logger = pino({
   base: { service: 'claw-hive', pid: process.pid },
 });
 
-function child(bindings: Record<string, unknown>) {
-  return _logger.child(bindings);
+/**
+ * Create a child logger with bindings
+ * @param {object} bindings - Key-value pairs to add to all logs
+ */
+function child(bindings: Record<string, any>): any {
+  return logger.child(bindings);
 }
 
-module.exports = { logger: _logger, child };
+module.exports = { logger, child };
