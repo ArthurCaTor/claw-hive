@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="1400" height="1000" xmlns="http://www.w3.org/2000/svg">
+<svg width="1400" height="1250" xmlns="http://www.w3.org/2000/svg">
 <defs>
   <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
     <polygon points="0 0, 10 3.5, 0 7" fill="#94A3B8"/>
@@ -12,191 +12,286 @@
 
 <!-- Title -->
 <text x="700" y="35" font-family="Arial" font-size="28" font-weight="bold" fill="#1E293B" text-anchor="middle">Claw-Hive Core System Architecture</text>
-<text x="700" y="60" font-family="Arial" font-size="14" fill="#64748B" text-anchor="middle">Primary LLM Gateway &amp; Monitoring System</text>
+<text x="700" y="60" font-family="Arial" font-size="14" fill="#64748B" text-anchor="middle">Primary LLM Gateway &amp; Monitoring System | 100% TypeScript</text>
+
+<!-- Stats -->
+<rect x="980" y="15" width="370" height="60" rx="8" fill="#F0FDF4" stroke="#059669"/>
+<text x="1000" y="38" font-family="Arial" font-size="11" fill="#059669" font-weight="bold">📊 PROJECT STATS</text>
+<text x="1000" y="55" font-family="Arial" font-size="9" fill="#64748B">TypeScript: 43 files | API: 21+ endpoints | Tests: Unit + Scale</text>
+<text x="1000" y="70" font-family="Arial" font-size="9" fill="#64748B">Rate Limit: 1000 req/min | WebSocket: Enabled | Prometheus: /metrics</text>
 
 <!-- ============ LAYER 1: Users ============ -->
-<rect x="50" y="80" width="1300" height="90" rx="12" fill="#EEF2FF" stroke="#4F46E5" stroke-width="2"/>
-<text x="70" y="105" font-family="Arial" font-size="12" font-weight="bold" fill="#4F46E5">USERS</text>
+<rect x="50" y="90" width="1300" height="110" rx="12" fill="#EEF2FF" stroke="#4F46E5" stroke-width="2"/>
+<text x="70" y="115" font-family="Arial" font-size="14" font-weight="bold" fill="#4F46E5">LAYER 1: USERS (Entry Points)</text>
+<text x="70" y="132" font-family="Arial" font-size="10" fill="#64748B">All incoming requests pass through OpenClaw Gateway before reaching claw-hive server</text>
 
-<g transform="translate(100, 115)">
-  <rect x="0" y="0" width="140" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
-  <text x="70" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Telegram</text>
-  <text x="70" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Arthur Wang</text>
+<g transform="translate(100, 145)">
+  <rect x="0" y="0" width="130" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="65" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Telegram</text>
+  <text x="65" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">@Arthur Wang</text>
 </g>
-<g transform="translate(280, 115)">
-  <rect x="0" y="0" width="140" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
-  <text x="70" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">REST API</text>
-  <text x="70" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">External Clients</text>
+<g transform="translate(250, 145)">
+  <rect x="0" y="0" width="130" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="65" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">REST API</text>
+  <text x="65" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">curl/wget/http</text>
 </g>
-<g transform="translate(460, 115)">
-  <rect x="0" y="0" width="140" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
-  <text x="70" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">WebSocket</text>
-  <text x="70" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Real-time UI</text>
+<g transform="translate(400, 145)">
+  <rect x="0" y="0" width="130" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="65" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">WebSocket</text>
+  <text x="65" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">ws://localhost:8080</text>
 </g>
-<g transform="translate(640, 115)">
-  <rect x="0" y="0" width="140" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
-  <text x="70" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Dashboard</text>
-  <text x="70" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">React UI</text>
+<g transform="translate(550, 145)">
+  <rect x="0" y="0" width="130" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="65" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Dashboard UI</text>
+  <text x="65" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">React (8 pages)</text>
 </g>
-<g transform="translate(820, 115)">
-  <rect x="0" y="0" width="140" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
-  <text x="70" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Prometheus</text>
-  <text x="70" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Metrics</text>
+<g transform="translate(700, 145)">
+  <rect x="0" y="0" width="130" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="65" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Prometheus</text>
+  <text x="65" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">GET /metrics</text>
 </g>
-<g transform="translate(1000, 115)">
-  <rect x="0" y="0" width="140" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
-  <text x="70" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Grafana</text>
-  <text x="70" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Dashboards</text>
+<g transform="translate(850, 145)">
+  <rect x="0" y="0" width="130" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="65" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Grafana</text>
+  <text x="65" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Dashboards</text>
+</g>
+<g transform="translate(1000, 145)">
+  <rect x="0" y="0" width="130" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="65" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">GitHub</text>
+  <text x="65" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">CI/CD Actions</text>
+</g>
+<g transform="translate(1150, 145)">
+  <rect x="0" y="0" width="130" height="50" rx="8" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="65" y="20" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Claude CaBot</text>
+  <text x="65" y="38" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">AI Agent</text>
 </g>
 
 <!-- ============ LAYER 2: Gateway ============ -->
-<line x1="170" y1="165" x2="700" y2="205" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
-<line x1="350" y1="165" x2="700" y2="205" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
-<line x1="530" y1="165" x2="700" y2="205" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
-<line x1="710" y1="165" x2="700" y2="205" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
-<line x1="890" y1="165" x2="700" y2="205" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
-<line x1="1070" y1="165" x2="700" y2="205" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="165" y1="195" x2="700" y2="230" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="315" y1="195" x2="700" y2="230" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="465" y1="195" x2="700" y2="230" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="615" y1="195" x2="700" y2="230" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="765" y1="195" x2="700" y2="230" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="915" y1="195" x2="700" y2="230" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="1065" y1="195" x2="700" y2="230" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="1215" y1="195" x2="700" y2="230" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
 
-<rect x="550" y="205" width="300" height="50" rx="10" fill="#7C3AED" filter="url(#shadow)"/>
-<text x="700" y="238" font-family="Arial" font-size="16" font-weight="bold" fill="white" text-anchor="middle">OpenClaw Gateway</text>
+<rect x="550" y="230" width="300" height="55" rx="10" fill="#7C3AED" filter="url(#shadow)"/>
+<text x="700" y="260" font-family="Arial" font-size="16" font-weight="bold" fill="white" text-anchor="middle">OpenClaw Gateway</text>
+<text x="700" y="278" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Multi-Agent Orchestration Layer</text>
 
 <!-- ============ LAYER 3: Server ============ -->
-<line x1="700" y1="255" x2="700" y2="290" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="700" y1="285" x2="700" y2="320" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
 
-<rect x="100" y="290" width="1200" height="360" rx="12" fill="#F0FDF4" stroke="#059669" stroke-width="2"/>
-<text x="120" y="320" font-family="Arial" font-size="16" font-weight="bold" fill="#059669">claw-hive Server (:8080)</text>
-<text x="120" y="345" font-family="Arial" font-size="11" fill="#64748B">TypeScript | 100% | Express + WebSocket | Prometheus Metrics</text>
+<rect x="50" y="320" width="1300" height="400" rx="12" fill="#F0FDF4" stroke="#059669" stroke-width="2"/>
+<text x="70" y="350" font-family="Arial" font-size="16" font-weight="bold" fill="#059669">LAYER 3: CLAW-HIVE SERVER (:8080)</text>
+<text x="70" y="372" font-family="Arial" font-size="11" fill="#64748B">TypeScript 100% | Express.js | WebSocket | Rate Limiter (1000 req/min per IP) | CORS Enabled</text>
 
 <!-- Services Row 1 -->
-<rect x="130" y="365" width="170" height="90" rx="8" fill="#059669"/>
-<text x="215" y="400" font-family="Arial" font-size="12" fill="white" text-anchor="middle">LLM Proxy</text>
-<text x="215" y="420" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Passive Mode</text>
-<text x="215" y="438" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">HTTP 劫持 / 记录</text>
+<rect x="80" y="395" width="190" height="100" rx="8" fill="#059669"/>
+<text x="175" y="425" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">LLM Proxy Service</text>
+<text x="175" y="448" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Passive Mode (HTTP 劫持)</text>
+<text x="175" y="468" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• 拦截 LLM 请求/响应</text>
+<text x="175" y="484" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• 记录 tokens, latency</text>
 
-<rect x="320" y="365" width="170" height="90" rx="8" fill="#0891B2"/>
-<text x="405" y="400" font-family="Arial" font-size="12" fill="white" text-anchor="middle">Token Aggregator</text>
-<text x="405" y="420" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Real-time Stats</text>
-<text x="405" y="438" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">Tokens In/Out</text>
+<rect x="290" y="395" width="190" height="100" rx="8" fill="#0891B2"/>
+<text x="385" y="425" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">Token Aggregator</text>
+<text x="385" y="448" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Real-time Stats</text>
+<text x="385" y="468" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• 累计 tokens_in/out</text>
+<text x="385" y="484" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• 按 model/provider 聚合</text>
 
-<rect x="510" y="365" width="170" height="90" rx="8" fill="#DC2626"/>
-<text x="595" y="400" font-family="Arial" font-size="12" fill="white" text-anchor="middle">Cost Calculator</text>
-<text x="595" y="420" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Usage Tracking</text>
-<text x="595" y="438" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">MiniMax/OpenAI/Anthropic</text>
+<rect x="500" y="395" width="190" height="100" rx="8" fill="#DC2626"/>
+<text x="595" y="425" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">Cost Calculator</text>
+<text x="595" y="448" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Usage &amp; Cost Tracking</text>
+<text x="595" y="468" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• MiniMax: $0.05/1M tokens</text>
+<text x="595" y="484" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• OpenAI: $15/1M tokens</text>
 
-<rect x="700" y="365" width="170" height="90" rx="8" fill="#7C3AED"/>
-<text x="785" y="400" font-family="Arial" font-size="12" fill="white" text-anchor="middle">LLM Tracker</text>
-<text x="785" y="420" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Switch Detection</text>
-<text x="785" y="438" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">Provider 切换监控</text>
+<rect x="710" y="395" width="190" height="100" rx="8" fill="#7C3AED"/>
+<text x="805" y="425" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">LLM Tracker</text>
+<text x="805" y="448" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Provider Switch Detection</text>
+<text x="805" y="468" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• 监控 provider 切换</text>
+<text x="805" y="484" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• 记录切换历史</text>
 
-<rect x="890" y="365" width="170" height="90" rx="8" fill="#EA580C"/>
-<text x="975" y="400" font-family="Arial" font-size="12" fill="white" text-anchor="middle">Alert Service</text>
-<text x="975" y="420" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">5 Rules Active</text>
-<text x="975" y="438" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">Error / Latency / Cost</text>
+<rect x="920" y="395" width="190" height="100" rx="8" fill="#EA580C"/>
+<text x="1015" y="425" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">Alert Service</text>
+<text x="1015" y="448" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">5 Rules Active</text>
+<text x="1015" y="468" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• Error rate threshold</text>
+<text x="1015" y="484" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• Latency &amp; cost alerts</text>
 
-<rect x="1080" y="365" width="170" height="90" rx="8" fill="#475569"/>
-<text x="1165" y="400" font-family="Arial" font-size="12" fill="white" text-anchor="middle">Metrics Exporter</text>
-<text x="1165" y="420" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Prometheus</text>
-<text x="1165" y="438" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">/metrics endpoint</text>
+<rect x="1130" y="395" width="190" height="100" rx="8" fill="#475569"/>
+<text x="1225" y="425" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">Metrics Exporter</text>
+<text x="1225" y="448" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Prometheus Format</text>
+<text x="1225" y="468" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• GET /metrics</text>
+<text x="1225" y="484" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• Prometheus 抓取格式</text>
 
 <!-- Services Row 2 -->
-<rect x="130" y="470" width="170" height="90" rx="8" fill="#059669"/>
-<text x="215" y="505" font-family="Arial" font-size="12" fill="white" text-anchor="middle">Message Optimizer</text>
-<text x="215" y="525" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Active Mode</text>
-<text x="215" y="543" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">Token 优化</text>
+<rect x="80" y="510" width="190" height="100" rx="8" fill="#059669"/>
+<text x="175" y="540" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">Message Optimizer</text>
+<text x="175" y="563" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Active Mode (Optional)</text>
+<text x="175" y="583" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• Token 压缩优化</text>
+<text x="175" y="599" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• 历史上下文裁剪</text>
 
-<rect x="320" y="470" width="170" height="90" rx="8" fill="#0891B2"/>
-<text x="405" y="505" font-family="Arial" font-size="12" fill="white" text-anchor="middle">WebSocket Server</text>
-<text x="405" y="525" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Real-time Updates</text>
-<text x="405" y="543" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">Push to Dashboard</text>
+<rect x="290" y="510" width="190" height="100" rx="8" fill="#0891B2"/>
+<text x="385" y="540" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">WebSocket Server</text>
+<text x="385" y="563" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Real-time Updates</text>
+<text x="385" y="583" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• ws://localhost:8080</text>
+<text x="385" y="599" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• agents_update events</text>
 
-<rect x="510" y="470" width="170" height="90" rx="8" fill="#06B6D4"/>
-<text x="595" y="505" font-family="Arial" font-size="12" fill="white" text-anchor="middle">JSONL Writer</text>
-<text x="595" y="525" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Captures</text>
-<text x="595" y="543" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">File: captures/*.jsonl</text>
+<rect x="500" y="510" width="190" height="100" rx="8" fill="#06B6D4"/>
+<text x="595" y="540" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">JSONL File Writer</text>
+<text x="595" y="563" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">Capture Persistence</text>
+<text x="595" y="583" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• captures/*.jsonl</text>
+<text x="595" y="599" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• 同步写入核心数据</text>
 
-<rect x="700" y="470" width="170" height="90" rx="8" fill="#8B5CF6"/>
-<text x="785" y="505" font-family="Arial" font-size="12" fill="white" text-anchor="middle">API Routes</text>
-<text x="785" y="525" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">21+ Endpoints</text>
-<text x="785" y="543" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">Debug/Cost/LLM/Alert</text>
+<rect x="710" y="510" width="190" height="100" rx="8" fill="#8B5CF6"/>
+<text x="805" y="540" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">API Routes</text>
+<text x="805" y="563" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">21+ REST Endpoints</text>
+<text x="805" y="583" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• /api/debug-proxy/*</text>
+<text x="805" y="599" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• /api/stats/* /cost/*</text>
 
-<rect x="890" y="470" width="170" height="90" rx="8" fill="#EC4899"/>
-<text x="975" y="505" font-family="Arial" font-size="12" fill="white" text-anchor="middle">Dashboard UI</text>
-<text x="975" y="525" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">React + TS</text>
-<text x="975" y="543" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">8 Pages</text>
+<rect x="920" y="510" width="190" height="100" rx="8" fill="#EC4899"/>
+<text x="1015" y="540" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">Dashboard UI</text>
+<text x="1015" y="563" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">React + TypeScript</text>
+<text x="1015" y="583" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• 8 Pages: Dashboard...</text>
+<text x="1015" y="599" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• Metrics, Agents, Cost</text>
 
-<!-- Rate Limiter -->
-<rect x="1080" y="470" width="170" height="90" rx="8" fill="#F59E0B"/>
-<text x="1165" y="505" font-family="Arial" font-size="12" fill="white" text-anchor="middle">Rate Limiter</text>
-<text x="1165" y="525" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">1000 req/min</text>
-<text x="1165" y="543" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">per IP</text>
+<rect x="1130" y="510" width="190" height="100" rx="8" fill="#F59E0B"/>
+<text x="1225" y="540" font-family="Arial" font-size="12" font-weight="bold" fill="white" text-anchor="middle">Rate Limiter</text>
+<text x="1225" y="563" font-family="Arial" font-size="10" fill="#DDD" text-anchor="middle">1000 req/min per IP</text>
+<text x="1225" y="583" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• express-rate-limit</text>
+<text x="1225" y="599" font-family="Arial" font-size="9" fill="#AAD" text-anchor="middle">• Redis-free (in-memory)</text>
 
 <!-- ============ LAYER 4: API Endpoints ============ -->
-<line x1="700" y1="560" x2="700" y2="590" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="700" y1="610" x2="700" y2="640" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
 
-<rect x="50" y="590" width="1300" height="70" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
-<text x="70" y="615" font-family="Arial" font-size="11" font-weight="bold" fill="#64748B">API Endpoints (21+)</text>
-<text x="70" y="635" font-family="Courier" font-size="9" fill="#475569">GET /api/health | GET /api/debug-proxy/captures | GET /api/stats/tokens | GET /api/cost/summary | GET /api/cost/pricing</text>
-<text x="70" y="652" font-family="Courier" font-size="9" fill="#475569">GET /api/llm-tracker/agents | GET /api/llm-tracker/providers | GET /api/llm-tracker/switches | GET /api/alerts/summary</text>
+<rect x="50" y="640" width="1300" height="90" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+<text x="70" y="665" font-family="Arial" font-size="12" font-weight="bold" fill="#64748B">LAYER 4: API ENDPOINTS (21+)</text>
+
+<text x="70" y="690" font-family="Courier" font-size="9" fill="#475569">GET  /api/health                      POST /api/debug-proxy/start              GET  /api/debug-proxy/captures</text>
+<text x="70" y="708" font-family="Courier" font-size="9" fill="#475569">GET  /api/stats/tokens                GET  /api/cost/summary                   POST /api/cost/pricing</text>
+<text x="70" y="726" font-family="Courier" font-size="9" fill="#475569">GET  /api/llm-tracker/agents          GET  /api/llm-tracker/providers          GET  /api/llm-tracker/switches</text>
+<text x="70" y="744" font-family="Courier" font-size="9" fill="#475569">GET  /api/alerts/summary              POST /api/alerts/acknowledge-all         GET  /api/alerts/rules</text>
+<text x="70" y="762" font-family="Courier" font-size="9" fill="#475569">GET  /api/export/captures/json         GET  /api/export/captures/csv           GET  /metrics</text>
 
 <!-- ============ LAYER 5: Data Storage ============ -->
-<rect x="50" y="680" width="640" height="100" rx="12" fill="#F1F5F9" stroke="#3B82F6" stroke-width="2"/>
-<text x="70" y="705" font-family="Arial" font-size="12" font-weight="bold" fill="#3B82F6">Local Storage (Primary)</text>
-<text x="70" y="725" font-family="Arial" font-size="10" fill="#64748B">Files are written synchronously - Core system depends on these</text>
+<rect x="50" y="750" width="640" height="130" rx="12" fill="#F1F5F9" stroke="#3B82F6" stroke-width="2"/>
+<text x="70" y="778" font-family="Arial" font-size="14" font-weight="bold" fill="#3B82F6">LAYER 5: LOCAL STORAGE (Primary - Core System Depends On)</text>
+<text x="70" y="800" font-family="Arial" font-size="10" fill="#64748B">Files are written synchronously by Core System</text>
 
-<rect x="100" y="745" width="150" height="30" rx="6" fill="#3B82F6"/>
-<text x="175" y="765" font-family="Arial" font-size="10" fill="white" text-anchor="middle">captures/*.jsonl</text>
+<rect x="100" y="820" width="170" height="50" rx="8" fill="#3B82F6"/>
+<text x="185" y="845" font-family="Arial" font-size="11" fill="white" text-anchor="middle">captures/*.jsonl</text>
+<text x="185" y="862" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">LLM 请求/响应记录</text>
 
-<rect x="270" y="745" width="150" height="30" rx="6" fill="#3B82F6"/>
-<text x="345" y="765" font-family="Arial" font-size="10" fill="white" text-anchor="middle">sessions/*.jsonl</text>
+<rect x="290" y="820" width="170" height="50" rx="8" fill="#3B82F6"/>
+<text x="375" y="845" font-family="Arial" font-size="11" fill="white" text-anchor="middle">sessions/*.jsonl</text>
+<text x="375" y="862" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">会话数据</text>
 
-<rect x="440" y="745" width="150" height="30" rx="6" fill="#3B82F6"/>
-<text x="515" y="765" font-family="Arial" font-size="10" fill="white" text-anchor="middle">events/*.jsonl</text>
+<rect x="480" y="820" width="170" height="50" rx="8" fill="#3B82F6"/>
+<text x="565" y="845" font-family="Arial" font-size="11" fill="white" text-anchor="middle">events/*.jsonl</text>
+<text x="565" y="862" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">系统事件</text>
 
 <!-- ============ LAYER 6: LLM Providers ============ -->
-<rect x="710" y="680" width="640" height="100" rx="12" fill="#FFF7ED" stroke="#EA580C" stroke-width="2"/>
-<text x="730" y="705" font-family="Arial" font-size="12" font-weight="bold" fill="#EA580C">LLM Providers</text>
-<text x="730" y="725" font-family="Arial" font-size="10" fill="#64748B">Server makes outbound requests to these providers</text>
+<rect x="710" y="750" width="640" height="130" rx="12" fill="#FFF7ED" stroke="#EA580C" stroke-width="2"/>
+<text x="730" y="778" font-family="Arial" font-size="14" font-weight="bold" fill="#EA580C">LAYER 6: LLM PROVIDERS (Outbound)</text>
+<text x="730" y="800" font-family="Arial" font-size="10" fill="#64748B">Server makes HTTP requests to these external APIs</text>
 
-<rect x="760" y="745" width="150" height="30" rx="6" fill="#EA580C"/>
-<text x="835" y="765" font-family="Arial" font-size="10" fill="white" text-anchor="middle">MiniMax</text>
+<rect x="760" y="820" width="170" height="50" rx="8" fill="#EA580C"/>
+<text x="845" y="845" font-family="Arial" font-size="11" fill="white" text-anchor="middle">MiniMax</text>
+<text x="845" y="862" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">api.minimax.chat</text>
 
-<rect x="930" y="745" width="150" height="30" rx="6" fill="#10B981"/>
-<text x="1005" y="765" font-family="Arial" font-size="10" fill="white" text-anchor="middle">OpenAI</text>
+<rect x="950" y="820" width="170" height="50" rx="8" fill="#10B981"/>
+<text x="1035" y="845" font-family="Arial" font-size="11" fill="white" text-anchor="middle">OpenAI</text>
+<text x="1035" y="862" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">api.openai.com</text>
 
-<rect x="1100" y="745" width="150" height="30" rx="6" fill="#6366F1"/>
-<text x="1175" y="765" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Anthropic</text>
+<rect x="1140" y="820" width="170" height="50" rx="8" fill="#6366F1"/>
+<text x="1225" y="845" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Anthropic</text>
+<text x="1225" y="862" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">api.anthropic.com</text>
 
-<!-- External Integrations -->
-<rect x="50" y="800" width="1300" height="60" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
-<text x="70" y="825" font-family="Arial" font-size="10" font-weight="bold" fill="#475569">External Integrations</text>
-<rect x="100" y="830" width="120" height="25" rx="4" fill="#F97316"/>
-<text x="160" y="847" font-family="Arial" font-size="9" fill="white" text-anchor="middle">Prometheus</text>
-<rect x="240" y="830" width="120" height="25" rx="4" fill="#EAB308"/>
-<text x="300" y="847" font-family="Arial" font-size="9" fill="white" text-anchor="middle">Grafana</text>
-<rect x="380" y="830" width="120" height="25" rx="4" fill="#8B5CF6"/>
-<text x="440" y="847" font-family="Arial" font-size="9" fill="white" text-anchor="middle">Dashboard UI</text>
-<rect x="520" y="830" width="120" height="25" rx="4" fill="#64748B"/>
-<text x="580" y="847" font-family="Arial" font-size="9" fill="white" text-anchor="middle">Telegram</text>
+<!-- ============ LAYER 7: External Integrations ============ -->
+<rect x="50" y="900" width="1300" height="80" rx="12" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+<text x="70" y="925" font-family="Arial" font-size="12" font-weight="bold" fill="#475569">LAYER 7: EXTERNAL INTEGRATIONS</text>
 
-<!-- Legend -->
-<rect x="50" y="880" width="1300" height="40" rx="8" fill="#1E293B"/>
-<text x="80" y="903" font-family="Arial" font-size="9" fill="#94A3B8">Legend:</text>
-<rect x="150" y="893" width="12" height="12" rx="2" fill="#059669"/>
-<text x="167" y="903" font-family="Arial" font-size="8" fill="white">Services</text>
-<rect x="230" y="893" width="12" height="12" rx="2" fill="#06B6D4"/>
-<text x="247" y="903" font-family="Arial" font-size="8" fill="white">Storage</text>
-<rect x="310" y="893" width="12" height="12" rx="2" fill="#EA580C"/>
-<text x="327" y="903" font-family="Arial" font-size="8" fill="white">LLM Providers</text>
-<rect x="430" y="893" width="12" height="12" rx="2" fill="#3B82F6"/>
-<text x="447" y="903" font-family="Arial" font-size="8" fill="white">Data</text>
+<rect x="100" y="940" width="130" height="30" rx="6" fill="#F97316"/>
+<text x="165" y="960" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Prometheus</text>
 
-<text x="1200" y="903" font-family="Arial" font-size="8" fill="#94A3B8">Core System v2.1 | 2026-03-18</text>
+<rect x="250" y="940" width="130" height="30" rx="6" fill="#EAB308"/>
+<text x="315" y="960" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Grafana</text>
 
-<!-- Feature Tags -->
-<text x="1350" y="30" font-family="Arial" font-size="9" fill="#059669" text-anchor="end">✅ Phase 1-3 Complete</text>
-<text x="1350" y="42" font-family="Arial" font-size="9" fill="#059669" text-anchor="end">✅ TypeScript 100%</text>
-<text x="1350" y="54" font-family="Arial" font-size="9" fill="#059669" text-anchor="end">✅ WebSocket Real-time</text>
-<text x="1350" y="66" font-family="Arial" font-size="9" fill="#059669" text-anchor="end">✅ CI/CD Pipeline</text>
-<text x="1350" y="78" font-family="Arial" font-size="9" fill="#06B6D4" text-anchor="end">📁 Local JSONL Files</text>
+<rect x="400" y="940" width="130" height="30" rx="6" fill="#8B5CF6"/>
+<text x="465" y="960" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Dashboard UI</text>
+
+<rect x="550" y="940" width="130" height="30" rx="6" fill="#64748B"/>
+<text x="615" y="960" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Telegram</text>
+
+<rect x="700" y="940" width="130" height="30" rx="6" fill="#06B6D4"/>
+<text x="765" y="960" font-family="Arial" font-size="10" fill="white" text-anchor="middle">JSONL Files</text>
+
+<rect x="850" y="940" width="130" height="30" rx="6" fill="#3B82F6"/>
+<text x="915" y="960" font-family="Arial" font-size="10" fill="white" text-anchor="middle">PostgreSQL</text>
+
+<rect x="1000" y="940" width="130" height="30" rx="6" fill="#059669"/>
+<text x="1065" y="960" font-family="Arial" font-size="10" fill="white" text-anchor="middle">OpenClaw</text>
+
+<rect x="1150" y="940" width="130" height="30" rx="6" fill="#DC2626"/>
+<text x="1215" y="960" font-family="Arial" font-size="10" fill="white" text-anchor="middle">GitHub Actions</text>
+
+<!-- ============ LAYER 8: Technology Stack ============ -->
+<rect x="50" y="1000" width="1300" height="80" rx="12" fill="#1E293B"/>
+<text x="70" y="1025" font-family="Arial" font-size="12" font-weight="bold" fill="#94A3B8">TECHNOLOGY STACK</text>
+
+<rect x="100" y="1035" width="85" height="35" rx="6" fill="#3178C6"/>
+<text x="142" y="1058" font-family="Arial" font-size="11" fill="white" text-anchor="middle">TypeScript</text>
+
+<rect x="200" y="1035" width="85" height="35" rx="6" fill="#000000"/>
+<text x="242" y="1058" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Node.js 22</text>
+
+<rect x="300" y="1035" width="85" height="35" rx="6" fill="#68A063"/>
+<text x="342" y="1058" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Express.js</text>
+
+<rect x="400" y="1035" width="85" height="35" rx="6" fill="#61DAFB"/>
+<text x="442" y="1058" font-family="Arial" font-size="11" fill="black" text-anchor="middle">React 18</text>
+
+<rect x="500" y="1035" width="85" height="35" rx="6" fill="#FF6A00"/>
+<text x="542" y="1058" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Vite</text>
+
+<rect x="600" y="1035" width="85" height="35" rx="6" fill="#64646A"/>
+<text x="642" y="1058" font-family="Arial" font-size="11" fill="white" text-anchor="middle">chokidar</text>
+
+<rect x="700" y="1035" width="85" height="35" rx="6" fill="#336791"/>
+<text x="742" y="1058" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Prometheus</text>
+
+<rect x="800" y="1035" width="85" height="35" rx="6" fill="#F46800"/>
+<text x="842" y="1058" font-family="Arial" font-size="11" fill="white" text-anchor="middle">WebSocket</text>
+
+<rect x="900" y="1035" width="85" height="35" rx="6" fill="#CC0000"/>
+<text x="942" y="1058" font-family="Arial" font-size="11" fill="white" text-anchor="middle">PM2</text>
+
+<rect x="1000" y="1035" width="85" height="35" rx="6" fill="#06B6D4"/>
+<text x="1042" y="1058" font-family="Arial" font-size="11" fill="white" text-anchor="middle">JSONL</text>
+
+<rect x="1100" y="1035" width="85" height="35" rx="6" fill="#F7B731"/>
+<text x="1142" y="1058" font-family="Arial" font-size="11" fill="black" text-anchor="middle">JWT Auth</text>
+
+<rect x="1200" y="1035" width="85" height="35" rx="6" fill="#EAB308"/>
+<text x="1242" y="1058" font-family="Arial" font-size="11" fill="black" text-anchor="middle">Zustand</text>
+
+<!-- ============ LAYER 9: Project Structure ============ -->
+<rect x="50" y="1100" width="1300" height="85" rx="12" fill="#0F172A"/>
+<text x="70" y="1125" font-family="Arial" font-size="12" font-weight="bold" fill="#94A3B8">PROJECT STRUCTURE</text>
+
+<text x="80" y="1148" font-family="Courier" font-size="9" fill="#AAD">claw-hive/</text>
+<text x="180" y="1148" font-family="Courier" font-size="9" fill="#94A3B8">├── src/</text>
+<text x="260" y="1148" font-family="Courier" font-size="9" fill="#64748B">services/ (11) | routes/ (9) | utils/</text>
+
+<text x="180" y="1165" font-family="Courier" font-size="9" fill="#94A3B8">├── dashboard/</text>
+<text x="290" y="1165" font-family="Courier" font-size="9" fill="#64748B">pages/ (8) | components/ | stores/ | hooks/</text>
+
+<text x="80" y="1165" font-family="Courier" font-size="9" fill="#AAD">sync-worker/</text>
+<text x="195" y="1165" font-family="Courier" font-size="9" fill="#AAD">tests/</text>
+<text x="270" y="1165" font-family="Courier" font-size="9" fill="#AAD">docs/</text>
+<text x="340" y="1165" font-family="Courier" font-size="9" fill="#AAD">public/</text>
+
+<text x="1100" y="1165" font-family="Arial" font-size="9" fill="#64748B" text-anchor="end">245 commits | main + evolution branches</text>
+<text x="1100" y="1180" font-family="Arial" font-size="9" fill="#059669" text-anchor="end">v2.2 | 2026-03-18</text>
 
 </svg>
