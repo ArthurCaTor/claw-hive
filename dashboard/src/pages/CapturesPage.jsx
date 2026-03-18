@@ -2,6 +2,20 @@ import React from 'react';
 // Captures Page - Full Proxy functionality
 import { useState, useEffect, useRef } from 'react';
 
+// Add shimmer animation styles
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+`;
+document.head.appendChild(style);
+
 const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:8080';
 
 function ResizablePane({ children, ...props }) {
@@ -254,6 +268,22 @@ ${JSON.stringify(capture.response?.body, null, 2)}
         >
           🔄
         </button>
+        
+        <button
+          onClick={() => selectedCapture && exportCapture(selectedCapture)}
+          style={{
+            padding: '4px 8px',
+            borderRadius: '4px',
+            border: '1px solid #334155',
+            background: 'transparent',
+            color: '#94a3b8',
+            cursor: 'pointer',
+            fontSize: '11px',
+          }}
+          disabled={!selectedCapture}
+        >
+          📥
+        </button>
       </div>
 
       {error && (
@@ -355,16 +385,82 @@ ${JSON.stringify(capture.response?.body, null, 2)}
               borderRadius: '8px', 
               padding: '12px',
               height: '100%',
-              overflow: 'auto',
+              overflow: 'hidden',
               display: 'flex',
               flexDirection: 'column'
             }}>
               {loadingCapture ? (
-                <div style={{ color: '#64748b' }}>Loading...</div>
+                <>
+                  {/* Skeleton for Request Body */}
+                  <div style={{ 
+                    flex: 1, 
+                    overflowY: 'hidden', 
+                    minHeight: 0,
+                    marginBottom: '12px'
+                  }}>
+                    <div style={{ 
+                      fontSize: '12px', 
+                      fontWeight: 600, 
+                      color: '#94a3b8', 
+                      marginBottom: '6px'
+                    }}>
+                      Request Body
+                    </div>
+                    <div style={{
+                      background: '#0d1117',
+                      borderRadius: '6px',
+                      padding: '12px',
+                      height: '100%',
+                      animation: 'pulse 1.5s ease-in-out infinite'
+                    }}>
+                      <div style={{ 
+                        background: 'linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%)',
+                        backgroundSize: '200% 100%',
+                        animation: 'shimmer 1.5s infinite',
+                        height: '100%',
+                        borderRadius: '4px'
+                      }} />
+                    </div>
+                  </div>
+                  {/* Skeleton for Response Body */}
+                  <div style={{ 
+                    flexShrink: 0, 
+                    height: '160px'
+                  }}>
+                    <div style={{ 
+                      fontSize: '12px', 
+                      fontWeight: 600, 
+                      color: '#94a3b8', 
+                      marginBottom: '6px'
+                    }}>
+                      Response Body
+                    </div>
+                    <div style={{
+                      background: '#0d1117',
+                      borderRadius: '6px',
+                      padding: '12px',
+                      height: '130px',
+                      animation: 'pulse 1.5s ease-in-out infinite'
+                    }}>
+                      <div style={{ 
+                        background: 'linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%)',
+                        backgroundSize: '200% 100%',
+                        animation: 'shimmer 1.5s infinite',
+                        height: '100%',
+                        borderRadius: '4px'
+                      }} />
+                    </div>
+                  </div>
+                </>
               ) : (
                 <>
-                  {/* Request Body with inline export */}
-                  <div style={{ marginBottom: '12px' }}>
+                  {/* Request Body - greedy, fills remaining space */}
+                  <div style={{ 
+                    flex: 1, 
+                    overflowY: 'auto', 
+                    minHeight: 0,
+                    marginBottom: '12px'
+                  }}>
                     <div style={{ 
                       fontSize: '12px', 
                       fontWeight: 600, 
@@ -375,20 +471,6 @@ ${JSON.stringify(capture.response?.body, null, 2)}
                       alignItems: 'center'
                     }}>
                       <span>Request Body</span>
-                      <button
-                        onClick={() => exportCapture(selectedCapture)}
-                        style={{
-                          padding: '2px 6px',
-                          borderRadius: '3px',
-                          border: 'none',
-                          background: '#334155',
-                          color: '#94a3b8',
-                          cursor: 'pointer',
-                          fontSize: '10px',
-                        }}
-                      >
-                        📥 Export
-                      </button>
                     </div>
                     <pre style={{
                       background: '#0d1117',
@@ -398,7 +480,6 @@ ${JSON.stringify(capture.response?.body, null, 2)}
                       fontFamily: 'monospace',
                       color: '#e2e8f0',
                       overflow: 'auto',
-                      maxHeight: '300px',
                       margin: 0,
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-all',
@@ -407,8 +488,12 @@ ${JSON.stringify(capture.response?.body, null, 2)}
                     </pre>
                   </div>
 
-                  {/* Response Body */}
-                  <div style={{ marginBottom: '12px' }}>
+                  {/* Response Body - fixed height, anchored at bottom */}
+                  <div style={{ 
+                    flexShrink: 0, 
+                    height: '160px',
+                    overflowY: 'auto'
+                  }}>
                     <div style={{ 
                       fontSize: '12px', 
                       fontWeight: 600, 
@@ -425,7 +510,6 @@ ${JSON.stringify(capture.response?.body, null, 2)}
                       fontFamily: 'monospace',
                       color: '#e2e8f0',
                       overflow: 'auto',
-                      maxHeight: '300px',
                       margin: 0,
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-all',

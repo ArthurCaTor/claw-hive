@@ -1,7 +1,7 @@
+// @ts-nocheck
 /**
- * @file src/utils/openapi-spec.js
+ * @file src/utils/openapi-spec.ts
  * @description OpenAPI/Swagger specification for Claw-Hive API
- * Claw-Hive API 的 OpenAPI/Swagger 规范
  */
 
 const spec = {
@@ -100,12 +100,8 @@ const spec = {
           }
         ],
         responses: {
-          '200': {
-            description: 'Agent details'
-          },
-          '404': {
-            description: 'Agent not found'
-          }
+          '200': { description: 'Agent details' },
+          '404': { description: 'Agent not found' }
         }
       }
     },
@@ -131,9 +127,7 @@ const spec = {
           }
         },
         responses: {
-          '200': {
-            description: 'Status updated'
-          }
+          '200': { description: 'Status updated' }
         }
       }
     },
@@ -142,14 +136,7 @@ const spec = {
         tags: ['Stats'],
         summary: 'Get system statistics',
         responses: {
-          '200': {
-            description: 'Stats object',
-            content: {
-              'application/json': {
-                schema: { type: 'object' }
-              }
-            }
-          }
+          '200': { description: 'Stats object' }
         }
       }
     },
@@ -158,9 +145,7 @@ const spec = {
         tags: ['Stats'],
         summary: 'Get cost breakdown',
         responses: {
-          '200': {
-            description: 'Cost data'
-          }
+          '200': { description: 'Cost data' }
         }
       }
     },
@@ -169,9 +154,7 @@ const spec = {
         tags: ['Sessions'],
         summary: 'Get all sessions',
         responses: {
-          '200': {
-            description: 'List of sessions'
-          }
+          '200': { description: 'List of sessions' }
         }
       }
     },
@@ -185,9 +168,7 @@ const spec = {
           { name: 'limit', in: 'query', schema: { type: 'integer' } }
         ],
         responses: {
-          '200': {
-            description: 'Search results'
-          }
+          '200': { description: 'Search results' }
         }
       }
     },
@@ -196,9 +177,7 @@ const spec = {
         tags: ['Debug'],
         summary: 'Get debug mode status',
         responses: {
-          '200': {
-            description: 'Debug status'
-          }
+          '200': { description: 'Debug status' }
         }
       }
     },
@@ -207,9 +186,7 @@ const spec = {
         tags: ['Debug'],
         summary: 'Get LLM proxy status',
         responses: {
-          '200': {
-            description: 'Proxy status'
-          }
+          '200': { description: 'Proxy status' }
         }
       }
     },
@@ -221,9 +198,7 @@ const spec = {
           { name: 'limit', in: 'query', schema: { type: 'integer' } }
         ],
         responses: {
-          '200': {
-            description: 'List of captures'
-          }
+          '200': { description: 'List of captures' }
         }
       }
     },
@@ -232,9 +207,7 @@ const spec = {
         tags: ['Agents'],
         summary: 'Get available models',
         responses: {
-          '200': {
-            description: 'Model list'
-          }
+          '200': { description: 'Model list' }
         }
       }
     },
@@ -243,9 +216,7 @@ const spec = {
         tags: ['System'],
         summary: 'Get cron jobs',
         responses: {
-          '200': {
-            description: 'Cron job list'
-          }
+          '200': { description: 'Cron job list' }
         }
       }
     }

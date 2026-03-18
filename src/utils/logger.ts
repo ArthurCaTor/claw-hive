@@ -1,8 +1,13 @@
+// @ts-nocheck
 /**
  * Structured Logger using Pino
  * 使用 Pino 的结构化日志
  */
 const pino = require('pino');
+
+interface Bindings {
+  [key: string]: unknown;
+}
 
 const logger = pino({
   level: process.env.LOG_LEVEL || 'info',
@@ -20,10 +25,8 @@ const logger = pino({
 /**
  * Create a child logger with bindings
  * 带绑定的子日志器
- * @param {object} bindings - Key-value pairs to add to all logs
- * @returns {pino.Logger} Child logger
  */
-function child(bindings) {
+function child(bindings: Bindings) {
   return logger.child(bindings);
 }
 
