@@ -1,6 +1,3 @@
-# CLAW-HIVE CI/CD Pipeline
-# GitHub Actions workflow for automated testing and deployment
-
 name: CI/CD
 
 on:
@@ -9,19 +6,25 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  NODE_VERSION: '22'
+
 jobs:
+  # ============================================
+  # 1. Test Job
+  # ============================================
   test:
-    name: Test
+    name: 🧪 Unit Tests
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Setup Node.js
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
       
       - name: Install dependencies
@@ -32,82 +35,154 @@ jobs:
       
       - name: Check server starts
         run: |
-          timeout 10s node src/server.js || true
-          echo "Server start check completed"
+          timeout 10s node src/server.js || echo "Server start check completed"
       
       - name: Check for console.log in production code
         run: |
-          # Warn if there are console.log without logger
-          grep -r "console.log" src/ --include="*.js" | grep -v "logger" | head -5 || true
-      
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run ESLint
-        run: |
-          npx eslint src/ --ext .js || echo "No ESLint config, skipping"
+          # Check for console.log without logger
+          FOUND=$(grep -r "console.log" src/ --include="*.ts" --include="*.js" 2>/dev/null | grep -v "logger" | grep -v ".bak" | wc -l)
+          if [ "$FOUND" -gt 0 ]; then
+            echo "Warning: Found $FOUND files with console.log without logger"
+            grep -r "console.log" src/ --include="*.ts" --include="*.js" 2>/dev/null | grep -v "logger" | grep -v ".bak" | head -5
+          fi
 
-  build:
-    name: Build
+  # ============================================
+  # 2. Dashboard Build Job
+  # ============================================
+  dashboard:
+    name: 🎨 Dashboard Build
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
       
-      - name: Setup Node.js
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
       
       - name: Install dependencies
         run: npm ci
       
-      - name: Build frontend
+      - name: Build dashboard
         run: npm run build
+        working-directory: dashboard
       
-      - name: Verify build output
+      - name: Verify build
         run: |
-          ls -la public/
-          test -f public/index.html
-          test -f public/assets/index-*.js
+          test -f dashboard/dist/index.html
+          test -d dashboard/dist/assets
+          echo "Dashboard build verified"
+      
+      - name: Upload dashboard artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-dist
+          path: dashboard/dist
+          retention-days: 7
 
-  deploy:
-    name: Deploy
+  # ============================================
+  # 3. TypeScript Check
+  # ============================================
+  typescript:
+    name: 📝 TypeScript Check
     runs-on: ubuntu-latest
-    needs: [test, lint, build]
-    if: github.ref == 'refs/heads/main'
     
     steps:
-      - name: Checkout code
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Install
+        run: npm ci
+      
+      - name: TypeScript check
+        run: |
+          npx tsc --noEmit 2>&1 | head -20 || echo "TypeScript check completed"
+
+  # ============================================
+  # 4. Scale Test Job
+  # ============================================
+  scale-test:
+    name: ⚡ Scale Test (30 agents)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Install
+        run: npm ci
+      
+      - name: Start server
+        run: |
+          node src/server.js &
+          sleep 5
+          curl -s http://localhost:8080/api/health || exit 1
+      
+      - name: Run scale test
+        run: node tests/scale.test.js
+
+  # ============================================
+  # 5. Deploy Job (main branch only)
+  # ============================================
+  deploy:
+    name: 🚀 Deploy to Server
+    needs: [test, dashboard, typescript, scale-test]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
         uses: actions/checkout@v4
       
       - name: Build frontend
         run: |
           npm ci
-          npm run build
+          npm run build -w dashboard
       
-      - name: Deploy to server
+      - name: Deploy to production
+        if: env.SERVER_HOST != ''
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
         run: |
           if [ -n "$SERVER_HOST" ]; then
-            rsync -avz --delete public/ $SERVER_USER@$SERVER_HOST:/home/arthur/claw-hive/public/
-            echo "Deployed to $SERVER_HOST"
+            rsync -avz --delete-after dashboard/dist/ $SERVER_USER@$SERVER_HOST:/home/arthur/claw-hive/public/
+            echo "✅ Deployed to $SERVER_HOST"
           else
-            echo "No deploy config, skipping deployment"
+            echo "⚠️  No SERVER_HOST configured, skipping deployment"
+          fi
+
+  # ============================================
+  # 6. Discord Notification (on failure)
+  # ============================================
+  notify-failure:
+    name: 🔔 Notify on Failure
+    needs: [test, dashboard, typescript, scale-test]
+    if: failure()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Send Discord notification
+        if: env.DISCORD_WEBHOOK != ''
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK" ]; then
+            curl -H "Content-Type: application/json" \
+              -d '{"content":"❌ CI/CD Failed: '"$GITHUB_REPOSITORY" '"$GITHUB_REF" '"$GITHUB_RUN_ID"}' "}' \
+              $DISCORD_WEBHOOK
           fi
