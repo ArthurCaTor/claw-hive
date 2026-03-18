@@ -53,11 +53,14 @@ router.post('/api/debug-proxy/stop', async (req, res) => {
 // Get all captures (summary)
 router.get('/api/debug-proxy/captures', (req, res) => {
   const captures = llmProxy.getCaptures().map(c => ({
-    id: c.callId,
+    id: c.callId || c.id,
     timestamp: c.timestamp,
     status: c.response?.status,
     latency_ms: c.latency_ms || 0,
-    tokens: c.usage?.total_tokens || 0,
+    tokens: {
+      input: c.usage?.input_tokens || c.tokens?.input || 0,
+      output: c.usage?.output_tokens || c.tokens?.output || 0,
+    },
     model: c.body?.model || 'unknown',
     messageCount: c.body?.messages?.length || 0,
     toolCount: c.body?.tools?.length || 0,
@@ -88,15 +91,16 @@ router.get('/api/debug-proxy/stream', (req, res) => {
 
   const onCapture = (capture) => {
     const summary = {
-      id: capture.id,
+      id: capture.callId || capture.id,
       timestamp: capture.timestamp,
-      status: capture.response.status,
-      latency_ms: capture.latency_ms,
-      tokens: capture.tokens,
-      model: capture.request.body?.model || 'unknown',
-      messageCount: capture.request.body?.messages?.length || 0,
-      toolCount: capture.request.body?.tools?.length || 0,
-      hasSystem: !!capture.request.body?.system,
+      status: capture.response?.status,
+      latency_ms: capture.latency_ms || 0,
+      tokens: {
+        input: capture.usage?.input_tokens || 0,
+        output: capture.usage?.output_tokens || 0,
+      },
+      model: capture.body?.model || 'unknown',
+      messageCount: capture.body?.messages?.length || 0,
     };
     res.write(`data: ${JSON.stringify(summary)}\n\n`);
   };

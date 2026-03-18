@@ -110,8 +110,14 @@ class LLMProxy extends EventEmitter {
           } catch {}
           res.status(forwardRes.status).send(body);
         }
-        this.emit('call', capturedRequest);
+        this.emit('capture', capturedRequest);
         // Store in memory
+        capturedRequest.id = callId;
+        capturedRequest.latency_ms = Date.now() - startTime;
+        capturedRequest.tokens = {
+          input: capturedRequest.usage?.input_tokens || 0,
+          output: capturedRequest.usage?.output_tokens || 0,
+        };
         this.captures.push(capturedRequest);
         if (this.captures.length > this.MAX_CAPTURES) {
           this.captures = this.captures.slice(-this.MAX_CAPTURES);
@@ -148,7 +154,8 @@ class LLMProxy extends EventEmitter {
   }
 
   getCapture(id: string) {
-    return this.captures.find(c => c.id === id);
+    const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+    return this.captures.find(c => c.callId === numId || c.id === numId);
   }
 
   stop() {
