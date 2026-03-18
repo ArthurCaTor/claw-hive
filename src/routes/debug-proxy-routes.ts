@@ -79,7 +79,12 @@ router.get('/api/debug-proxy/captures/:id', (req, res) => {
   if (!capture) {
     return res.status(404).json({ error: 'Capture not found' });
   }
-  res.json(capture);
+  // Add backward compatibility wrapper
+  const response = {
+    ...capture,
+    request: { body: capture.body }
+  };
+  res.json(response);
 });
 
 // SSE - real-time push
