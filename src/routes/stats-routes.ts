@@ -31,7 +31,7 @@ interface LLMTracker {
   getStats?: () => unknown;
 }
 
-export default function statsRoutes(app: Application, { agentStore, findConfigPath, getStats, llmTracker }: { agentStore: AgentStore; findConfigPath: FindConfigPath; getStats: GetStats; llmTracker?: LLMTracker }): void {
+module.exports = function statsRoutes(app: Application, { agentStore, findConfigPath, getStats, llmTracker }: { agentStore: AgentStore; findConfigPath: FindConfigPath; getStats: GetStats; llmTracker?: LLMTracker }): void {
   // Stats endpoint
   app.get('/api/stats', (req, res) => {
     res.json(getStats());

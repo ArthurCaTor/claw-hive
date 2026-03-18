@@ -15,7 +15,7 @@ interface LogFile {
   modified: string;
 }
 
-export default function logRoutes(app: Application): void {
+module.exports = function logRoutes(app: Application): void {
   // Get list of log files
   app.get('/api/logs', (req, res) => {
     const logPaths = [

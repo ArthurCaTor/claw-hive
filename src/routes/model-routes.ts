@@ -14,7 +14,7 @@ interface FindConfigPath {
   (): string | null;
 }
 
-export default function modelRoutes(app: Application, { findConfigPath }: { findConfigPath: FindConfigPath }): void {
+module.exports = function modelRoutes(app: Application, { findConfigPath }: { findConfigPath: FindConfigPath }): void {
   // Get available models
   app.get('/api/models', (req, res) => {
     const configPath = findConfigPath();

@@ -7,7 +7,7 @@ const { Application, Request, Response } = require('express');
  * Health check route module
  * @param app - Express application
  */
-export default function healthRoutes(app: Application): void {
+module.exports = function healthRoutes(app: Application): void {
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json({
       status: 'ok',

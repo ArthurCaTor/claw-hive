@@ -19,7 +19,7 @@ interface FindConfigPath {
   (): string | null;
 }
 
-export default function systemRoutes(app: Application, { sessionWatcher, debugService, OPENCLAW_DIR, findConfigPath }: { sessionWatcher?: SessionWatcher; debugService?: DebugService; OPENCLAW_DIR: string; findConfigPath: FindConfigPath }): void {
+module.exports = function systemRoutes(app: Application, { sessionWatcher, debugService, OPENCLAW_DIR, findConfigPath }: { sessionWatcher?: SessionWatcher; debugService?: DebugService; OPENCLAW_DIR: string; findConfigPath: FindConfigPath }): void {
   // Gateway status
   app.get('/api/gateway/status', (req, res) => {
     const info = (sessionWatcher as any).getWatchedInfo();

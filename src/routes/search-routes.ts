@@ -10,7 +10,7 @@ interface AgentStore {
   [key: string]: unknown;
 }
 
-export default function searchRoutes(app: Application, { agentStore }: { agentStore: AgentStore }): void {
+module.exports = function searchRoutes(app: Application, { agentStore }: { agentStore: AgentStore }): void {
   // Cross-agent search
   app.get('/api/search', (req, res) => {
     const { q } = req.query;

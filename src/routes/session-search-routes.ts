@@ -22,7 +22,7 @@ interface AgentStore {
   [key: string]: Agent;
 }
 
-export default function sessionSearchRoutes(app: Application, { agentStore }: { agentStore: AgentStore }): void {
+module.exports = function sessionSearchRoutes(app: Application, { agentStore }: { agentStore: AgentStore }): void {
   // Session Search Endpoint
   app.get('/api/sessions/search', (req, res) => {
     const { q } = req.query;

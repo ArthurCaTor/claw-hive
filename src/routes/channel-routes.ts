@@ -26,7 +26,7 @@ interface FindConfigPath {
   (): string | null;
 }
 
-export default function channelRoutes(app: Application, { findConfigPath }: { findConfigPath: FindConfigPath }): void {
+module.exports = function channelRoutes(app: Application, { findConfigPath }: { findConfigPath: FindConfigPath }): void {
   // Get channels config
   app.get('/api/channels', (req, res) => {
     const configPath = findConfigPath();

@@ -30,7 +30,7 @@ function resolveWorkspacePath(workspace, reqPath) {
   return { basePath, targetPath };
 }
 
-export default function filesRoutes(app: Application): void {
+module.exports = function filesRoutes(app: Application): void {
   // List files in workspace
   app.get('/api/files', (req, res) => {
     const reqPath = req.query.path;

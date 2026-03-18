@@ -42,7 +42,7 @@ function resolveRecordingPath(filename: string): ResolveResult {
   return { filepath, recordingsDir };
 }
 
-export default function recordingRoutes(app: Application, { recordingStore }: { recordingStore: RecordingStore }): void {
+module.exports = function recordingRoutes(app: Application, { recordingStore }: { recordingStore: RecordingStore }): void {
   // Recording status
   app.get('/api/recording/status', (req, res) => {
     const status = recordingStore.getStatus();

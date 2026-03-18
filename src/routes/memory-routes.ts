@@ -34,7 +34,7 @@ function findMemoryFile(id: string): { filePath: string; workspace: string } | n
   return null;
 }
 
-export default function memoryRoutes(app: Application): void {
+module.exports = function memoryRoutes(app: Application): void {
   // Get list of memory files
   app.get('/api/memory', (req, res) => {
     const memoryPaths = getMemoryPaths();

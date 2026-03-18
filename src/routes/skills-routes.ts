@@ -13,7 +13,7 @@ interface Skill {
   emoji: string;
 }
 
-export default function skillsRoutes(app: Application): void {
+module.exports = function skillsRoutes(app: Application): void {
   // Get available skills
   app.get('/api/skills', (req, res) => {
     const nodePath = execSync('npm root -g', { encoding: 'utf8' }).trim();

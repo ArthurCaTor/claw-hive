@@ -24,7 +24,7 @@ interface ValidateAgentUpdate {
   (data: unknown): { valid: boolean; errors: string[] };
 }
 
-export default function agentRoutes(app: Application, { agentStore, findConfigPath, validateAgentUpdate }: { agentStore: AgentStore; findConfigPath: FindConfigPath; validateAgentUpdate: ValidateAgentUpdate }): void {
+module.exports = function agentRoutes(app: Application, { agentStore, findConfigPath, validateAgentUpdate }: { agentStore: AgentStore; findConfigPath: FindConfigPath; validateAgentUpdate: ValidateAgentUpdate }): void {
   // Get all agents
   app.get('/api/agents', (req, res) => {
     res.json(Object.values(agentStore as Record<string, any>));
