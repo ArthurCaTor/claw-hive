@@ -1,258 +1,245 @@
 // @ts-nocheck
 /**
- * @file src/services/llm-tracker.ts
- * @description LLM Tracker — observes which LLM each agent uses
- * LLM 跟踪器 — 观察每个 Agent 使用哪个 LLM
- *
- * IMPORTANT: This is TRACKING, not ROUTING.
- * 重要：这是跟踪，不是路由。OpenClaw 决定 LLM，我们只观察。
+ * LLM Tracker Service
+ * 
+ * Tracks which LLM each agent is using, detects switches,
+ * and records usage history.
  */
+
 const { EventEmitter } = require('events');
+const fs = require('fs');
+const path = require('path');
 
-interface LLMSwitchEvent {
-  agentId: string;
-  from: { provider: string; model: string };
-  to: { provider: string; model: string };
-  timestamp: string;
-  trigger: 'error' | 'manual';
-}
-
-interface AgentLLMInfo {
-  provider: string;
-  model: string;
-  lastSeen: Date;
-}
-
-interface HealthMetrics {
-  calls: number;
-  errors: number;
-  latencies: number[];
-  lastCall: string | null;
-}
-
-interface LLMTrackerStats {
-  totalAgents: number;
-  totalSwitches: number;
-  byProvider: Record<string, number>;
-}
+const HISTORY_DIR = path.join(process.cwd(), 'data', 'llm-history');
+const MAX_HISTORY_PER_AGENT = 100;
 
 class LLMTracker extends EventEmitter {
-  private agentLLMs: Map<string, AgentLLMInfo>;
-  private switchHistory: LLMSwitchEvent[];
-  private MAX_HISTORY: number;
-  private healthMetrics: Map<string, HealthMetrics>;
-
   constructor() {
     super();
-    this.agentLLMs = new Map();
-    this.switchHistory = [];
-    this.MAX_HISTORY = 500;
-    this.healthMetrics = new Map();
+    this.agentStates = new Map();
+    this.providerStats = new Map();
     
-    console.log('LLMTracker initialized');
+    // Ensure history directory exists
+    fs.mkdirSync(HISTORY_DIR, { recursive: true });
+    
+    // Load existing history
+    this.loadHistory();
+    
+    console.log('[LLMTracker] Initialized');
   }
 
   /**
-   * Track an agent's LLM usage
-   * 跟踪 Agent 的 LLM 使用
-   * @param agentId - Agent ID
-   * @param provider - LLM provider (e.g., 'minimax', 'anthropic', 'openai')
-   * @param model - Model name
-   * @param hadError - Whether there was an error that triggered this switch
+   * Track a request and detect LLM switches
    */
-  track(agentId: string, provider: string, model: string, hadError = false): void {
-    const prev = this.agentLLMs.get(agentId);
-    const now = new Date();
-
-    if (prev && (prev.provider !== provider || prev.model !== model)) {
-      const switchEvent: LLMSwitchEvent = {
-        agentId,
-        from: { provider: prev.provider, model: prev.model },
-        to: { provider, model },
-        timestamp: now.toISOString(),
-        trigger: hadError ? 'error' : 'manual',
+  trackRequest(agentId, provider, model, requestId, latency, tokens, error) {
+    const timestamp = new Date().toISOString();
+    
+    // Get or create agent state
+    let state = this.agentStates.get(agentId);
+    if (!state) {
+      state = {
+        currentProvider: provider,
+        currentModel: model,
+        lastSeen: timestamp,
+        history: [],
+        switches: [],
+        totalRequests: 0,
+      };
+      this.agentStates.set(agentId, state);
+    }
+    
+    // Detect LLM switch
+    if (state.currentProvider !== provider || state.currentModel !== model) {
+      const switchEvent = {
+        timestamp,
+        fromProvider: state.currentProvider,
+        fromModel: state.currentModel,
+        toProvider: provider,
+        toModel: model,
+        requestId,
       };
       
-      this.switchHistory.push(switchEvent);
-      if (this.switchHistory.length > this.MAX_HISTORY) {
-        this.switchHistory = this.switchHistory.slice(-this.MAX_HISTORY);
-      }
+      state.switches.push(switchEvent);
       
-      console.log('[LLMTracker] LLM switch detected', { 
-        agentId, 
-        from: switchEvent.from, 
-        to: switchEvent.to,
-        trigger: switchEvent.trigger 
+      // Emit switch event for dashboard
+      this.emit('llm-switch', {
+        agentId,
+        ...switchEvent,
       });
       
-      this.emit('llm-switch', switchEvent);
+      console.log(
+        `[LLMTracker] Agent ${agentId} switched: ` +
+        `${state.currentModel} → ${model}`
+      );
+      
+      // Update current
+      state.currentProvider = provider;
+      state.currentModel = model;
     }
-
-    this.agentLLMs.set(agentId, { 
-      provider, 
-      model, 
-      lastSeen: now 
+    
+    // Record usage
+    state.history.push({
+      provider,
+      model,
+      timestamp,
+      requestId,
     });
+    
+    // Trim history
+    if (state.history.length > MAX_HISTORY_PER_AGENT) {
+      state.history = state.history.slice(-MAX_HISTORY_PER_AGENT);
+    }
+    
+    state.lastSeen = timestamp;
+    state.totalRequests++;
+    
+    // Update provider stats
+    this.updateProviderStats(provider, latency, tokens, error);
+    
+    // Persist periodically
+    if (state.totalRequests % 10 === 0) {
+      this.saveHistory();
+    }
   }
 
   /**
-   * Get current LLM for all tracked agents
-   * 获取所有已跟踪 Agent 的当前 LLM
-   * @returns Map of agentId → { provider, model, lastSeen }
+   * Update provider statistics
    */
-  getCurrentLLMs(): Record<string, { provider: string; model: string; lastSeen: string }> {
-    const result: Record<string, { provider: string; model: string; lastSeen: string }> = {};
-    for (const [id, info] of this.agentLLMs) {
-      result[id] = { 
-        provider: info.provider, 
-        model: info.model, 
-        lastSeen: info.lastSeen.toISOString() 
+  updateProviderStats(provider, latency, tokens, error) {
+    let stats = this.providerStats.get(provider);
+    if (!stats) {
+      stats = {
+        provider,
+        requestCount: 0,
+        tokenCount: 0,
+        errorCount: 0,
+        avgLatency: 0,
+        lastUsed: new Date().toISOString(),
       };
+      this.providerStats.set(provider, stats);
+    }
+    
+    stats.requestCount++;
+    stats.lastUsed = new Date().toISOString();
+    
+    if (tokens) {
+      stats.tokenCount += (tokens.input || 0) + (tokens.output || 0);
+    }
+    
+    if (error) {
+      stats.errorCount++;
+    }
+    
+    if (latency) {
+      // Rolling average
+      stats.avgLatency = Math.round(
+        (stats.avgLatency * (stats.requestCount - 1) + latency) / stats.requestCount
+      );
+    }
+  }
+
+  /**
+   * Get state for an agent
+   */
+  getAgentState(agentId) {
+    return this.agentStates.get(agentId);
+  }
+
+  /**
+   * Get all agent states
+   */
+  getAllAgentStates() {
+    const result = {};
+    for (const [agentId, state] of this.agentStates) {
+      result[agentId] = state;
     }
     return result;
   }
 
   /**
-   * Get LLM switch history
-   * 获取 LLM 切换历史
-   * @param agentId - Optional agent ID to filter by
-   * @param limit - Maximum number of events to return
-   * @returns Switch events
+   * Get recent switches across all agents
    */
-  getSwitchHistory(agentId?: string, limit = 50): LLMSwitchEvent[] {
-    let history = this.switchHistory;
-    if (agentId) {
-      history = history.filter(e => e.agentId === agentId);
+  getRecentSwitches(limit = 20) {
+    const allSwitches = [];
+    
+    for (const [agentId, state] of this.agentStates) {
+      for (const sw of state.switches) {
+        allSwitches.push({ ...sw, agentId });
+      }
     }
-    return history.slice(-limit);
+    
+    // Sort by timestamp descending
+    allSwitches.sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    
+    return allSwitches.slice(0, limit);
   }
 
   /**
-   * Clear history for an agent
-   * 清除某个 Agent 的历史
-   * @param agentId - Agent ID
+   * Get provider statistics
    */
-  clearHistory(agentId: string): void {
-    if (agentId) {
-      this.switchHistory = this.switchHistory.filter(e => e.agentId !== agentId);
-    }
+  getProviderStats() {
+    return Array.from(this.providerStats.values());
   }
 
   /**
-   * Get statistics
-   * 获取统计信息
-   * @returns Stats
+   * Save history to file
    */
-  getStats(): LLMTrackerStats {
-    const providers: Record<string, number> = {};
-    for (const [, info] of this.agentLLMs) {
-      providers[info.provider] = (providers[info.provider] || 0) + 1;
-    }
-    
-    return {
-      totalAgents: this.agentLLMs.size,
-      totalSwitches: this.switchHistory.length,
-      byProvider: providers,
-    };
-  }
-
-  /**
-   * Extract provider from model name
-   * 从模型名称推断提供商
-   * @param model - Model name
-   * @returns Provider
-   */
-  getProviderFromModel(model: string): string {
-    if (!model || model === 'unknown') return 'unknown';
-    const lower = model.toLowerCase();
-    if (lower.includes('claude')) return 'anthropic';
-    if (lower.includes('gpt-4') || lower.includes('gpt-3.5') || lower.includes('o1') || lower.includes('o3')) return 'openai';
-    if (lower.includes('minimax') || lower.includes('abab')) return 'minimax';
-    if (lower.includes('gemini')) return 'google';
-    if (lower.includes('llama') || lower.includes('mistral') || lower.includes('qwen')) return 'open-source';
-    return 'unknown';
-  }
-
-  // ============================================================
-  // Health Tracking - Per-provider metrics
-  // 健康追踪 — 每个提供商的指标
-  // ============================================================
-
-  /**
-   * Record a call for health tracking
-   * @param provider - Provider name
-   * @param latencyMs - Response latency in ms
-   * @param success - Whether the call succeeded
-   */
-  recordCall(provider: string, latencyMs: number, success = true): void {
-    if (!provider || provider === 'unknown') return;
-    
-    let metrics = this.healthMetrics.get(provider);
-    if (!metrics) {
-      metrics = { calls: 0, errors: 0, latencies: [], lastCall: null };
-      this.healthMetrics.set(provider, metrics);
-    }
-    
-    metrics.calls++;
-    if (!success) metrics.errors++;
-    metrics.latencies.push(latencyMs);
-    metrics.lastCall = new Date().toISOString();
-    
-    // Keep only last 1000 latencies for P50/P95/P99
-    if (metrics.latencies.length > 1000) {
-      metrics.latencies = metrics.latencies.slice(-1000);
+  saveHistory() {
+    try {
+      const data = {
+        agentStates: Object.fromEntries(this.agentStates),
+        providerStats: Object.fromEntries(this.providerStats),
+        savedAt: new Date().toISOString(),
+      };
+      
+      const filepath = path.join(HISTORY_DIR, 'llm-tracker-state.json');
+      fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
+    } catch (err) {
+      console.error('[LLMTracker] Failed to save history:', err.message);
     }
   }
 
   /**
-   * Get health metrics for a provider
-   * @param provider - Provider name
-   * @returns Health metrics
+   * Load history from file
    */
-  getHealthMetrics(provider: string): {
-    calls: number;
-    errors: number;
-    errorRate: number;
-    latencies: number[];
-    p50: number;
-    p95: number;
-    p99: number;
-    lastCall: string | null;
-  } {
-    const metrics = this.healthMetrics.get(provider);
-    if (!metrics) {
-      return { calls: 0, errors: 0, errorRate: 0, latencies: [], p50: 0, p95: 0, p99: 0, lastCall: null };
+  loadHistory() {
+    try {
+      const filepath = path.join(HISTORY_DIR, 'llm-tracker-state.json');
+      
+      if (fs.existsSync(filepath)) {
+        const data = JSON.parse(fs.readFileSync(filepath, 'utf-8'));
+        
+        if (data.agentStates) {
+          for (const [agentId, state] of Object.entries(data.agentStates)) {
+            this.agentStates.set(agentId, state);
+          }
+        }
+        
+        if (data.providerStats) {
+          for (const [provider, stats] of Object.entries(data.providerStats)) {
+            this.providerStats.set(provider, stats);
+          }
+        }
+        
+        console.log(`[LLMTracker] Loaded ${this.agentStates.size} agent states`);
+      }
+    } catch (err) {
+      console.warn('[LLMTracker] Could not load history:', err.message);
     }
-    
-    const latencies = metrics.latencies.sort((a, b) => a - b);
-    const p50 = latencies[Math.floor(latencies.length * 0.5)] || 0;
-    const p95 = latencies[Math.floor(latencies.length * 0.95)] || 0;
-    const p99 = latencies[Math.floor(latencies.length * 0.99)] || 0;
-    
-    return {
-      calls: metrics.calls,
-      errors: metrics.errors,
-      errorRate: metrics.calls > 0 ? Math.round((metrics.errors / metrics.calls) * 10000) / 100 : 0,
-      latencies: latencies.slice(-100),
-      p50: Math.round(p50),
-      p95: Math.round(p95),
-      p99: Math.round(p99),
-      lastCall: metrics.lastCall,
-    };
   }
 
   /**
-   * Get health metrics for all providers
-   * @returns All health metrics
+   * Clear all tracking data
    */
-  getAllHealthMetrics(): Record<string, ReturnType<LLMTracker['getHealthMetrics']>> {
-    const result: Record<string, ReturnType<LLMTracker['getHealthMetrics']>> = {};
-    for (const provider of this.healthMetrics.keys()) {
-      result[provider] = this.getHealthMetrics(provider);
-    }
-    return result;
+  clear() {
+    this.agentStates.clear();
+    this.providerStats.clear();
+    console.log('[LLMTracker] Cleared all tracking data');
   }
 }
 
 const llmTracker = new LLMTracker();
-export { LLMTracker, llmTracker };
+
+module.exports = { LLMTracker, llmTracker };

@@ -1,162 +1,169 @@
+// @ts-nocheck
 /**
- * @file src/services/cost-calculator.ts
- * @description Cost Calculator — calculates LLM API costs
- * 成本计算器 — 计算 LLM API 成本
+ * Cost Calculator Service
  * 
- * Pricing is configurable per provider/model
- * 每个提供商/模型的定价可配置
+ * Calculates API costs based on token usage and provider pricing.
+ * Pricing is configurable per model.
  */
 
-interface PricingTier {
-  input: number;
-  output: number;
-}
-
-interface ProviderPricing {
-  [model: string]: PricingTier;
-}
-
-interface AllPricing {
-  [provider: string]: ProviderPricing;
-}
-
-interface CostParams {
-  provider: string;
-  model: string;
-  inputTokens?: number;
-  outputTokens?: number;
-}
-
-interface Usage extends CostParams {}
-
-interface CostResult {
-  total: number;
-  byProvider: Record<string, number>;
-  byModel: Record<string, number>;
-}
+// Pricing per 1M tokens (USD)
+const DEFAULT_PRICING = {
+  // MiniMax
+  'MiniMax-M2.7': { input: 0.70, output: 2.80 },
+  'MiniMax-M2.5': { input: 0.70, output: 2.80 },
+  'MiniMax-Text-01': { input: 0.50, output: 2.00 },
+  
+  // Anthropic
+  'claude-3-opus': { input: 15.00, output: 75.00 },
+  'claude-3-sonnet': { input: 3.00, output: 15.00 },
+  'claude-3-haiku': { input: 0.25, output: 1.25 },
+  'claude-sonnet-4': { input: 3.00, output: 15.00 },
+  'claude-opus-4': { input: 15.00, output: 75.00 },
+  
+  // OpenAI
+  'gpt-4': { input: 30.00, output: 60.00 },
+  'gpt-4-turbo': { input: 10.00, output: 30.00 },
+  'gpt-4o': { input: 5.00, output: 15.00 },
+  'gpt-3.5-turbo': { input: 0.50, output: 1.50 },
+  
+  // Default fallback
+  'unknown': { input: 1.00, output: 3.00 },
+};
 
 class CostCalculator {
-  private pricing: AllPricing;
-  private currency: string;
-
   constructor() {
-    // Default pricing (per 1M tokens)
-    // Can be overridden via setPricing()
-    this.pricing = {
-      anthropic: {
-        'claude-opus-4-5': { input: 15.0, output: 75.0 },
-        'claude-sonnet-4-5': { input: 3.0, output: 15.0 },
-        'claude-haiku-3-5': { input: 0.8, output: 4.0 },
-        'claude-3-opus': { input: 15.0, output: 75.0 },
-        'claude-3-sonnet': { input: 3.0, output: 15.0 },
-        'claude-3-haiku': { input: 0.25, output: 1.25 },
-        default: { input: 3.0, output: 15.0 },
-      },
-      openai: {
-        'gpt-4o': { input: 5.0, output: 15.0 },
-        'gpt-4o-mini': { input: 0.15, output: 0.6 },
-        'gpt-4-turbo': { input: 10.0, output: 30.0 },
-        'gpt-4': { input: 30.0, output: 60.0 },
-        'gpt-3.5-turbo': { input: 0.5, output: 1.5 },
-        'o1': { input: 15.0, output: 60.0 },
-        'o1-mini': { input: 3.0, output: 12.0 },
-        'o3': { input: 10.0, output: 40.0 },
-        default: { input: 5.0, output: 15.0 },
-      },
-      minimax: {
-        'abab6.5s-chat': { input: 1.0, output: 1.0 },
-        'abab6.5g-chat': { input: 4.0, output: 4.0 },
-        'abab5.5s-chat': { input: 1.0, output: 1.0 },
-        default: { input: 1.0, output: 1.0 },
-      },
-      google: {
-        'gemini-2.0-flash': { input: 0.0, output: 0.0 },
-        'gemini-1.5-pro': { input: 1.25, output: 5.0 },
-        'gemini-1.5-flash': { input: 0.075, output: 0.3 },
-        default: { input: 0.075, output: 0.3 },
-      },
-      'open-source': {
-        default: { input: 0.0, output: 0.0 },
-      },
-    };
-    
-    // Currency
-    this.currency = 'USD';
-    
-    console.log('CostCalculator initialized with default pricing');
+    this.pricing = { ...DEFAULT_PRICING };
+    this.loadCustomPricing();
   }
 
   /**
-   * Set custom pricing for a provider
-   * @param provider - Provider name
-   * @param pricing - { model: { input, output } }
+   * Load custom pricing from config file
    */
-  setPricing(provider: string, pricing: ProviderPricing): void {
-    this.pricing[provider] = { ...this.pricing[provider], ...pricing };
-    console.log('CostCalculator: Updated pricing', { provider, pricing });
+  loadCustomPricing() {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const configPath = path.join(process.cwd(), 'config', 'pricing.json');
+      
+      if (fs.existsSync(configPath)) {
+        const custom = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        this.pricing = { ...this.pricing, ...custom };
+        console.log('[CostCalculator] Loaded custom pricing');
+      }
+    } catch (err) {
+      console.warn('[CostCalculator] Using default pricing');
+    }
   }
 
   /**
-   * Calculate cost for a request
-   * @param params - { provider, model, inputTokens, outputTokens }
-   * @returns Cost in USD
+   * Get pricing for a model
    */
-  calculate(params: CostParams): number {
-    const { provider, model, inputTokens = 0, outputTokens = 0 } = params;
-    
-    if (!provider || provider === 'unknown') {
-      return 0;
+  getPricing(model) {
+    // Try exact match first
+    if (this.pricing[model]) {
+      return this.pricing[model];
     }
     
-    const providerPricing = this.pricing[provider] || this.pricing['open-source'];
-    const modelPricing = providerPricing[model] || providerPricing.default;
+    // Try partial match
+    for (const [key, value] of Object.entries(this.pricing)) {
+      if (model.toLowerCase().includes(key.toLowerCase())) {
+        return value;
+      }
+    }
     
-    const inputCost = (inputTokens / 1000000) * modelPricing.input;
-    const outputCost = (outputTokens / 1000000) * modelPricing.output;
-    
-    return Math.round((inputCost + outputCost) * 10000) / 10000; // Round to 4 decimal places
+    return this.pricing['unknown'];
   }
 
   /**
-   * Get pricing for a provider
-   * @param provider - Provider name
-   * @returns Pricing object
+   * Calculate cost for tokens
    */
-  getPricing(provider: string): ProviderPricing {
-    return this.pricing[provider] || this.pricing['open-source'];
+  calculateCost(model, inputTokens, outputTokens) {
+    const pricing = this.getPricing(model);
+    
+    const inputCost = (inputTokens / 1_000_000) * pricing.input;
+    const outputCost = (outputTokens / 1_000_000) * pricing.output;
+    
+    return {
+      inputCost: Math.round(inputCost * 10000) / 10000,
+      outputCost: Math.round(outputCost * 10000) / 10000,
+      totalCost: Math.round((inputCost + outputCost) * 10000) / 10000,
+    };
+  }
+
+  /**
+   * Get cost summary from all captures
+   */
+  getCostSummary() {
+    const { tokenAggregator } = require('./token-aggregator');
+    const tokenStats = tokenAggregator.getStats();
+    const { llmProxy } = require('./llm-proxy');
+    
+    const byModel = [];
+    let totalCost = 0;
+    let totalInputCost = 0;
+    let totalOutputCost = 0;
+    const byDay = {};
+
+    // Calculate by model
+    for (const [model, stats] of Object.entries(tokenStats.byModel)) {
+      const costs = this.calculateCost(model, stats.input, stats.output);
+      
+      byModel.push({
+        model,
+        inputTokens: stats.input,
+        outputTokens: stats.output,
+        inputCost: costs.inputCost,
+        outputCost: costs.outputCost,
+        totalCost: costs.totalCost,
+        requestCount: stats.count,
+      });
+      
+      totalCost += costs.totalCost;
+      totalInputCost += costs.inputCost;
+      totalOutputCost += costs.outputCost;
+    }
+
+    // Calculate by day from captures
+    const captures = llmProxy.getCaptures();
+    for (const capture of captures) {
+      const day = capture.timestamp?.slice(0, 10) || 'unknown';
+      const model = capture.request?.body?.model || 'unknown';
+      const input = capture.tokens?.input || 0;
+      const output = capture.tokens?.output || 0;
+      const costs = this.calculateCost(model, input, output);
+      
+      byDay[day] = (byDay[day] || 0) + costs.totalCost;
+    }
+
+    // Sort byModel by cost descending
+    byModel.sort((a, b) => b.totalCost - a.totalCost);
+
+    return {
+      totalCost: Math.round(totalCost * 10000) / 10000,
+      totalInputCost: Math.round(totalInputCost * 10000) / 10000,
+      totalOutputCost: Math.round(totalOutputCost * 10000) / 10000,
+      byModel,
+      byDay,
+      currency: 'USD',
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Update pricing for a model
+   */
+  setPricing(model, input, output) {
+    this.pricing[model] = { input, output };
   }
 
   /**
    * Get all pricing
-   * @returns All pricing
    */
-  getAllPricing(): AllPricing {
-    return this.pricing;
-  }
-
-  /**
-   * Calculate total cost from usage
-   * @param usages - Array of { provider, model, inputTokens, outputTokens }
-   * @returns { total, byProvider, byModel }
-   */
-  calculateTotal(usages: Usage[] = []): CostResult {
-    let total = 0;
-    const byProvider: Record<string, number> = {};
-    const byModel: Record<string, number> = {};
-    
-    for (const usage of usages) {
-      const cost = this.calculate(usage);
-      total += cost;
-      
-      const { provider = 'unknown', model = 'unknown' } = usage;
-      byProvider[provider] = (byProvider[provider] || 0) + cost;
-      byModel[`${provider}:${model}`] = (byModel[`${provider}:${model}`] || 0) + cost;
-    }
-    
-    return { total: Math.round(total * 10000) / 10000, byProvider, byModel };
+  getAllPricing() {
+    return { ...this.pricing };
   }
 }
 
 const costCalculator = new CostCalculator();
 
-export { CostCalculator, costCalculator };
+module.exports = { CostCalculator, costCalculator };

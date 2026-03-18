@@ -37,6 +37,21 @@ module.exports = function statsRoutes(app: Application, { agentStore, findConfig
     res.json(getStats());
   });
 
+  // Token Statistics from captures
+  app.get('/api/stats/tokens', (req, res) => {
+    try {
+      const { tokenAggregator } = require('../services/token-aggregator');
+      const stats = tokenAggregator.getStats();
+      res.json({
+        success: true,
+        ...stats,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   // Cost Analysis
   app.get('/api/cost', (req, res) => {
     const agents = Object.values(agentStore);

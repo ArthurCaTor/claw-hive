@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1400" height="900" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0, 10 3.5, 0 7" fill="#94A3B8"/>
+  </marker>
+  <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" style="stop-color:#4F46E5;stop-opacity:0.1"/>
+    <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:0.1"/>
+  </linearGradient>
+  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.1"/>
+  </filter>
+</defs>
+<rect width="100%" height="100%" fill="#FAFAFA"/>
+
+<!-- Title -->
+<text x="700" y="40" font-family="Arial" font-size="26" font-weight="bold" fill="#1E293B" text-anchor="middle">Claw-Hive System Architecture</text>
+<text x="700" y="65" font-family="Arial" font-size="14" fill="#64748B" text-anchor="middle">Multi-Agent LLM Gateway with Debug Proxy</text>
+
+<!-- LAYER 1: Users -->
+<rect x="50" y="100" width="1300" height="90" rx="12" fill="url(#grad1)" stroke="#E2E8F0" stroke-width="1"/>
+<text x="100" y="130" font-family="Arial" font-size="12" font-weight="bold" fill="#4F46E5">USERS (Telegram)</text>
+
+<!-- 6 User Boxes -->
+<g transform="translate(80, 140)">
+  <rect x="0" y="0" width="160" height="40" rx="6" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="80" y="15" font-family="Arial" font-size="11" fill="white" text-anchor="middle">User A</text>
+  <text x="80" y="30" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">MiniMax M2.7</text>
+</g>
+<g transform="translate(260, 140)">
+  <rect x="0" y="0" width="160" height="40" rx="6" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="80" y="15" font-family="Arial" font-size="11" fill="white" text-anchor="middle">User B</text>
+  <text x="80" y="30" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">MiniMax M2.7</text>
+</g>
+<g transform="translate(440, 140)">
+  <rect x="0" y="0" width="160" height="40" rx="6" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="80" y="15" font-family="Arial" font-size="11" fill="white" text-anchor="middle">User C</text>
+  <text x="80" y="30" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">OpenAI GPT-4o</text>
+</g>
+<g transform="translate(620, 140)">
+  <rect x="0" y="0" width="160" height="40" rx="6" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="80" y="15" font-family="Arial" font-size="11" fill="white" text-anchor="middle">User D</text>
+  <text x="80" y="30" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">OpenAI GPT-4o</text>
+</g>
+<g transform="translate(800, 140)">
+  <rect x="0" y="0" width="160" height="40" rx="6" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="80" y="15" font-family="Arial" font-size="11" fill="white" text-anchor="middle">User E</text>
+  <text x="80" y="30" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Claude Sonnet</text>
+</g>
+<g transform="translate(980, 140)">
+  <rect x="0" y="0" width="160" height="40" rx="6" fill="#4F46E5" filter="url(#shadow)"/>
+  <text x="80" y="15" font-family="Arial" font-size="11" fill="white" text-anchor="middle">User F</text>
+  <text x="80" y="30" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Claude Sonnet</text>
+</g>
+
+<!-- Arrows to Gateway -->
+<line x1="160" y1="180" x2="700" y2="250" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="340" y1="180" x2="700" y2="250" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="520" y1="180" x2="700" y2="250" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="700" y1="180" x2="700" y2="250" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="880" y1="180" x2="700" y2="250" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="1060" y1="180" x2="700" y2="250" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+
+<!-- LAYER 2: OpenClaw Gateway -->
+<rect x="550" y="250" width="300" height="50" rx="8" fill="#7C3AED" filter="url(#shadow)"/>
+<text x="700" y="280" font-family="Arial" font-size="14" font-weight="bold" fill="white" text-anchor="middle">OpenClaw Gateway</text>
+
+<!-- Arrow to Server -->
+<line x1="700" y1="300" x2="700" y2="340" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+
+<!-- LAYER 3: claw-hive Server -->
+<rect x="300" y="340" width="800" height="200" rx="12" fill="#F0FDF4" stroke="#059669" stroke-width="2"/>
+<text x="350" y="370" font-family="Arial" font-size="14" font-weight="bold" fill="#059669">claw-hive Server (:8080)</text>
+<text x="350" y="390" font-family="Arial" font-size="11" fill="#64748B">In-Process LLM Proxy (Passive Mode)</text>
+
+<!-- 6 Agents -->
+<g transform="translate(350, 410)">
+  <rect x="0" y="0" width="110" height="35" rx="4" fill="#0891B2"/>
+  <text x="55" y="15" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Agent 1</text>
+  <text x="55" y="27" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">MiniMax</text>
+</g>
+<g transform="translate(480, 410)">
+  <rect x="0" y="0" width="110" height="35" rx="4" fill="#0891B2"/>
+  <text x="55" y="15" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Agent 2</text>
+  <text x="55" y="27" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">MiniMax</text>
+</g>
+<g transform="translate(610, 410)">
+  <rect x="0" y="0" width="110" height="35" rx="4" fill="#0891B2"/>
+  <text x="55" y="15" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Agent 3</text>
+  <text x="55" y="27" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">OpenAI</text>
+</g>
+<g transform="translate(740, 410)">
+  <rect x="0" y="0" width="110" height="35" rx="4" fill="#0891B2"/>
+  <text x="55" y="15" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Agent 4</text>
+  <text x="55" y="27" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">OpenAI</text>
+</g>
+<g transform="translate(870, 410)">
+  <rect x="0" y="0" width="110" height="35" rx="4" fill="#0891B2"/>
+  <text x="55" y="15" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Agent 5</text>
+  <text x="55" y="27" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">Claude</text>
+</g>
+<g transform="translate(1000, 410)">
+  <rect x="0" y="0" width="110" height="35" rx="4" fill="#0891B2"/>
+  <text x="55" y="15" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Agent 6</text>
+  <text x="55" y="27" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">Claude</text>
+</g>
+
+<!-- Memory Management Box -->
+<rect x="350" y="460" width="720" height="65" rx="6" fill="#FEF9C3" stroke="#CA8A04" stroke-width="1"/>
+<text x="370" y="485" font-family="Arial" font-size="12" font-weight="bold" fill="#92400E">Memory Management</text>
+<text x="370" y="505" font-family="Arial" font-size="10" fill="#92400E">• conversation history (sliding window)</text>
+<text x="370" y="520" font-family="Arial" font-size="10" fill="#92400E">• context window • variables • short/long term memory</text>
+
+<!-- Arrow to LLM -->
+<line x1="700" y1="540" x2="700" y2="580" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+
+<!-- LAYER 4: LLM Providers -->
+<rect x="300" y="580" width="800" height="80" rx="12" fill="#FFF7ED" stroke="#EA580C" stroke-width="2"/>
+<text x="350" y="605" font-family="Arial" font-size="12" font-weight="bold" fill="#EA580C">LLM Providers</text>
+
+<g transform="translate(380, 615)">
+  <rect x="0" y="0" width="140" height="35" rx="6" fill="#EA580C"/>
+  <text x="70" y="15" font-family="Arial" font-size="11" fill="white" text-anchor="middle">MiniMax</text>
+  <text x="70" y="28" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">api.minimax.io</text>
+</g>
+<g transform="translate(600, 615)">
+  <rect x="0" y="0" width="140" height="35" rx="6" fill="#EA580C"/>
+  <text x="70" y="15" font-family="Arial" font-size="11" fill="white" text-anchor="middle">OpenAI</text>
+  <text x="70" y="28" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">api.openai.com</text>
+</g>
+<g transform="translate(820, 615)">
+  <rect x="0" y="0" width="140" height="35" rx="6" fill="#EA580C"/>
+  <text x="70" y="15" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Claude</text>
+  <text x="70" y="28" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">api.anthropic.com</text>
+</g>
+
+<!-- Data Flow Arrows -->
+<line x1="450" y1="595" x2="450" y2="615" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="670" y1="595" x2="670" y2="615" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="890" y1="595" x2="890" y2="615" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+
+<!-- LAYER 5: File System -->
+<rect x="300" y="700" width="800" height="100" rx="12" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+<text x="350" y="725" font-family="Arial" font-size="12" font-weight="bold" fill="#64748B">File System</text>
+
+<g transform="translate(350, 740)">
+  <text x="0" y="0" font-family="Courier" font-size="10" fill="#475569">~/.openclaw/workspace-{agent}/sessions/</text>
+  <text x="0" y="15" font-family="Courier" font-size="10" fill="#475569">~/.openclaw/workspace-{agent}/memory/</text>
+  <text x="0" y="30" font-family="Courier" font-size="10" fill="#475569">~/claw-hive/captures/call-*.json</text>
+</g>
+
+<g transform="translate(650, 740)">
+  <text x="0" y="0" font-family="Courier" font-size="10" fill="#475569">openclaw.json (config)</text>
+  <text x="0" y="15" font-family="Courier" font-size="10" fill="#475569">events.jsonl (session)</text>
+  <text x="0" y="30" font-family="Courier" font-size="10" fill="#475569">long-term.json (memory)</text>
+</g>
+
+<!-- Legend -->
+<g transform="translate(50, 850)">
+  <text x="0" y="0" font-family="Arial" font-size="12" font-weight="bold" fill="#64748B">Legend:</text>
+  <rect x="80" y="-12" width="15" height="15" rx="2" fill="#4F46E5"/>
+  <text x="100" y="0" font-family="Arial" font-size="10" fill="#64748B">Telegram Users</text>
+  <rect x="180" y="-12" width="15" height="15" rx="2" fill="#7C3AED"/>
+  <text x="200" y="0" font-family="Arial" font-size="10" fill="#64748B">Gateway</text>
+  <rect x="270" y="-12" width="15" height="15" rx="2" fill="#059669"/>
+  <text x="290" y="0" font-family="Arial" font-size="10" fill="#64748B">Server</text>
+  <rect x="350" y="-12" width="15" height="15" rx="2" fill="#0891B2"/>
+  <text x="370" y="0" font-family="Arial" font-size="10" fill="#64748B">Agents</text>
+  <rect x="420" y="-12" width="15" height="15" rx="2" fill="#EA580C"/>
+  <text x="440" y="0" font-family="Arial" font-size="10" fill="#64748B">LLM Providers</text>
+  <rect x="550" y="-12" width="15" height="15" rx="2" fill="#FEF9C3" stroke="#CA8A04"/>
+  <text x="570" y="0" font-family="Arial" font-size="10" fill="#64748B">Memory</text>
+</g>
+
+<!-- Version -->
+<text x="1350" y="885" font-family="Arial" font-size="9" fill="#94A3B8" text-anchor="end">v1.0 • 2026-03-18</text>
+</svg>

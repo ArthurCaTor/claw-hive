@@ -702,6 +702,10 @@ app.get('/api/sessions/search', (req, res) => {
 
 // Debug Proxy Routes (must be BEFORE SPA fallback)
 const debugProxyRoutes = require('./routes/debug-proxy-routes');
+const costRoutes = require('./routes/cost-routes');
+const llmTrackerRoutes = require('./routes/llm-tracker-routes');
+const alertRoutes = require('./routes/alert-routes');
+const exportRoutes = require('./routes/export-routes');
 const healthRoutes = require('./routes/health-routes');
 const agentRoutes = require('./routes/agent-routes');
 const modelRoutes = require('./routes/model-routes');
@@ -716,6 +720,10 @@ const statsRoutes = require('./routes/stats-routes');
 const filesRoutes = require('./routes/files-routes');
 const openclawRoutes = require('./routes/openclaw-routes');
 app.use(debugProxyRoutes);
+app.use(costRoutes);
+app.use(llmTrackerRoutes);
+app.use(alertRoutes);
+app.use(exportRoutes);
 healthRoutes(app);
 agentRoutes(app, { agentStore, findConfigPath });
 modelRoutes(app, { findConfigPath });
