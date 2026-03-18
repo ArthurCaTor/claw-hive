@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="1400" height="1150" xmlns="http://www.w3.org/2000/svg">
+<svg width="1200" height="700" xmlns="http://www.w3.org/2000/svg">
 <defs>
   <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-    <polygon points="0 0, 10 3.5, 0 7" fill="#94A3B8"/>
-  </marker>
-  <marker id="dashed-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
     <polygon points="0 0, 10 3.5, 0 7" fill="#94A3B8"/>
   </marker>
   <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -14,186 +11,135 @@
 <rect width="100%" height="100%" fill="#FAFAFA"/>
 
 <!-- Title -->
-<text x="700" y="35" font-family="Arial" font-size="28" font-weight="bold" fill="#1E293B" text-anchor="middle">Claw-Hive System Architecture</text>
-<text x="700" y="60" font-family="Arial" font-size="14" fill="#64748B" text-anchor="middle">Multi-Agent LLM Gateway with Real-Time Monitoring</text>
+<text x="600" y="40" font-family="Arial" font-size="28" font-weight="bold" fill="#1E293B" text-anchor="middle">Claw-Hive System Overview</text>
+<text x="600" y="65" font-family="Arial" font-size="14" fill="#64748B" text-anchor="middle">Multi-Agent LLM Gateway with Monitoring</text>
 
-<!-- ============ CORE SYSTEM (Left Side) ============ -->
-<rect x="50" y="90" width="700" height="700" rx="12" fill="#F0FDF4" stroke="#059669" stroke-width="2"/>
-<text x="70" y="120" font-family="Arial" font-size="16" font-weight="bold" fill="#059669">CORE SYSTEM (Primary)</text>
+<!-- ============ CORE SYSTEM BOX ============ -->
+<rect x="50" y="90" width="520" height="520" rx="12" fill="#F0FDF4" stroke="#059669" stroke-width="3"/>
+<text x="70" y="120" font-family="Arial" font-size="18" font-weight="bold" fill="#059669">CORE SYSTEM</text>
+<text x="70" y="140" font-family="Arial" font-size="11" fill="#64748B">claw-hive Server (:8080)</text>
 
-<!-- Users Layer -->
-<rect x="80" y="145" width="640" height="70" rx="10" fill="#EEF2FF" stroke="#4F46E5" stroke-width="2"/>
-<text x="100" y="170" font-family="Arial" font-size="11" font-weight="bold" fill="#4F46E5">USERS</text>
-<text x="100" y="190" font-family="Arial" font-size="9" fill="#64748B">Telegram + REST API + WebSocket</text>
+<!-- Core Components -->
+<rect x="80" y="160" width="130" height="60" rx="8" fill="#059669"/>
+<text x="145" y="190" font-family="Arial" font-size="11" fill="white" text-anchor="middle">LLM Proxy</text>
+<text x="145" y="208" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Passive Mode</text>
 
-<!-- Arrow down -->
-<line x1="400" y1="215" x2="400" y2="250" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="225" y="160" width="130" height="60" rx="8" fill="#0891B2"/>
+<text x="290" y="190" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Token Stats</text>
+<text x="290" y="208" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Aggregator</text>
 
-<!-- Gateway Layer -->
-<rect x="250" y="250" width="300" height="50" rx="10" fill="#7C3AED" filter="url(#shadow)"/>
-<text x="400" y="280" font-family="Arial" font-size="14" font-weight="bold" fill="white" text-anchor="middle">OpenClaw Gateway</text>
+<rect x="370" y="160" width="130" height="60" rx="8" fill="#DC2626"/>
+<text x="435" y="190" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Cost Calculator</text>
+<text x="435" y="208" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Tracking</text>
 
-<!-- Arrow down -->
-<line x1="400" y1="300" x2="400" y2="330" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="80" y="235" width="130" height="60" rx="8" fill="#7C3AED"/>
+<text x="145" y="265" font-family="Arial" font-size="11" fill="white" text-anchor="middle">LLM Tracker</text>
+<text x="145" y="283" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Switches</text>
 
-<!-- Server Layer -->
-<rect x="80" y="330" width="640" height="200" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
-<text x="100" y="355" font-family="Arial" font-size="12" font-weight="bold" fill="#475569">claw-hive Server (:8080)</text>
+<rect x="225" y="235" width="130" height="60" rx="8" fill="#EA580C"/>
+<text x="290" y="265" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Alert Service</text>
+<text x="290" y="283" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">5 Rules</text>
 
-<!-- Services Grid -->
-<rect x="100" y="375" width="140" height="70" rx="8" fill="#059669"/>
-<text x="170" y="405" font-family="Arial" font-size="10" fill="white" text-anchor="middle">LLM Proxy</text>
-<text x="170" y="420" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">Passive Mode</text>
+<rect x="370" y="235" width="130" height="60" rx="8" fill="#475569"/>
+<text x="435" y="265" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Prometheus</text>
+<text x="435" y="283" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Metrics</text>
 
-<rect x="250" y="375" width="140" height="70" rx="8" fill="#0891B2"/>
-<text x="320" y="405" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Token Aggregator</text>
-<text x="320" y="420" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">Real-time</text>
+<rect x="80" y="310" width="130" height="60" rx="8" fill="#0891B2"/>
+<text x="145" y="340" font-family="Arial" font-size="11" fill="white" text-anchor="middle">WebSocket</text>
+<text x="145" y="358" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Real-time</text>
 
-<rect x="400" y="375" width="140" height="70" rx="8" fill="#DC2626"/>
-<text x="470" y="405" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Cost Calculator</text>
-<text x="470" y="420" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">Usage</text>
+<rect x="225" y="310" width="130" height="60" rx="8" fill="#06B6D4"/>
+<text x="290" y="340" font-family="Arial" font-size="11" fill="white" text-anchor="middle">JSONL Files</text>
+<text x="290" y="358" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">Captures</text>
 
-<rect x="550" y="375" width="140" height="70" rx="8" fill="#7C3AED"/>
-<text x="620" y="405" font-family="Arial" font-size="10" fill="white" text-anchor="middle">LLM Tracker</text>
-<text x="620" y="420" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">Switches</text>
+<rect x="370" y="310" width="130" height="60" rx="8" fill="#8B5CF6"/>
+<text x="435" y="340" font-family="Arial" font-size="11" fill="white" text-anchor="middle">Dashboard</text>
+<text x="435" y="358" font-family="Arial" font-size="9" fill="#DDD" text-anchor="middle">React UI</text>
 
-<rect x="100" y="455" width="140" height="70" rx="8" fill="#EA580C"/>
-<text x="170" y="485" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Alert Service</text>
-<text x="170" y="500" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">5 Rules</text>
-
-<rect x="250" y="455" width="140" height="70" rx="8" fill="#475569"/>
-<text x="320" y="485" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Metrics</text>
-<text x="320" y="500" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">Prometheus</text>
-
-<rect x="400" y="455" width="140" height="70" rx="8" fill="#059669"/>
-<text x="470" y="485" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Optimizer</text>
-<text x="470" y="500" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">Active Mode</text>
-
-<rect x="550" y="455" width="140" height="70" rx="8" fill="#0891B2"/>
-<text x="620" y="485" font-family="Arial" font-size="10" fill="white" text-anchor="middle">WebSocket</text>
-<text x="620" y="500" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">Real-time</text>
-
-<!-- JSONL Files (write operation, independent) -->
-<rect x="100" y="540" width="140" height="50" rx="8" fill="#06B6D4"/>
-<text x="170" y="565" font-family="Arial" font-size="10" fill="white" text-anchor="middle">JSONL Files</text>
-<text x="170" y="580" font-family="Arial" font-size="8" fill="#A5F3FC" text-anchor="middle">Captures</text>
-
-<!-- Arrow from Server to Files -->
-<line x1="170" y1="505" x2="170" y2="540" stroke="#94A3B8" stroke-width="2" stroke-dasharray="5,5"/>
+<!-- Users -->
+<rect x="80" y="390" width="420" height="50" rx="8" fill="#EEF2FF" stroke="#4F46E5" stroke-width="2"/>
+<text x="290" y="420" font-family="Arial" font-size="12" fill="#4F46E5" text-anchor="middle">Users: Telegram | REST API | WebSocket | Dashboard | Prometheus | Grafana</text>
 
 <!-- LLM Providers -->
-<rect x="300" y="540" width="390" height="50" rx="10" fill="#FFF7ED" stroke="#EA580C" stroke-width="2"/>
-<text x="320" y="565" font-family="Arial" font-size="11" font-weight="bold" fill="#EA580C">LLM Providers</text>
-<text x="320" y="580" font-family="Arial" font-size="9" fill="#64748B">MiniMax · OpenAI · Anthropic</text>
-
-<!-- Arrow from Server to LLM -->
-<line x1="400" y1="530" x2="400" y2="540" stroke="#94A3B8" stroke-width="2"/>
-
-<!-- External Integrations -->
-<rect x="80" y="610" width="640" height="70" rx="10" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
-<text x="100" y="635" font-family="Arial" font-size="10" font-weight="bold" fill="#475569">External</text>
-<rect x="100" y="645" width="100" height="25" rx="4" fill="#F97316"/>
-<text x="150" y="662" font-family="Arial" font-size="9" fill="white" text-anchor="middle">Prometheus</text>
-<rect x="220" y="645" width="100" height="25" rx="4" fill="#EAB308"/>
-<text x="270" y="662" font-family="Arial" font-size="9" fill="white" text-anchor="middle">Grafana</text>
-<rect x="340" y="645" width="100" height="25" rx="4" fill="#8B5CF6"/>
-<text x="390" y="662" font-family="Arial" font-size="9" fill="white" text-anchor="middle">Dashboard</text>
-<rect x="460" y="645" width="100" height="25" rx="4" fill="#64748B"/>
-<text x="510" y="662" font-family="Arial" font-size="9" fill="white" text-anchor="middle">Telegram</text>
-<rect x="580" y="645" width="120" height="25" rx="4" fill="#06B6D4"/>
-<text x="640" y="662" font-family="Arial" font-size="9" fill="white" text-anchor="middle">JSONL Files</text>
-
-<!-- API Endpoints (below core) -->
-<rect x="80" y="695" width="640" height="50" rx="10" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
-<text x="100" y="720" font-family="Arial" font-size="9" fill="#64748B">API: /api/health | /api/debug-proxy/* | /api/stats/* | /api/cost/* | /api/llm-tracker/* | /api/alerts/* | /metrics</text>
-
-<!-- ============ SIDECAR / AUXILIARY (Right Side) ============ -->
-<rect x="780" y="90" width="570" height="700" rx="12" fill="#FFF7ED" stroke="#EA580C" stroke-width="2" stroke-dasharray="10,5"/>
-<text x="800" y="120" font-family="Arial" font-size="16" font-weight="bold" fill="#EA580C">SIDECAR / AUXILIARY</text>
-<text x="800" y="140" font-family="Arial" font-size="10" fill="#64748B">Independent processes - Core system does NOT depend on these</text>
-
-<!-- Sync Worker Box -->
-<rect x="810" y="165" width="520" height="200" rx="10" fill="#FFFFFF" stroke="#EA580C" stroke-width="2"/>
-<text x="830" y="195" font-family="Arial" font-size="14" font-weight="bold" fill="#EA580C">Sync Worker (Background)</text>
-<text x="830" y="215" font-family="Arial" font-size="10" fill="#64748B">Monitors JSONL files and syncs to PostgreSQL</text>
-
-<!-- If it fails -->
-<rect x="830" y="235" width="480" height="40" rx="6" fill="#FEE2E2"/>
-<text x="850" y="258" font-family="Arial" font-size="10" fill="#DC2626">⚠️ If this fails: Core system continues normally</text>
-
-<!-- Sync Worker Components -->
-<rect x="830" y="290" width="140" height="60" rx="8" fill="#EA580C"/>
-<text x="900" y="318" font-family="Arial" font-size="10" fill="white" text-anchor="middle">File Watcher</text>
-<text x="900" y="335" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">chokidar</text>
-
-<rect x="990" y="290" width="140" height="60" rx="8" fill="#EA580C"/>
-<text x="1060" y="318" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Batch Buffer</text>
-<text x="1060" y="335" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">100 records</text>
-
-<rect x="830" y="365" width="140" height="60" rx="8" fill="#EA580C"/>
-<text x="900" y="393" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Checkpoint</text>
-<text x="900" y="410" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">Resume support</text>
-
-<rect x="990" y="365" width="140" height="60" rx="8" fill="#EA580C"/>
-<text x="1060" y="393" font-family="Arial" font-size="10" fill="white" text-anchor="middle">PG Insert</text>
-<text x="1060" y="410" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">PostgreSQL</text>
-
-<!-- Arrow from JSONL Files to Sync Worker -->
-<line x1="640" y1="565" x2="810" y2="265" stroke="#94A3B8" stroke-width="2" stroke-dasharray="5,5" marker-end="url(#arrow)"/>
-<text x="725" y="400" font-family="Arial" font-size="8" fill="#64748B" transform="rotate(-45, 725, 400)">file changes</text>
-
-<!-- Management via fix-proxy.sh -->
-<rect x="810" y="385" width="520" height="100" rx="10" fill="#FFFFFF" stroke="#475569" stroke-width="1"/>
-<text x="830" y="410" font-family="Arial" font-size="12" font-weight="bold" fill="#475569">Management (fix-proxy.sh)</text>
-<text x="830" y="435" font-family="Courier" font-size="10" fill="#64748B">./fix-proxy.sh sync-start   # Start worker</text>
-<text x="830" y="455" font-family="Courier" font-size="10" fill="#64748B">./fix-proxy.sh sync-stop    # Stop worker</text>
-<text x="830" y="475" font-family="Courier" font-size="10" fill="#64748B">./fix-proxy.sh sync-status  # Check status</text>
-
-<!-- PostgreSQL Database (at bottom of sidecar) -->
-<rect x="810" y="510" width="520" height="150" rx="10" fill="#F1F5F9" stroke="#3B82F6" stroke-width="2"/>
-<text x="830" y="540" font-family="Arial" font-size="14" font-weight="bold" fill="#3B82F6">PostgreSQL (openclaw_memory.claw_hive)</text>
-<text x="830" y="560" font-family="Arial" font-size="10" fill="#64748B">Optional long-term storage for analytics</text>
-
-<rect x="840" y="580" width="180" height="35" rx="6" fill="#3B82F6"/>
-<text x="930" y="603" font-family="Arial" font-size="10" fill="white" text-anchor="middle">captures (82+ rows)</text>
-
-<rect x="1040" y="580" width="180" height="35" rx="6" fill="#3B82F6"/>
-<text x="1130" y="603" font-family="Arial" font-size="10" fill="white" text-anchor="middle">llm_switches</text>
-
-<rect x="840" y="625" width="380" height="25" rx="4" fill="#DBEAFE"/>
-<text x="1030" y="642" font-family="Arial" font-size="9" fill="#3B82F6" text-anchor="middle">If DB unavailable: Worker retries, Core system unaffected</text>
-
-<!-- Arrow from Sync Worker to PostgreSQL -->
-<line x1="1060" y1="425" x2="1060" y2="580" stroke="#94A3B8" stroke-width="2" stroke-dasharray="5,5"/>
-
-<!-- Key Points Box -->
-<rect x="810" y="680" width="520" height="100" rx="10" fill="#F0FDF4" stroke="#059669" stroke-width="2"/>
-<text x="830" y="705" font-family="Arial" font-size="12" font-weight="bold" fill="#059669">✓ Design Principles</text>
-<text x="830" y="725" font-family="Arial" font-size="10" fill="#64748B">• Sync Worker is 100% independent from core system</text>
-<text x="830" y="745" font-family="Arial" font-size="10" fill="#64748B">• Core writes JSONL → If worker fails, core continues normally</text>
-<text x="830" y="765" font-family="Arial" font-size="10" fill="#64748B">• Worker failure only affects: historical data analytics</text>
-
-<!-- Legend -->
-<rect x="50" y="810" width="1300" height="40" rx="8" fill="#1E293B"/>
-<text x="80" y="833" font-family="Arial" font-size="9" fill="#94A3B8">Legend:</text>
-<rect x="150" y="823" width="12" height="12" rx="2" fill="#059669"/>
-<text x="167" y="833" font-family="Arial" font-size="8" fill="white">Core System</text>
-<rect x="240" y="823" width="12" height="12" rx="2" fill="#EA580C"/>
-<text x="257" y="833" font-family="Arial" font-size="8" fill="white">Sidecar/Auxiliary</text>
-<rect x="350" y="823" width="12" height="12" rx="2" fill="#3B82F6"/>
-<text x="367" y="833" font-family="Arial" font-size="8" fill="white">Database</text>
-<rect x="440" y="823" width="12" height="12" rx="2" fill="#06B6D4"/>
-<text x="457" y="833" font-family="Arial" font-size="8" fill="white">JSONL Files</text>
-<line x1="540" y1="829" x2="560" y2="829" stroke="#94A3B8" stroke-width="2" stroke-dasharray="5,5"/>
-<text x="567" y="833" font-family="Arial" font-size="8" fill="white">Async/Optional</text>
-
-<text x="1200" y="833" font-family="Arial" font-size="8" fill="#94A3B8">v2.2 | 2026-03-18</text>
+<rect x="80" y="455" width="420" height="50" rx="8" fill="#FFF7ED" stroke="#EA580C" stroke-width="2"/>
+<text x="290" y="485" font-family="Arial" font-size="12" fill="#EA580C" text-anchor="middle">LLM Providers: MiniMax | OpenAI | Anthropic</text>
 
 <!-- Feature Tags -->
-<text x="1350" y="30" font-family="Arial" font-size="9" fill="#059669" text-anchor="end">✅ Core: Phase 1-3</text>
-<text x="1350" y="42" font-family="Arial" font-size="9" fill="#059669" text-anchor="end">✅ Core: TypeScript 100%</text>
-<text x="1350" y="54" font-family="Arial" font-size="9" fill="#059669" text-anchor="end">✅ Core: WebSocket</text>
-<text x="1350" y="66" font-family="Arial" font-size="9" fill="#EA580C" text-anchor="end">⚡ Sidecar: Sync Worker</text>
-<text x="1350" y="78" font-family="Arial" font-size="9" fill="#3B82F6" text-anchor="end">💾 Optional: PostgreSQL</text>
+<text x="540" y="520" font-family="Arial" font-size="10" fill="#059669">✅ TypeScript 100%</text>
+<text x="540" y="535" font-family="Arial" font-size="10" fill="#059669">✅ WebSocket Real-time</text>
+<text x="540" y="550" font-family="Arial" font-size="10" fill="#059669">✅ CI/CD Pipeline</text>
+<text x="540" y="565" font-family="Arial" font-size="10" fill="#059669">✅ 21+ API Endpoints</text>
+<text x="540" y="580" font-family="Arial" font-size="10" fill="#059669">✅ Unit + Scale Tests</text>
+
+<!-- Arrow to detail -->
+<rect x="540" y="100" width="130" height="35" rx="17" fill="#059669"/>
+<text x="605" y="122" font-family="Arial" font-size="10" fill="white" text-anchor="middle">View Detail →</text>
+<text x="605" y="580" font-family="Courier" font-size="9" fill="#64748B" text-anchor="middle">SYSTEM_ARCHITECTURE_CORE.svg</text>
+
+<!-- ============ SIDECAR BOX ============ -->
+<rect x="620" y="90" width="530" height="520" rx="12" fill="#FFF7ED" stroke="#EA580C" stroke-width="3" stroke-dasharray="8,4"/>
+<text x="640" y="120" font-family="Arial" font-size="18" font-weight="bold" fill="#EA580C">SIDECAR / AUXILIARY</text>
+<text x="640" y="140" font-family="Arial" font-size="11" fill="#64748B">100% Independent - Core does NOT depend on these</text>
+
+<!-- Warning Badge -->
+<rect x="900" y="115" width="220" height="30" rx="15" fill="#FEE2E2"/>
+<text x="1010" y="135" font-family="Arial" font-size="10" fill="#DC2626" text-anchor="middle">⚠️ If fails: Core continues</text>
+
+<!-- Sync Worker Box -->
+<rect x="660" y="170" width="450" height="180" rx="10" fill="#FFFFFF" stroke="#EA580C" stroke-width="2"/>
+<text x="680" y="200" font-family="Arial" font-size="14" font-weight="bold" fill="#EA580C">Sync Worker</text>
+<text x="680" y="220" font-family="Arial" font-size="10" fill="#64748B">Background process: JSONL → PostgreSQL</text>
+
+<rect x="680" y="240" width="100" height="50" rx="6" fill="#EA580C"/>
+<text x="730" y="265" font-family="Arial" font-size="10" fill="white" text-anchor="middle">File Watcher</text>
+<text x="730" y="282" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">chokidar</text>
+
+<rect x="795" y="240" width="100" height="50" rx="6" fill="#EA580C"/>
+<text x="845" y="265" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Batch Buffer</text>
+<text x="845" y="282" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">100 records</text>
+
+<rect x="910" y="240" width="100" height="50" rx="6" fill="#EA580C"/>
+<text x="960" y="265" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Checkpoint</text>
+<text x="960" y="282" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">Resume</text>
+
+<rect x="680" y="305" width="100" height="50" rx="6" fill="#EA580C"/>
+<text x="730" y="330" font-family="Arial" font-size="10" fill="white" text-anchor="middle">PG Client</text>
+<text x="730" y="347" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">node-postgres</text>
+
+<rect x="795" y="305" width="215" height="50" rx="6" fill="#EA580C"/>
+<text x="902" y="330" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Error Handler (Retry)</text>
+<text x="902" y="347" font-family="Arial" font-size="8" fill="#DDD" text-anchor="middle">Graceful degradation</text>
+
+<!-- PostgreSQL Box -->
+<rect x="660" y="365" width="450" height="80" rx="10" fill="#F1F5F9" stroke="#3B82F6" stroke-width="2"/>
+<text x="680" y="395" font-family="Arial" font-size="14" font-weight="bold" fill="#3B82F6">PostgreSQL (Optional)</text>
+<text x="680" y="415" font-family="Arial" font-size="10" fill="#64748B">openclaw_memory.claw_hive | captures | llm_switches</text>
+<text x="680" y="435" font-family="Arial" font-size="9" fill="#94A3B8">For analytics only - Core system works without this</text>
+
+<!-- Management -->
+<rect x="660" y="460" width="450" height="130" rx="10" fill="#F0FDF4" stroke="#059669" stroke-width="1"/>
+<text x="680" y="490" font-family="Arial" font-size="13" font-weight="bold" fill="#059669">Management (fix-proxy.sh)</text>
+<text x="680" y="515" font-family="Courier" font-size="10" fill="#475569">./fix-proxy.sh sync-start   # Start</text>
+<text x="680" y="535" font-family="Courier" font-size="10" fill="#475569">./fix-proxy.sh sync-stop    # Stop</text>
+<text x="680" y="555" font-family="Courier" font-size="10" fill="#475569">./fix-proxy.sh sync-status  # Status</text>
+<text x="680" y="575" font-family="Courier" font-size="10" fill="#475569">Logs: /tmp/sync-worker.log</text>
+
+<!-- Arrow from Core to Sidecar -->
+<line x1="570" y1="300" x2="660" y2="260" stroke="#94A3B8" stroke-width="2" stroke-dasharray="5,5" marker-end="url(#arrow)"/>
+<text x="615" y="260" font-family="Arial" font-size="8" fill="#64748B" transform="rotate(-25, 615, 260)">async</text>
+
+<!-- Legend -->
+<rect x="50" y="630" width="1100" height="50" rx="8" fill="#1E293B"/>
+<text x="70" y="655" font-family="Arial" font-size="10" fill="#94A3B8">Legend:</text>
+<rect x="140" y="646" width="15" height="15" rx="3" fill="#059669"/>
+<text x="162" y="658" font-family="Arial" font-size="9" fill="white">Core System</text>
+<rect x="260" y="646" width="15" height="15" rx="3" fill="#EA580C"/>
+<text x="282" y="658" font-family="Arial" font-size="9" fill="white">Sidecar</text>
+<rect x="370" y="646" width="15" height="15" rx="3" fill="#3B82F6"/>
+<text x="392" y="658" font-family="Arial" font-size="9" fill="white">PostgreSQL</text>
+<line x1="490" y1="654" x2="520" y2="654" stroke="#94A3B8" stroke-width="2" stroke-dasharray="5,5"/>
+<text x="530" y="658" font-family="Arial" font-size="9" fill="white">Async/Optional</text>
+
+<text x="1100" y="670" font-family="Arial" font-size="9" fill="#94A3B8" text-anchor="end">v2.2 | 2026-03-18</text>
 
 </svg>
