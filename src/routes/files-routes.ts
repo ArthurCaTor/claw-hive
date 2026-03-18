@@ -17,7 +17,7 @@ function getWorkspacePaths() {
 }
 
 // Helper function to validate and resolve file path within workspace
-function resolveWorkspacePath(workspace, reqPath) {
+function resolveWorkspacePath(workspace: string, reqPath: string | undefined): { error?: string; basePath?: string; targetPath?: string } {
   const workspacePaths = getWorkspacePaths();
   const basePath = workspacePaths[workspace] || workspacePaths.coder;
   const targetPath = reqPath ? path.join(basePath, reqPath) : basePath;
@@ -33,8 +33,8 @@ function resolveWorkspacePath(workspace, reqPath) {
 module.exports = function filesRoutes(app: Application): void {
   // List files in workspace
   app.get('/api/files', (req, res) => {
-    const reqPath = req.query.path;
-    const workspace = req.query.workspace;
+    const reqPath = req.query.path as string | undefined;
+    const workspace = req.query.workspace as string || 'coder';
     
     // Security: prevent path traversal
     if (reqPath && (String(reqPath).includes('..') || String(reqPath).includes('~'))) {
@@ -75,7 +75,7 @@ module.exports = function filesRoutes(app: Application): void {
 
   // Get file content
   app.get('/api/files/content', (req, res) => {
-    const { workspace, path: filePath } = req.query;
+    const { workspace, path: filePath } = { workspace: req.query.workspace as string, path: req.query.path as string };
     
     // Security: prevent path traversal
     if (filePath && (String(filePath).includes('..') || String(filePath).includes('~'))) {

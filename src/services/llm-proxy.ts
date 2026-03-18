@@ -93,14 +93,34 @@ class LLMProxy extends EventEmitter {
         const contentType = forwardRes.headers.get('content-type') || '';
         capturedRequest.response = { status: forwardRes.status, headers: Object.fromEntries(forwardRes.headers.entries()) };
         if (contentType.includes('text/event-stream')) {
-          const text = await forwardRes.text();
-          capturedRequest.response.body = text;
-          capturedRequest.usage = extractUsageFromSSE(text);
-          capturedRequest.text = extractTextFromSSE(text);
+          // 1. Forward headers first
           res.setHeader('Content-Type', 'text/event-stream');
           res.setHeader('Cache-Control', 'no-cache');
           res.setHeader('Connection', 'keep-alive');
-          res.send(text);
+
+          // 2. Pipe chunks while collecting
+          const chunks: string[] = [];
+          const reader = forwardRes.body.getReader();
+          const decoder = new TextDecoder();
+
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              res.write(value); // Forward in real-time
+              chunks.push(decoder.decode(value, { stream: true }));
+            }
+          } catch (pipeErr) {
+            console.error(`[LLMProxy] Stream pipe error: ${pipeErr.message}`);
+          }
+
+          res.end();
+
+          // 3. Record after response
+          const fullText = chunks.join('');
+          capturedRequest.response.body = { _streaming: true, _raw_length: fullText.length };
+          capturedRequest.usage = extractUsageFromSSE(fullText);
+          capturedRequest.text = extractTextFromSSE(fullText);
         } else {
           const body = await forwardRes.text();
           capturedRequest.response.body = body;
