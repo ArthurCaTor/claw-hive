@@ -21,7 +21,7 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 
 // Configuration
 const CONFIG = {
-  databaseUrl: process.env.DATABASE_URL || 'postgresql://localhost:5432/claw_hive',
+  databaseUrl: process.env.DATABASE_URL || 'postgresql://localhost:5432/openclaw_memory',
   batchSize: 100,
   flushIntervalMs: 5000,
   checkpointFile: path.join(ROOT_DIR, '.sync-checkpoint.json'),
