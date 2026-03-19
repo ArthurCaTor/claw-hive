@@ -233,6 +233,26 @@ class LLMTracker extends EventEmitter {
   /**
    * Clear all tracking data
    */
+  getProviderFromModel(model) {
+    // Extract provider from model string
+    // e.g., "minimax-portal/MiniMax-M2.1" → "minimax"
+    // e.g., "anthropic/claude-sonnet-4" → "anthropic"
+    // e.g., "openai/gpt-4o" → "openai"
+    
+    if (!model) return 'unknown';
+    
+    if (model.includes('/')) {
+      return model.split('/')[0];
+    }
+    
+    // Handle bare model names
+    if (model.startsWith('gpt-')) return 'openai';
+    if (model.startsWith('claude-')) return 'anthropic';
+    if (model.startsWith('MiniMax')) return 'minimax';
+    
+    return 'unknown';
+  }
+  
   clear() {
     this.agentStates.clear();
     this.providerStats.clear();

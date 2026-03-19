@@ -60,6 +60,15 @@ class SessionWatcher {
     if (this.activeWatcher) {
       try { this.activeWatcher.close(); } catch {}
     }
+    
+    // Skip if filepath is empty or undefined
+    if (!filepath) {
+      this.watchedFile = '';
+      this.watchedAgent = '';
+      this.watchedSessionId = '';
+      return;
+    }
+    
     this.watchedFile = filepath;
     this.watchedAgent = agent;
     this.watchedSessionId = sessionId;
