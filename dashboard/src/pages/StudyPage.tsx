@@ -1,7 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import mermaid from 'mermaid';
 
-// Initialize mermaid
 mermaid.initialize({
   startOnLoad: false,
   theme: 'dark',
@@ -93,32 +92,43 @@ export function StudyPage() {
   useEffect(() => {
     if (!diagram || !svgRef.current) return;
 
-    const renderDiagram = async () => {
+    const render = async () => {
       try {
         const id = `mermaid-${Date.now()}`;
         svgRef.current!.innerHTML = `<div class="mermaid">${diagram}</div>`;
         const { svg } = await mermaid.render(id, diagram);
         svgRef.current!.innerHTML = svg;
+        autoFit();
       } catch (err) {
         console.error('Mermaid render error:', err);
         if (svgRef.current) {
-          svgRef.current.innerHTML = `<pre style="color: red; text-align: left;">Error: ${err}</pre>`;
+          svgRef.current.innerHTML = `<pre style="color: red; text-align: left; overflow: auto;">Error: ${err}</pre>`;
         }
       }
     };
 
-    renderDiagram();
+    render();
   }, [diagram]);
 
-  // Zoom controls
+  const autoFit = useCallback(() => {
+    if (!svgRef.current || !containerRef.current) return;
+    const svg = svgRef.current.querySelector('svg');
+    if (!svg) return;
+    const containerWidth = containerRef.current.clientWidth - 48;
+    const svgWidth = svg.clientWidth || svgRef.current.clientWidth;
+    if (svgWidth > containerWidth) {
+      const newScale = (containerWidth / svgWidth) * 0.95;
+      setScale(Math.max(0.3, newScale));
+    }
+  }, []);
+
   const handleZoomIn = () => setScale(s => Math.min(s + 0.25, 3));
-  const handleZoomOut = () => setScale(s => Math.max(s - 0.25, 0.25));
+  const handleZoomOut = () => setScale(s => Math.max(s - 0.25, 0.3));
   const handleReset = () => {
     setScale(1);
     setPosition({ x: 0, y: 0 });
   };
 
-  // Pan controls
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) {
       setIsDragging(true);
@@ -128,10 +138,7 @@ export function StudyPage() {
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isDragging) {
-      setPosition({
-        x: e.clientX - startPos.x,
-        y: e.clientY - startPos.y,
-      });
+      setPosition({ x: e.clientX - startPos.x, y: e.clientY - startPos.y });
     }
   };
 
@@ -142,21 +149,20 @@ export function StudyPage() {
     if (e.deltaY < 0) {
       setScale(s => Math.min(s + 0.1, 3));
     } else {
-      setScale(s => Math.max(s - 0.1, 0.25));
+      setScale(s => Math.max(s - 0.1, 0.3));
     }
   };
+
+  useEffect(() => {
+    const handleResize = () => autoFit();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [autoFit]);
 
   const renderTree = () => {
     return Object.entries(tree).map(([category, items]) => (
       <div key={category} style={{ marginBottom: '20px' }}>
-        <div style={{ 
-          color: '#94a3b8', 
-          fontSize: '11px', 
-          fontWeight: 'bold',
-          marginBottom: '8px',
-          textTransform: 'uppercase',
-          fontFamily: 'monospace'
-        }}>
+        <div style={{ color: '#94a3b8', fontSize: '11px', fontWeight: 'bold', marginBottom: '8px', textTransform: 'uppercase', fontFamily: 'monospace' }}>
           {category}
         </div>
         {(items as StudyItem[]).map(item => (
@@ -185,172 +191,74 @@ export function StudyPage() {
   };
 
   return (
-    <div style={{ display: 'flex', gap: '24px', height: 'calc(100vh - 120px)' }}>
-      {/* Left Sidebar */}
-      <div style={{ 
-        width: '280px', 
-        background: '#0f172a', 
-        borderRadius: '12px', 
-        padding: '16px',
-        overflow: 'auto'
-      }}>
-        <h2 style={{ color: '#fff', margin: '0 0 16px 0', fontSize: '18px' }}>
-          📚 Study
-        </h2>
-        {renderTree()}
+    <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', background: '#0d1117' }}>
+      <div style={{ width: '260px', background: '#0f172a', borderRight: '1px solid #1e293b', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '20px', borderBottom: '1px solid #1e293b' }}>
+          <h2 style={{ color: '#fff', margin: 0, fontSize: '20px' }}>📚 OpenClaw Study</h2>
+        </div>
+        <div style={{ flex: 1, overflow: 'auto', padding: '16px' }}>
+          {renderTree()}
+        </div>
       </div>
-
-      {/* Main Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {selectedItem ? (
-          <>
-            {/* Header */}
-            <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h2 style={{ color: '#fff', margin: '0 0 8px 0', fontSize: '24px' }}>
-                  {selectedItem.title}
-                </h2>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                  <span style={{ 
-                    background: '#1e293b', 
-                    padding: '4px 8px', 
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    color: '#94a3b8'
-                  }}>
-                    Layer {selectedItem.layer}
-                  </span>
-                  {selectedItem.lastUpdated && (
-                    <span style={{ color: '#64748b', fontSize: '12px' }}>
-                      Updated: {new Date(selectedItem.lastUpdated).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Zoom Controls */}
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button
-                  onClick={handleZoomOut}
-                  style={{
-                    padding: '8px 12px',
-                    background: '#1e293b',
-                    border: '1px solid #334155',
-                    borderRadius: '6px',
-                    color: '#fff',
-                    cursor: 'pointer',
-                    fontSize: '18px'
-                  }}
-                >
-                  −
-                </button>
-                <span style={{ color: '#fff', minWidth: '50px', textAlign: 'center' }}>
-                  {Math.round(scale * 100)}%
-                </span>
-                <button
-                  onClick={handleZoomIn}
-                  style={{
-                    padding: '8px 12px',
-                    background: '#1e293b',
-                    border: '1px solid #334155',
-                    borderRadius: '6px',
-                    color: '#fff',
-                    cursor: 'pointer',
-                    fontSize: '18px'
-                  }}
-                >
-                  +
-                </button>
-                <button
-                  onClick={handleReset}
-                  style={{
-                    padding: '8px 12px',
-                    background: '#4F46E5',
-                    border: 'none',
-                    borderRadius: '6px',
-                    color: '#fff',
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  Reset
-                </button>
+        {selectedItem && (
+          <div style={{ padding: '16px 24px', background: '#0f172a', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+            <div>
+              <h2 style={{ color: '#fff', margin: 0, fontSize: '20px' }}>{selectedItem.title}</h2>
+              <div style={{ color: '#64748b', fontSize: '12px', marginTop: '4px' }}>
+                Layer {selectedItem.layer}
+                {selectedItem.lastUpdated && <> · Updated {new Date(selectedItem.lastUpdated).toLocaleDateString()}</>}
               </div>
             </div>
-
-            {/* Diagram Container */}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button onClick={handleZoomOut} style={{ padding: '8px 12px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontSize: '16px' }}>−</button>
+              <span style={{ color: '#fff', minWidth: '50px', textAlign: 'center' }}>{Math.round(scale * 100)}%</span>
+              <button onClick={handleZoomIn} style={{ padding: '8px 12px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontSize: '16px' }}>+</button>
+              <button onClick={handleReset} style={{ padding: '8px 12px', background: '#4F46E5', border: 'none', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontSize: '12px' }}>Reset</button>
+            </div>
+          </div>
+        )}
+        <div
+          ref={containerRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onWheel={handleWheel}
+          style={{
+            flex: 1,
+            padding: '24px',
+            overflow: 'hidden',
+            cursor: isDragging ? 'grabbing' : 'grab',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          {loading ? (
+            <div style={{ color: '#94a3b8' }}>Loading diagram...</div>
+          ) : diagram ? (
             <div
-              ref={containerRef}
+              ref={svgRef}
               style={{
-                flex: 1,
-                background: '#0f172a',
-                borderRadius: '12px',
-                padding: '24px',
-                overflow: 'hidden',
-                cursor: isDragging ? 'grabbing' : 'grab',
-                position: 'relative'
+                transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
+                transformOrigin: 'center center',
+                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+                maxWidth: '100%',
+                maxHeight: '100%',
               }}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              onWheel={handleWheel}
-            >
-              {loading ? (
-                <div style={{ color: '#94a3b8', textAlign: 'center', padding: '100px' }}>
-                  Loading diagram...
-                </div>
-              ) : diagram ? (
-                <div
-                  ref={svgRef}
-                  style={{
-                    transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                    transformOrigin: 'center center',
-                    transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    minHeight: '100%'
-                  }}
-                />
-              ) : (
-                <div style={{ color: '#64748b', textAlign: 'center', padding: '100px' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
-                  <p>Diagram pending generation</p>
-                </div>
-              )}
+            />
+          ) : (
+            <div style={{ textAlign: 'center', color: '#64748b' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
+              <p>Select a module from the left to view diagram</p>
             </div>
-
-            {/* Instructions */}
-            <div style={{ 
-              marginTop: '12px', 
-              color: '#64748b', 
-              fontSize: '12px',
-              textAlign: 'center'
-            }}>
-              🖱️ Drag to pan | 🔄 Scroll to zoom | +/- buttons to resize
-            </div>
-
-            {/* Description */}
-            {selectedItem.description && (
-              <div style={{ marginTop: '16px', color: '#94a3b8', fontSize: '14px' }}>
-                {selectedItem.description}
-              </div>
-            )}
-          </>
-        ) : (
-          <div style={{ 
-            background: '#0f172a', 
-            borderRadius: '12px', 
-            padding: '100px',
-            textAlign: 'center',
-            color: '#64748b'
-          }}>
-            <div style={{ fontSize: '64px', marginBottom: '16px' }}>📊</div>
-            <h3 style={{ color: '#94a3b8', margin: '0 0 8px 0' }}>
-              Select a topic to view
-            </h3>
-            <p>Choose a module from the left sidebar</p>
+          )}
+        </div>
+        {selectedItem && (
+          <div style={{ padding: '12px 24px', background: '#0f172a', borderTop: '1px solid #1e293b', color: '#64748b', fontSize: '12px', display: 'flex', justifyContent: 'space-between' }}>
+            <span>🖱️ Drag to pan · 🔄 Scroll to zoom · +/- to resize</span>
+            {selectedItem.description && <span>{selectedItem.description}</span>}
           </div>
         )}
       </div>
