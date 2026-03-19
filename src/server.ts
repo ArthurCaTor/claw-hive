@@ -242,7 +242,7 @@ function pollOpenclaw() {
         // Track LLM usage
         const model = session.model || old.model || 'unknown';
         const provider = llmTracker.getProviderFromModel(model);
-        llmTracker.track(agentId, provider, model);
+        llmTracker.trackRequest(agentId, provider, model, null, null, null, null);
       }
       
       // Broadcast update
