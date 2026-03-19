@@ -12,6 +12,7 @@ import StreamPage from './pages/StreamPage';
 import MetricsPage from './pages/MetricsPage';
 import SettingsPage from './pages/SettingsPage';
 import StudyPage from './pages/StudyPage';
+import Study2Page from './pages/Study2Page';
 
 function NavLink({ to, label }) {
   const location = useLocation();
@@ -44,6 +45,7 @@ function NewApp() {
   else if (location.pathname === '/metrics') PageComponent = MetricsPage;
   else if (location.pathname === '/settings') PageComponent = SettingsPage;
   else if (location.pathname === '/study') PageComponent = StudyPage;
+  else if (location.pathname === '/study2') PageComponent = Study2Page;
   
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0d1117' }}>
@@ -62,7 +64,8 @@ function NewApp() {
         <NavLink to="/stream" label="Context Stream" />
         <NavLink to="/metrics" label="📊 Metrics" />
         <NavLink to="/settings" label="Settings" />
-        <NavLink to="/study" label="📚 Study" />
+        <NavLink to="/study" label="📚 Study 1" />
+        <NavLink to="/study2" label="📖 Study 2" />
       </nav>
       <main style={{ flex: 1, padding: '24px', overflow: 'auto' }}>
         <PageComponent />
