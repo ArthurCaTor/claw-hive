@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useWebSocket, useAgentsWebSocket } from '../hooks';
 
 export function DashboardPage() {
