@@ -15,6 +15,18 @@ mermaid.initialize({
     htmlLabels: true,
     curve: 'basis',
   },
+  sequence: {
+    useMaxWidth: false,
+    diagramMarginX: 20,
+    diagramMarginY: 20,
+    actorMargin: 80,
+    width: 180,
+    height: 50,
+    boxMargin: 10,
+    boxTextMargin: 5,
+    noteMargin: 10,
+    messageMargin: 40,
+  },
   securityLevel: 'loose',
 });
 
