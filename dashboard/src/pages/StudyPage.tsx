@@ -240,7 +240,7 @@ export function StudyPage() {
           style={{
             flex: 1,
             padding: '24px',
-            overflow: 'hidden',
+            overflow: 'auto',
             cursor: isDragging ? 'grabbing' : 'grab',
             display: 'flex',
             alignItems: 'center',
@@ -256,8 +256,9 @@ export function StudyPage() {
                 transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
                 transformOrigin: 'center center',
                 transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-                maxWidth: '100%',
+                maxWidth: 'none',
                 maxHeight: '100%',
+                overflow: 'visible',
               }}
             />
           ) : (
