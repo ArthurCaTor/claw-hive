@@ -21,6 +21,10 @@ function study2Routes(app: Application): void {
           { id: 'story-system-startup', name: 'OpenClaw 启动了', story: 'story-system-startup' },
           { id: 'story-telegram-message', name: '我在 Telegram 发了一条消息', story: 'story-telegram-message' },
           { id: 'story-tool-call', name: 'Agent 调用了一个工具', story: 'story-tool-call' },
+          { id: 'story-session-memory', name: 'Agent 记住了上次对话', story: 'story-session-memory' },
+          { id: 'story-switch-llm', name: 'Agent 切换了 LLM', story: 'story-switch-llm' },
+          { id: 'story-multi-agent', name: '多个 Agent 同时工作', story: 'story-multi-agent' },
+          { id: 'story-agent-read-webpage', name: 'Agent 读了一个网页', story: 'story-agent-read-webpage' },
         ]
       },
       {
@@ -40,6 +44,7 @@ function study2Routes(app: Application): void {
         items: [
           { id: 'data-message', name: 'Message', data: 'message' },
           { id: 'data-session', name: 'Session', data: 'session' },
+          { id: 'data-tool-call', name: 'ToolCall', data: 'tool-call' },
         ]
       },
       {
