@@ -52,7 +52,7 @@ function studyRoutes(app: Application): void {
       const searchPaths = [
         path.join(STUDY_DIR, `${id}.mermaid`),
         path.join(STUDY_DIR, 'system', `${id}.mermaid`),
-        path.join(STUDY_DIR, 'modules', id, `${id}.mermaid`),
+        path.join(STUDY_DIR, 'modules', `${id}.mermaid`),
         path.join(STUDY_DIR, 'interactions', `${id}.mermaid`),
       ];
       

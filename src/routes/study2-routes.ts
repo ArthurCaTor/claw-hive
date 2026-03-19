@@ -301,4 +301,4 @@ function study2Routes(app: Application): void {
   });
 }
 
-export default study2Routes;
+module.exports = study2Routes;
